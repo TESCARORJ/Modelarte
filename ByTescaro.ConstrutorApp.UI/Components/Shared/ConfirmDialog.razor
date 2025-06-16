@@ -1,0 +1,19 @@
+﻿@using Radzen
+@inject DialogService DialogService
+
+<div class="rz-pa-4">
+    <RadzenText Text="@Message" TextStyle="TextStyle.Body1" />
+
+    <div class="rz-mt-4 rz-justify-end rz-gap-2 rz-display-flex">
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem">
+            <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Secondary" Click="@OnCancel" />
+            <RadzenButton Text="Confirmar" ButtonStyle="ButtonStyle.Danger" Click="@OnConfirm" />
+        </RadzenStack>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Message { get; set; } = "Tem certeza que deseja excluir?";
+    void OnConfirm() => DialogService.Close(true);
+    void OnCancel() => DialogService.Close(false);
+}

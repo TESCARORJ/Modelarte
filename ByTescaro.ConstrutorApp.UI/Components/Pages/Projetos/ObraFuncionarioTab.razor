@@ -1,0 +1,205 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject ObraFuncionarioApiService ObraFuncionarioApiService
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+
+<RadzenCard Class="pa-4">
+    <RadzenHeading Size="H6" Text="Funcionários Alocados na Obra" class="mb-3" />
+
+    <RadzenDropDown TValue="List<long>"
+                    Data="@FuncionariosDisponiveis"
+                    TextProperty="Nome"
+                    ValueProperty="Id"
+                    Placeholder="Selecionar Funcionários"
+                    Multiple="true"
+                    SelectAllText="Selecionar Todos"
+                    Style="width: 100%;"
+                    @bind-Value="_funcionariosSelecionados" />
+
+    <RadzenButton Text="Adicionar Selecionados"
+                  Style="margin-top: 1rem; margin-bottom: 1rem;"
+                  Disabled="@(!_funcionariosSelecionados.Any())"
+                  Click="AdicionarFuncionarios" />
+
+    <RadzenDivider Style="margin: 1rem 0;" />
+
+    @if (Obra.Funcionarios?.Any() == true)
+    {
+        <RadzenDataGrid Data="@Obra.Funcionarios" TItem="ObraFuncionarioDto" ShowPagingSummary="false" PageSize="10" Responsive="true">
+            <Columns>
+                <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="FuncionarioNome" Title="Nome" />
+                <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="FuncaoNoObra" Title="Função" />
+                <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="DataInicio" Title="Início" FormatString="{0:dd/MM/yyyy}" />
+                <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="DataFim" Title="Fim" FormatString="{0:dd/MM/yyyy}" />
+                <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="DataHoraCadastro" Title="Data Cadastro" FormatString="{0:dd/MM/yyyy}" />
+                <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="UsuarioCadastro" Title="Cadastrador por" />
+                <RadzenDataGridColumn TItem="ObraFuncionarioDto">
+                    <Template Context="funcionario">
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => ConfirmarRemocao(funcionario))" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    }
+    else
+    {
+        <RadzenText Text="Nenhum funcionário adicionado à obra." />
+    }
+    <RadzenButton Text="Salvar Funcionários"
+              Icon="save"
+              ButtonStyle="ButtonStyle.Primary"
+              Style="margin-top: 1rem;"
+              Click="SalvarFuncionariosAsync"
+                  Disabled="@IsBotaoSalvarDesabilitado" />
+
+
+</RadzenCard>
+
+@code {
+    [Parameter] public ObraDto Obra { get; set; } = new();
+    [Parameter] public List<FuncionarioDto> FuncionariosDisponiveis { get; set; } = new();
+    private bool IsBotaoSalvarDesabilitado => Obra.Funcionarios == null || !Obra.Funcionarios.Any();
+    private List<ObraFuncionarioDto> _funcionariosOriginais = new();
+
+
+    private List<long> _funcionariosSelecionados = new();
+
+
+    private void AdicionarFuncionarios()
+    {
+        if (Obra.Funcionarios == null)
+            Obra.Funcionarios = new List<ObraFuncionarioDto>();
+
+        var novos = new List<ObraFuncionarioDto>();
+
+        foreach (var id in _funcionariosSelecionados)
+        {
+            if (Obra.Funcionarios.Any(f => f.FuncionarioId == id))
+                continue;
+
+            var funcionario = FuncionariosDisponiveis.FirstOrDefault(f => f.Id == id);
+            if (funcionario is not null)
+            {
+                novos.Add(new ObraFuncionarioDto
+                    {
+                        ObraId = Obra.Id,
+                        FuncionarioId = funcionario.Id,
+                        FuncionarioNome = funcionario.Nome,
+                        FuncaoNoObra = funcionario.FuncaoNome ?? string.Empty,
+                        DataInicio = DateTime.Today
+                    });
+            }
+        }
+
+        if (novos.Any())
+        {
+            // 🔁 recria a lista
+            Obra.Funcionarios = Obra.Funcionarios.Concat(novos).ToList();
+        }
+
+        _funcionariosSelecionados.Clear();
+    }
+
+
+    private async Task ConfirmarRemocao(ObraFuncionarioDto funcionario)
+    {
+        bool? confirm = await DialogService.Confirm($"Deseja realmente remover o funcionário '{funcionario.FuncionarioNome}'?", "Remover Funcionário");
+
+        if (confirm == true)
+        {
+            Obra.Funcionarios = Obra.Funcionarios
+                        .Where(f => f.FuncionarioId != funcionario.FuncionarioId)
+                        .ToList();
+
+            NotificationService.Notify(NotificationSeverity.Warning, "Removido", "FUnconário removido da lista.");
+
+            StateHasChanged();
+
+        }
+    }
+
+ 
+    protected override async Task OnInitializedAsync()
+    {
+        if (!FuncionariosDisponiveis.Any())
+        {
+            FuncionariosDisponiveis = (await ObraFuncionarioApiService.GetFuncionariosDisponiveisAsync(Obra.Id)).ToList();
+        }
+
+        // Clona os funcionários atuais para controle de remoções
+        _funcionariosOriginais = Obra.Funcionarios?.Select(f => new ObraFuncionarioDto
+            {
+                Id = f.Id,
+                FuncionarioId = f.FuncionarioId,
+                ObraId = f.ObraId
+            }).ToList() ?? new();
+    }
+
+
+    private async Task SalvarFuncionariosAsync()
+    {
+        if (!Obra.Funcionarios.Any())
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Nenhum funcionário", "Adicione ao menos um funcionário.");
+            return;
+        }
+
+        var erros = new List<string>();
+
+        foreach (var func in Obra.Funcionarios)
+        {
+            if (func.DataInicio == default)
+                erros.Add($"Funcionário '{func.FuncionarioNome}' está sem data de início.");
+
+            if (func.DataFim.HasValue && func.DataFim < func.DataInicio)
+                erros.Add($"Funcionário '{func.FuncionarioNome}' possui data de fim anterior à de início.");
+        }
+
+        if (erros.Any())
+        {
+            foreach (var erro in erros)
+                NotificationService.Notify(NotificationSeverity.Error, "Erro de Validação", erro);
+            return;
+        }
+
+        try
+        {
+            // 🔁 Atualizar e adicionar
+            foreach (var funcionario in Obra.Funcionarios)
+            {
+                if (funcionario.Id == 0)
+                    await ObraFuncionarioApiService.CreateAsync(funcionario);
+                else
+                    await ObraFuncionarioApiService.UpdateAsync(funcionario);
+            }
+
+            // ❌ Remover os que saíram
+            var idsAtuais = Obra.Funcionarios.Select(f => f.Id).ToHashSet();
+            var removidos = _funcionariosOriginais.Where(f => !idsAtuais.Contains(f.Id)).ToList();
+
+            foreach (var func in removidos)
+            {
+                if (func.Id > 0)
+                    await ObraFuncionarioApiService.DeleteAsync(func.Id);
+            }
+
+            // ✅ Atualiza o controle de estado original
+            _funcionariosOriginais = Obra.Funcionarios
+                .Select(f => new ObraFuncionarioDto
+                    {
+                        Id = f.Id,
+                        FuncionarioId = f.FuncionarioId,
+                        ObraId = f.ObraId
+                    }).ToList();
+
+            NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Funcionários salvos com sucesso.");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Erro ao salvar funcionários: {ex.Message}");
+        }
+    }
+
+
+}

@@ -1,0 +1,114 @@
+﻿@page "/obraetapapadrao/novo"
+@page "/obraetapapadrao/editar/{Id:long}"
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@inject ObraEtapaPadraoApiService ObraEtapaPadraoApiService
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+@attribute [Authorize]
+
+<PageTitle>Etapa da Obra</PageTitle>
+
+<RadzenCard Class="rz-mt-5 rz-p-4 rz-shadow-md rz-rounded-md rz-mx-auto" Style="max-width: 1300px; width: 100%;">
+    <RadzenTemplateForm TItem="ObraEtapaPadraoDto" Data="@etapa" Submit="Salvar" InvalidSubmit="ExibirErros">
+        <RadzenHeading Size="H4" Text="@(Id == 0 ? "Nova Etapa da Obra" : "Editar Etapa da Obra")" Class="rz-mb-3" />
+
+        <RadzenFieldset Text="Dados da Etapa" Style="margin-bottom: 1.5rem;">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="9">
+                    <RadzenLabel Text="Nome" />
+                    <RadzenTextBox @bind-Value="etapa.Nome" Name="Nome" Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="Nome" Text="O nome é obrigatório" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenLabel Text="Ordem" />
+                    <RadzenNumeric @bind-Value="etapa.Ordem" Name="Ordem" Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="Ordem" Text="A ordem é obrigatória" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
+
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-3">
+            <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="@Cancelar" />
+            <RadzenButton Text="Salvar" ButtonType="ButtonType.Submit" Icon="save" Style="min-width: 120px;" />
+        </RadzenStack>
+    </RadzenTemplateForm>
+</RadzenCard>
+
+@code {
+    [Parameter] public long Id { get; set; }
+
+    private ObraEtapaPadraoDto etapa = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id != 0)
+        {
+            var existente = await ObraEtapaPadraoApiService.GetByIdAsync(Id);
+            if (existente is not null)
+                etapa = existente;
+        }
+        else
+        {
+            etapa.DataHoraCadastro = DateTime.Now;
+            etapa.UsuarioCadastro = "Sistema";
+        }
+    }
+
+    private async Task Salvar(ObraEtapaPadraoDto model)
+    {
+        try
+        {
+            if (model.Id == 0)
+            {
+                await ObraEtapaPadraoApiService.CreateAsync(model);
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Sucesso",
+                        Detail = "Etapa cadastrada com sucesso!",
+                        Duration = 4000
+                    });
+            }
+            else
+            {
+                await ObraEtapaPadraoApiService.UpdateAsync(model);
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Sucesso",
+                        Detail = "Etapa atualizada com sucesso!",
+                        Duration = 4000
+                    });
+            }
+
+            Navigation.NavigateTo("/obraetapaspadrao");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Erro",
+                    Detail = $"Erro ao salvar etapa: {ex.Message}",
+                    Duration = 5000
+                });
+        }
+    }
+
+    private void ExibirErros()
+    {
+        NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Warning,
+                Summary = "Atenção",
+                Detail = "Existem erros de validação no formulário.",
+                Duration = 4000
+            });
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/obraetapaspadrao");
+}

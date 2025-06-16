@@ -1,0 +1,326 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject ObraEtapaPadraoApiService EtapaPadraoApiService
+@inject ObraItemEtapaPadraoApiService ItemPadraoApiService
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+@inject ObraChecklistApiService ChecklistService
+
+<RadzenMediaQuery Query="(max-width: 576px)" Change="OnMobileChanged" />
+
+<RadzenCard Style="padding: 1rem">
+    <RadzenRow Style="gap: 0.5rem; margin-bottom: 1rem; align-items: end;">
+        <RadzenColumn Size="12" SizeMD="8" SizeLG="9">
+            <RadzenDropDown Data="@etapasPadrao.OrderBy(e => e.Ordem)"
+            TextProperty="Nome"
+            ValueProperty="Id"
+            @bind-Value="etapaSelecionadaId"
+            Placeholder="-- Selecione uma Etapa --"
+            Style="width: 100%;" />
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="4" SizeLG="3">
+            <RadzenButton Text="Incluir Etapa"
+            Icon="add_circle_outline"
+            Click="AdicionarEtapa"
+            Style="width: 100%;" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    @if (!Etapas.Any())
+    {
+        <RadzenHeading Size="H6">Nenhuma etapa cadastrada para esta obra.</RadzenHeading>
+    }
+    else
+    {
+        @foreach (var etapa in Etapas.OrderBy(e => e.Ordem))
+        {
+            <div class="etapa-container">
+                <RadzenRow Class="rz-align-items-center rz-mb-2">
+                    <RadzenColumn Size="10">
+                        <b>@etapa.Nome</b>
+                    </RadzenColumn>
+                    <RadzenColumn Size="2" Style="text-align: right;">
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                        Click="() => ConfirmarRemocaoEtapa(etapa)" />
+                    </RadzenColumn>
+                </RadzenRow>
+
+
+                <RadzenProgressBar Value="@CalcularProgresso(etapa)" ShowValue="true"
+                Style="width: 100%; margin-bottom: 0.5rem;" />
+
+                @foreach (var item in etapa.Itens.OrderBy(i => i.Ordem))
+                {
+                    <RadzenRow Class="rz-align-items-center rz-mb-2">
+                        <RadzenColumn Size="2" SizeSM="2" SizeMD="1">
+                            <RadzenCheckBox TValue="bool" TriState="false" @bind-Value="item.Concluido" />
+                        </RadzenColumn>
+                        @if (!isMobile)
+                        {
+                            <RadzenColumn Size="6" SizeSM="6" SizeMD="6">
+                                <span class="rz-text-caption">@item.Nome</span>
+                            </RadzenColumn>
+                        }
+                        else
+                        {
+                            <RadzenColumn Style="flex: 1;">
+                                <span class="rz-text-caption">@item.Nome</span>
+                            </RadzenColumn>
+
+                        }
+
+                        @if (!isMobile)
+                        {
+                            <RadzenColumn Size="4" SizeSM="4" SizeMD="5">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; justify-content: end;">
+                                    <RadzenBadge Text="@ObterStatusPrazoItem(item).Texto" BadgeStyle="@ObterBadgeStyle(ObterStatusPrazoItem(item).Cor)" />
+                                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                                  Click="() => ConfirmarRemocaoItem(etapa, item)" />
+                                </div>
+                            </RadzenColumn>
+                        }
+                        else
+                        {
+                            <RadzenColumn Size="12">
+                                <RadzenRow Class="rz-justify-between rz-align-center rz-mt-1">
+                                    <RadzenColumn Size="6">
+                                        <RadzenBadge Text="@ObterStatusPrazoItem(item).Texto" BadgeStyle="@ObterBadgeStyle(ObterStatusPrazoItem(item).Cor)" />
+                                    </RadzenColumn>
+                                    <RadzenColumn Size="6" Style="text-align: right;">
+                                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                                      Click="() => ConfirmarRemocaoItem(etapa, item)" />
+                                    </RadzenColumn>
+                                </RadzenRow>
+                            </RadzenColumn>
+                        }
+
+                    </RadzenRow>
+
+                }
+
+                <RadzenRow Style="gap: 0.5rem; margin-top: 1rem; margin-bottom: 1rem; align-items: end;">
+                    <RadzenColumn Size="12" SizeMD="9" SizeLG="9">
+                        @{
+                            var ordem = etapa.Ordem;
+                            var valorSelecionado = itemSelecionadoIds.ContainsKey(ordem) ? itemSelecionadoIds[ordem] : 0L;
+                        }
+                        <RadzenDropDown TValue="long"
+                                        Data="@ObterItensDisponiveisParaEtapa(etapa)"
+                                        TextProperty="Nome"
+                                        ValueProperty="Id"
+                                        Value="@valorSelecionado"
+                                        Change="@(args => itemSelecionadoIds[ordem] = Convert.ToInt64(args))"
+                                        Placeholder="-- Selecione um Item --"
+                                        Style="width: 100%;" />
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="3" SizeLG="3">
+                        <RadzenButton Text="Incluir Item"
+                                      Icon="add"
+                                      Click="() => AdicionarItem(etapa)"
+                                      Style="width: 100%;" />
+                    </RadzenColumn>
+                </RadzenRow>
+            </div>
+        }
+    }
+
+    <RadzenButton Text="Salvar Checklist"
+                  Icon="save"
+                  ButtonStyle="ButtonStyle.Primary"
+                  Click="@SalvarChecklistAsync"
+                  Style="margin: 2rem auto 0 auto; display: block; width: 100%; max-width: 300px;" />
+</RadzenCard>
+
+@code {
+    private bool isMobile;
+
+    private void OnMobileChanged(bool matches) => isMobile = matches;
+
+    [Parameter] public ObraDto Obra { get; set; } = new();
+
+    private List<ObraEtapaPadraoDto> etapasPadrao = new();
+    private List<ObraItemEtapaPadraoDto> itensPadrao = new();
+    private List<ObraItemEtapaPadraoDto> todosItensPadrao = new();
+
+    private long etapaSelecionadaId = 0;
+    private Dictionary<long, long> itemSelecionadoIds = new(); // chave = ObraEtapaDto.GetHashCode() ou nome/ordem
+
+
+
+    private List<ObraEtapaDto> Etapas
+    {
+        get => Obra.Etapas;
+        set => Obra.Etapas = value;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        etapasPadrao = await EtapaPadraoApiService.GetAllAsync();
+        todosItensPadrao = await ItemPadraoApiService.GetAllAsync();
+        itensPadrao = todosItensPadrao.ToList();
+    }
+
+
+    private void AdicionarEtapa()
+    {
+        if (etapaSelecionadaId == 0)
+            return;
+
+        var modelo = etapasPadrao.FirstOrDefault(e => e.Id == etapaSelecionadaId);
+        if (modelo == null)
+            return;
+
+        // Validação por nome (case-insensitive) para evitar duplicidade
+        if (Etapas.Any(e => e.Nome.Equals(modelo.Nome, StringComparison.OrdinalIgnoreCase)))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Duplicado", $"A etapa '{modelo.Nome}' já foi adicionada.");
+            return;
+        }
+
+        var itens = itensPadrao
+            .Where(i => i.ObraEtapaId == modelo.Id)
+            .Select(i => new ObraItemEtapaDto
+                {
+                    Nome = i.Nome,
+                    Ordem = i.Ordem,
+                    Concluido = false,
+                    DiasPrazo = i.DiasPrazo,
+                    IsDataPrazo = i.IsDataPrazo
+                }).ToList();
+
+        Etapas.Add(new ObraEtapaDto
+            {
+                Id = 0,
+                Nome = modelo.Nome,
+                Ordem = modelo.Ordem,
+                Itens = itens
+            });
+
+        if (!itemSelecionadoIds.ContainsKey(modelo.Ordem))
+            itemSelecionadoIds[modelo.Ordem] = 0; // Inicializa o dropdown dessa etapa
+    }
+
+    private void AdicionarItem(ObraEtapaDto etapa)
+    {
+        if (!itemSelecionadoIds.TryGetValue(etapa.Ordem, out var itemId) || itemId == 0)
+            return;
+
+        var modelo = itensPadrao.FirstOrDefault(i => i.Id == itemId);
+        if (modelo == null || etapa.Itens.Any(i => i.Nome == modelo.Nome))
+            return;
+
+        etapa.Itens.Add(new ObraItemEtapaDto
+            {
+                Id = 0,
+                Nome = modelo.Nome,
+                Ordem = modelo.Ordem,
+                Concluido = false,
+                DiasPrazo = modelo.DiasPrazo,
+                IsDataPrazo = modelo.IsDataPrazo
+            });
+
+        itemSelecionadoIds[etapa.Ordem] = 0;
+    }
+
+
+    private async Task ConfirmarRemocaoEtapa(ObraEtapaDto etapa)
+    {
+        bool? confirm = await DialogService.Confirm($"Deseja realmente remover a etapa '{etapa.Nome}'?", "Remover Etapa");
+
+        if (confirm == true)
+        {
+            Etapas.Remove(etapa);
+            NotificationService.Notify(NotificationSeverity.Warning, "Removida", "Etapa removida da lista.");
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<ObraItemEtapaPadraoDto> ObterItensDisponiveisParaEtapa(ObraEtapaDto etapa)
+    {
+        var nomesUsados = etapa.Itens.Select(i => i.Nome).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return todosItensPadrao.Where(i => i.ObraEtapaId == ObterIdEtapaPadraoPorNome(etapa.Nome) && !nomesUsados.Contains(i.Nome));
+
+    }
+
+    private long ObterIdEtapaPadraoPorNome(string nomeEtapa)
+    {
+        return etapasPadrao.FirstOrDefault(e => e.Nome.Equals(nomeEtapa, StringComparison.OrdinalIgnoreCase))?.Id ?? 0;
+    }
+
+
+    private async Task ConfirmarRemocaoItem(ObraEtapaDto etapa, ObraItemEtapaDto item)
+    {
+        bool? confirm = await DialogService.Confirm($"Deseja realmente remover a item '{item.Nome}'?", "Remover Item");
+
+        if (confirm == true)
+        {
+            etapa.Itens.Remove(item);
+
+            // Recalcular lista de itens disponíveis para esta etapa
+            var idsItensUsados = Etapas.SelectMany(e => e.Itens).Select(i => i.Nome).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            itensPadrao = todosItensPadrao
+                .Where(i => !idsItensUsados.Contains(i.Nome)) // Evita repetir nomes
+                .ToList();
+
+            NotificationService.Notify(NotificationSeverity.Warning, "Removida", "Item removida da lista.");
+            StateHasChanged();
+        }
+    }
+
+    private double CalcularProgresso(ObraEtapaDto etapa)
+    {
+        if (!etapa.Itens.Any()) return 0;
+        return Math.Round(etapa.Itens.Count(i => i.Concluido) * 100.0 / etapa.Itens.Count);
+    }
+
+    private (string Cor, string Texto) ObterStatusPrazoItem(ObraItemEtapaDto item)
+    {
+        if (!item.IsDataPrazo)
+            return ("Gray", "Sem prazo");
+
+        // Data base para cálculo
+        var baseDate = Obra.DataInicioExecucao ?? DateTime.Today;
+        var prazo = item.DiasPrazo ?? 0;
+
+        // Calcula a data final de prazo
+        var dataPrazo = item.DataPrazoCalculada ?? baseDate.AddDays(prazo);
+
+        // Aqui está a linha que **contempla os dias**
+        var dias = (dataPrazo - DateTime.Today).Days;
+
+        return item.Concluido
+            ? ("Green", "Concluído")
+            : dias > 1 ? ("Green", $"Faltam {dias} dias")
+            : dias == 1 ? ("Orange", "Vence amanhã")
+            : dias == 0 ? ("Red", "Vence hoje")
+            : ("Red", $"Atrasado há {Math.Abs(dias)} dias");
+    }
+
+    private BadgeStyle ObterBadgeStyle(string cor)
+    {
+        return cor.ToLower() switch
+        {
+            "gray" => BadgeStyle.Secondary,
+            "green" => BadgeStyle.Success,
+            "orange" => BadgeStyle.Warning,
+            "red" => BadgeStyle.Danger,
+            _ => BadgeStyle.Base
+        };
+    }
+
+    private async Task SalvarChecklistAsync()
+    {
+        try
+        {
+            await ChecklistService.SaveEtapasAsync(Obra.Id, Obra.Etapas);
+            NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Checklist salvo com sucesso.");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Erro ao salvar checklist: {ex.Message}");
+        }
+    }
+
+}

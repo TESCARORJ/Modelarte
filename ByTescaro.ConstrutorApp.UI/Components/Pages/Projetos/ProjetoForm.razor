@@ -1,0 +1,297 @@
+﻿@page "/projetos/novo"
+@page "/projetos/editar/{Id:long}"
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Utils
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@using ByTescaro.ConstrutorApp.UI.Utils
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+@inject ProjetoApiService ProjetoApiService
+@inject ObraApiService ObraApiService
+@inject ClienteApiService ClienteApiService
+@inject CepService CepService
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+
+
+
+<RadzenCard Class="rz-mx-auto rz-mt-4 rz-p-4" Style="max-width: 1300px">
+    <RadzenTemplateForm TItem="ProjetoDto" Data="@projeto" Submit="SalvarProjeto">
+        <RadzenHeading Size="H4" Text="@Titulo" Class="rz-mb-4" />
+
+        <RadzenTabs Change="@((int index) => OnTabChanged(index))" TabPosition="@tabPosition" RenderMode="TabRenderMode.Client">
+            <Tabs>
+                <RadzenTabsItem Text="Informações do Projeto">
+                    <RadzenFieldset Text="Dados do Projeto" Style="margin-bottom: 1.5rem;">
+                        <RadzenRow>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenLabel Text="Nome *" />
+                                <RadzenTextBox @bind-Value="projeto.Nome" Name="Nome" Style="width: 100%;" />
+                                <RadzenRequiredValidator Component="Nome" Text="Campo obrigatório" />
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenLabel Text="Cliente" />
+                                <RadzenDropDown @bind-Value="projeto.ClienteId" Name="ClienteId"
+                                                Data="@clientes" TextProperty="Nome" ValueProperty="Id"
+                                                Placeholder="-- Selecione um cliente --" Style="width: 100%;" />
+                                <RadzenRequiredValidator Component="ClienteId" Text="Campo obrigatório" />
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenLabel Text="Status" />
+                                <RadzenDropDown @bind-Value="projeto.Status" Name="Status"
+                                                Data="@statusOptions" TextProperty="Label" ValueProperty="Value"
+                                                Placeholder="-- Selecione --" Style="width: 100%;" />
+                                <RadzenRequiredValidator Component="Status" Text="Campo obrigatório" />
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="3">
+                                <RadzenLabel Text="Data de Início" />
+                                <RadzenDatePicker @bind-Value="projeto.DataInicio" Name="DataInicio" Style="width: 100%;" />
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="3">
+                                <RadzenLabel Text="Data de Término" />
+                                <RadzenDatePicker @bind-Value="projeto.DataFim" Name="DataFim" Style="width: 100%;" />
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenLabel Text="Telefone Principal" />
+                                <RadzenMask @bind-Value="projeto.TelefonePrincipal"
+                                            Mask="(**) *****-****" Name="TelefonePrincipal" Style="width: 100%;" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenFieldset>
+
+                    <RadzenFieldset Text="Endereço">
+                        <RadzenRow>
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="CEP *" />
+                                <RadzenMask @bind-Value="projeto.CEP"
+                                            Mask="*****-***"
+                                            CharacterPattern="[0-9]"
+                                            Placeholder="00000-000"
+                                            Name="CEP"
+                                            Change="@((string _) => PreencherEndereco())"
+                                            Style="width: 100%;" />
+                                <RadzenRequiredValidator Component="CEP" Text="Campo obrigatório" />
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenLabel Text="Logradouro" />
+                                <RadzenTextBox @bind-Value="projeto.Logradouro" ReadOnly Style="width: 100%;" />
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="Número" />
+                                <RadzenTextBox @bind-Value="projeto.Numero" Style="width: 100%;" />
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="Bairro" />
+                                <RadzenTextBox @bind-Value="projeto.Bairro" ReadOnly Style="width: 100%;" />
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="Cidade" />
+                                <RadzenTextBox @bind-Value="projeto.Cidade" ReadOnly Style="width: 100%;" />
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenLabel Text="Estado" />
+                                <RadzenTextBox @bind-Value="projeto.Estado" ReadOnly Style="width: 100%;" />
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenLabel Text="UF" />
+                                <RadzenTextBox @bind-Value="projeto.UF" ReadOnly Style="width: 100%;" />
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12">
+                                <RadzenLabel Text="Complemento" />
+                                <RadzenTextBox @bind-Value="projeto.Complemento" Style="width: 100%;" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenFieldset>
+
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-4">
+                        <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="Cancelar" />
+                        <RadzenButton Text="Salvar" ButtonType="ButtonType.Submit" Icon="save" />
+                    </RadzenStack>
+
+                </RadzenTabsItem>
+
+
+                @if (projeto.Id > 0 && projeto.Obras.Any())
+                {
+                    <RadzenTabsItem Text="Obras do Projeto">
+                        <RadzenAccordion>
+                            <Items>
+                                @for (int i = 0; i < projeto.Obras.Count; i++)
+                                {
+                                    <ObraAccordionItem Obra="@projeto.Obras[i]"
+                                                       TituloObra="@(!string.IsNullOrWhiteSpace(projeto.Obras[i].Nome) ? projeto.Obras[i].Nome : $"Obra #{i + 1}")"
+                                                       ResponsavelOptions="@responsavelMaterialEnumOptions"
+                                                       StatusOptions="@statusObraOptions"
+                                                       OnRemover="RemoverObra" />
+                                }
+                            </Items>
+
+                        </RadzenAccordion>
+
+                        <RadzenButton Text="Adicionar Nova Obra"
+                                      Icon="add_circle_outline"
+                                      Style="margin-top: 1rem;"
+                                      Click="AdicionarNovaObra" />
+                    </RadzenTabsItem>
+                }
+            </Tabs>
+        </RadzenTabs>       
+    </RadzenTemplateForm>
+</RadzenCard>
+
+
+@code {
+    [Parameter] public long Id { get; set; }
+
+
+    ProjetoDto projeto = new() { Obras = new List<ObraDto>() };
+    List<ClienteDto> clientes = new();
+    private List<EnumOption<StatusProjeto>> statusOptions = EnumHelper.ListarOpcoes<StatusProjeto>(incluirNulo: true);
+    private List<object> responsavelMaterialEnumOptions = EnumHelper.ListarOpcoes<ResponsavelMaterialEnum>(incluirNulo: true).Cast<object>().ToList();
+
+    private List<object> statusObraOptions = EnumHelper.ListarOpcoes<StatusObra>(incluirNulo: true).Cast<object>().ToList();
+
+    string Titulo => Id == 0 ? "Novo Projeto" : "Editar Projeto";
+
+    // private List<object> responsavelMaterialEnumOptions = Enum.GetValues<ResponsavelMaterialEnum>()
+    //     .Cast<ResponsavelMaterialEnum>()
+    //     .Select(x => new { Value = (ResponsavelMaterialEnum?)x, Label = x.ToString() })
+    //     .ToList<object>();
+
+    // private List<object> statusObraOptions = Enum.GetValues<StatusObra>()
+    //     .Cast<StatusObra>()
+    //     .Select(x => new { Value = (StatusObra?)x, Label = x.ToString() })
+    //     .ToList<object>();
+
+    TabPosition tabPosition = TabPosition.Top;
+
+    protected override async Task OnInitializedAsync()
+    {
+        clientes = await ClienteApiService.GetAllAsync();
+
+        if (Id != 0)
+        {
+            var existente = await ProjetoApiService.GetByIdAsync(Id);
+            if (existente is not null)
+            {
+                projeto = existente;
+                projeto.Obras = await ObraApiService.GetByProjetoIdAsync(Id);
+            }
+        }
+    }
+
+    void OnTabChanged(int index)
+    {
+        Console.WriteLine($"Aba selecionada: {index}");
+    }
+
+    void AdicionarNovaObra()
+    {
+        projeto.Obras = projeto.Obras.Append(new ObraDto()).ToList();
+    }
+
+    void RemoverObra(ObraDto obra)
+    {
+        projeto.Obras.Remove(obra);
+        projeto.Obras = projeto.Obras.ToList();
+    }
+
+    async Task PreencherEndereco()
+    {
+        await EnderecoAutoPreenchimentoHelper.PreencherEnderecoAsync(
+            projeto.CEP,
+            CepService,
+            NotificationService,
+            logradouro => projeto.Logradouro = logradouro,
+            bairro => projeto.Bairro = bairro,
+            cidade => projeto.Cidade = cidade,
+            estado => projeto.Estado = estado,
+            uf => projeto.UF = uf
+        );
+    }
+
+    async Task SalvarProjeto(ProjetoDto model)
+    {
+
+        try
+        {
+
+            if (model.Obras == null || !model.Obras.Any())
+            {
+                model.Obras = new List<ObraDto>
+                {
+                    new ObraDto
+                    {
+                        Nome = "Obra Principal",
+                        Status = StatusObra.NaoIniciada,
+                        ResponsavelMaterial = ResponsavelMaterialEnum.Cliente
+                    }
+                };
+            }
+
+
+            ProjetoDto? resultado = null;
+
+            if (model.Id == 0)
+            {
+                // Cria e retorna com ID
+                resultado = await ProjetoApiService.CreateAsync(model);
+            }
+            else
+            {
+                await ProjetoApiService.UpdateAsync(model);
+                resultado = model;
+            }
+
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Sucesso",
+                    Detail = "Projeto salvo com sucesso!",
+                    Duration = 4000
+                });
+
+            if (resultado?.Id > 0)
+            {
+                Navigation.NavigateTo($"/projetos/editar/{resultado.Id}", forceLoad: true);
+            }
+            else
+            {
+                Navigation.NavigateTo("/projetos");
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Erro",
+                    Detail = $"Erro ao salvar projeto: {ex.Message}",
+                    Duration = 6000
+                });
+        }
+    }
+
+    void Cancelar() => Navigation.NavigateTo("/projetos");
+
+
+
+}
+
+
+
+

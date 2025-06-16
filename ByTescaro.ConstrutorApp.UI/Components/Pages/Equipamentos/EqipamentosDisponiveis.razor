@@ -1,0 +1,30 @@
+﻿@page "/equipamentos/disponiveis"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject ObraEquipamentoApiService ObraEquipamentoApiService
+
+<PageTitle>Funcionários Disponíveis</PageTitle>
+
+<RadzenCard Style="margin: 1rem;">
+    <RadzenHeading Size="H4" Text="Equipamentos Disponíveis para Alocação" />
+
+    <RadzenDataGrid TItem="EquipamentoDto"
+                    Data="@_equipamentosDisponiveis"
+                    AllowPaging="true"
+                    PageSize="10"
+                    Responsive="true"
+                    ShowPagingSummary="true">
+        <Columns>
+            <RadzenDataGridColumn TItem="EquipamentoDto" Property="Nome" Title="Nome" />          
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<EquipamentoDto> _equipamentosDisponiveis = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _equipamentosDisponiveis = (await ObraEquipamentoApiService.GetEquipamentosTotalDisponiveisAsync()).ToList();
+    }
+}

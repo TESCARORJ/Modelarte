@@ -1,0 +1,117 @@
+﻿@* @page "/localizacoes/novo"
+@page "/localizacoes/editar/{Id:long}"
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Web.Services
+@using FluentValidation
+@using Microsoft.AspNetCore.Authorization
+@inject LocalizacaoEstoqueApiService LocalizacaoApiService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>Localização de Estoque</PageTitle>
+
+<MudPaper Class="mx-auto mt-4" MaxWidth="MaxWidth.Medium" Elevation="4">
+    <MudText Typo="Typo.h5" Class="pa-4 pb-0">
+        @(Id == 0 ? "Nova Localização de Estoque" : "Editar Localização de Estoque")
+    </MudText>
+
+    <MudForm @ref="form" Model="@localizacao" Validation="@(validator.ValidateValue)" class="pa-4">
+        <MudGrid GutterSize="3">
+            <MudItem xs="12" md="6">
+                <MudTextField Label="Nome" @bind-Value="localizacao.Nome" For="@(() => localizacao.Nome)" Immediate="true" @attributes=@NoAutocomplete("nome") />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField Label="Descrição" @bind-Value="localizacao.Descricao" For="@(() => localizacao.Descricao)" Immediate="true" @attributes=@NoAutocomplete("descricao") />
+            </MudItem>
+           @*  <MudItem xs="12">
+                <MudSwitch @bind-Checked="localizacao.Ativo" Color="Color.Primary" Label="Ativo" />
+            </MudItem> *@
+@*         </MudGrid>
+
+        <MudDivider Class="my-4" />
+
+        <MudGrid Class="mt-6">
+            <MudItem xs="12">
+                <div style="display: flex; justify-content: flex-end; gap: 16px;">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="@Cancelar">
+                        Cancelar
+                    </MudButton>
+                    <MudButton Type="Submit" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save" OnClick="@(async () => await Salvar())">
+                        Salvar
+                    </MudButton>
+                </div>
+            </MudItem>
+        </MudGrid>
+    </MudForm>
+</MudPaper>  *@
+
+@* @code {
+    [Parameter] public long Id { get; set; }
+
+    private LocalizacaoEstoqueDto localizacao = new();
+    private MudForm? form;
+    private LocalizacaoEstoqueDtoValidator validator = new();
+
+    private Dictionary<string, object> NoAutocomplete(string name) =>
+        new()
+        {
+            { "autocomplete", "new-password" },
+            { "name", $"{name}_{Guid.NewGuid():N}" }
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id != 0)
+        {
+            var existente = await LocalizacaoApiService.GetByIdAsync(Id);
+            if (existente is not null)
+                localizacao = existente;
+        }
+    }
+
+    private async Task Salvar()
+    {
+        if (form is null)
+            return;
+
+        await form.Validate();
+
+        if (!form.IsValid)
+        {
+            // Mostra todos os erros de validação no toaster
+            foreach (var message in form.Errors)
+            {
+                Snackbar.Add(message, MudBlazor.Severity.Error);
+            }
+            return;
+        }
+
+        try
+        {
+            if (localizacao.Id == 0)
+            {
+                await LocalizacaoApiService.CreateAsync(localizacao);
+                Snackbar.Add("Localização cadastrada com sucesso!", MudBlazor.Severity.Success);
+            }
+            else
+            {
+                await LocalizacaoApiService.UpdateAsync(localizacao);
+                Snackbar.Add("Localização atualizada com sucesso!", MudBlazor.Severity.Success);
+            }
+
+            Navigation.NavigateTo("/localizacoes");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao salvar localização: {ex.Message}", MudBlazor.Severity.Error);
+        }
+    }
+
+    private void Cancelar()
+    {
+        Navigation.NavigateTo("/localizacoes");
+    }
+}
+ *@

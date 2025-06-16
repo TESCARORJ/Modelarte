@@ -1,0 +1,148 @@
+﻿@page "/insumos"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Utils
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+@inject InsumoApiService InsumoApiService
+@inject NavigationManager Navigation
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+@attribute [Authorize]
+
+<PageTitle>Insumos</PageTitle>
+
+<RadzenCard Style="margin: 1rem;">
+    <RadzenHeading Size="H4" Text="Insumos" />
+
+    <div class="row mt-4 mb-2">
+        <div class="col-md-9">
+            <RadzenTextBox @bind-Value="Filtro"
+                           Placeholder="Pesquisar por nome"
+                           Icon="search"
+                           Style="width: 100%;" />
+        </div>
+        <div class="col-md-3 d-flex justify-content-end">
+            <RadzenButton Text="Novo Insumo" Icon="add_circle" Click="@NovoInsumo" Style="width: 100%;" />
+        </div>
+    </div>
+
+    <RadzenDataGrid TItem="InsumoDto"
+                    Data="@_insumosFiltrados"
+                    AllowPaging="true"
+                    PageSize="10"
+                    AllowSorting="true"
+                    FilterMode="FilterMode.Simple"
+                    Responsive="true"
+                    ShowPagingSummary="true">
+
+        <Columns>
+            <RadzenDataGridColumn TItem="InsumoDto" Property="Nome" Title="Nome" />
+            <RadzenDataGridColumn TItem="InsumoDto" Title="Unidade de Medida">
+                <Template Context="i">
+                    @EnumHelper.ObterDescricaoEnum(i.UnidadeMedida)
+                </Template>
+            </RadzenDataGridColumn>
+
+            
+            <RadzenDataGridColumn TItem="InsumoDto" Title="Ações" Filterable="false" Sortable="false">
+                <Template Context="i">
+                    <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
+                                  Click="@(() => VerDetalhes(i.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                  Click="@(() => EditarInsumo(i.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                  Click="@(() => ConfirmarExclusao(i.Id, i.Nome))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<InsumoDto> _insumos = new();
+    private string _filtro = string.Empty;
+
+    private string Filtro
+    {
+        get => _filtro;
+        set
+        {
+            _filtro = value;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<InsumoDto> _insumosFiltrados =>
+        string.IsNullOrWhiteSpace(_filtro)
+            ? _insumos
+            : _insumos.Where(i =>
+                i.Nome.Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _insumos = (await InsumoApiService.GetAllAsync()).ToList();
+    }
+
+    private void NovoInsumo() =>
+        Navigation.NavigateTo("/insumo/novo");
+
+    private void EditarInsumo(long id) =>
+        Navigation.NavigateTo($"/insumo/editar/{id}");
+
+    private void VerDetalhes(long id) =>
+        Navigation.NavigateTo($"/insumo/detalhes/{id}");
+
+    private async Task ConfirmarExclusao(long id, string nome)
+    {
+        var confirm = await DialogService.Confirm($"Deseja realmente excluir o insumo \"{nome}\"?",
+                                                  "Confirme a exclusão",
+                                                  new ConfirmOptions { OkButtonText = "Sim", CancelButtonText = "Cancelar" });
+
+        if (confirm == true)
+        {
+            await ExcluirConfirmado(id);
+        }
+    }
+
+    private async Task ExcluirConfirmado(long id)
+    {
+        try
+        {
+            await InsumoApiService.DeleteAsync(id);
+            _insumos = (await InsumoApiService.GetAllAsync()).ToList();
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Sucesso",
+                    Detail = "Insumo excluído com sucesso!",
+                    Duration = 4000
+                });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Erro",
+                    Detail = $"Erro ao excluir insumo: {ex.Message}",
+                    Duration = 5000
+                });
+        }
+    }
+
+    // private static string ObterNomeUnidade(UnidadeMedida? unidade)
+    // {
+    //     if (unidade == null)
+    //         return string.Empty;
+
+    //     var member = unidade.Value.GetType().GetMember(unidade.ToString() ?? "")
+    //         .FirstOrDefault();
+
+    //     var display = member?.GetCustomAttribute<DisplayAttribute>();
+    //     return display?.Name ?? unidade.ToString();
+    // }
+
+}

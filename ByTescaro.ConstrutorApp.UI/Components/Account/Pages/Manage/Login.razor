@@ -1,0 +1,136 @@
+﻿@layout LayoutVazio
+@page "/Account/Login"
+@rendermode InteractiveServer
+
+@using System.ComponentModel.DataAnnotations
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+<HeadContent>
+    <link href="css/app.css" rel="stylesheet" />
+    <style>
+        .rz-body {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .login-page-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            width: 100%;
+            padding: 5vw;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .login-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+
+        .RadzenHeading {
+            font-size: 1.5rem !important;
+        }
+    </style>
+</HeadContent>
+
+
+<PageTitle>Entrar no ConstrutorApp</PageTitle>
+
+<div class="login-page-container">
+    <RadzenImage Path="./css/background/modelarte.jpeg"
+                 class="login-background"
+                 AlternateText="Background" />
+
+    <div class="login-card">
+        <form method="post" action="/auth/login">
+            <RadzenHeading Size="H4" Text="Use sua conta para acessar o sistema." Style="margin-bottom: 1rem;" />
+
+            <RadzenFieldset Style="border: none;">
+                <RadzenTextBox Name="Email"
+                               Placeholder="exemplo@empresa.com"
+                               Style="width:100%; margin-bottom: 1rem"
+                               Type="email"
+                               Required="true"
+                               RequiredValidatorText="Informe o e-mail" />
+
+                <RadzenPassword Name="Senha"
+                                Placeholder="Digite sua senha"
+                                Style="width:100%; margin-bottom: 1rem"
+                                Required="true"
+                                RequiredValidatorText="Informe a senha" />
+
+                <div style="margin-bottom: 1rem;">
+                    <RadzenCheckBox Name="RememberMe" TValue="bool" />
+                    <label for="RememberMe" style="margin-left: 0.5rem">Lembrar login</label>
+                </div>
+
+                <RadzenButton ButtonType="ButtonType.Submit"
+                              Text="Entrar"
+                              Style="width:100%; margin-top: 1rem"
+                              Icon="login"
+                              ButtonStyle="ButtonStyle.Primary" />
+            </RadzenFieldset>
+        </form>
+    </div>
+</div>
+
+@code {
+    private string? errorMessage;
+
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private string? _pendingToken;
+    private bool _shouldRedirect;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("eval", "document.body.style.margin='0'; document.body.style.height='100vh';");
+        }
+
+        if (!string.IsNullOrEmpty(_pendingToken))
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", _pendingToken);
+            _pendingToken = null;
+
+            if (_shouldRedirect)
+                NavigationManager.NavigateTo(ReturnUrl ?? "/", forceLoad: true);
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = string.Empty;
+
+        public bool RememberMe { get; set; }
+    }
+}

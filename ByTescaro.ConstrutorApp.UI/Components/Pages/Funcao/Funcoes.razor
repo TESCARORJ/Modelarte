@@ -1,0 +1,116 @@
+﻿@page "/funcoes"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Components.Utils
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@inject FuncaoApiService FuncaoApiService
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+@attribute [Authorize]
+
+<PageTitle>Funções</PageTitle>
+
+<RadzenCard Style="margin: 1rem;">
+    <RadzenHeading Size="H4" Text="Funções Cadastradas" />
+
+    <div class="row mt-4 mb-2">
+        <div class="col-md-9">
+            <RadzenTextBox @bind-Value="Filtro"
+                           Placeholder="Pesquisar por nome"
+                           Icon="search"
+                           Style="width: 100%;" />
+        </div>
+        <div class="col-md-3 d-flex justify-content-end">
+            <RadzenButton Text="Nova Função" Icon="add_circle" Click="@Novo" Style="width: 100%;" />
+        </div>
+    </div>
+
+    <RadzenDataGrid TItem="FuncaoDto"
+                    Data="@_filtradas"
+                    AllowPaging="true"
+                    PageSize="10"
+                    AllowSorting="true"
+                    FilterMode="FilterMode.Simple"
+                    Responsive="true"
+                    ShowPagingSummary="true">
+
+        <Columns>
+            <RadzenDataGridColumn TItem="FuncaoDto" Property="Nome" Title="Nome" />
+
+            <RadzenDataGridColumn TItem="FuncaoDto" Title="Ações" Filterable="false" Sortable="false">
+                <Template Context="f">
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                  Click="@(() => Editar(f.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                  Click="@(() => ConfirmarExclusao(f.Id))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<FuncaoDto> _funcoes = new();
+    private string _filtro = string.Empty;
+
+    private string Filtro
+    {
+        get => _filtro;
+        set
+        {
+            _filtro = value;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<FuncaoDto> _filtradas =>
+        string.IsNullOrWhiteSpace(_filtro)
+            ? _funcoes
+            : _funcoes.Where(f => f.Nome.Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _funcoes = await FuncaoApiService.GetAllAsync();
+    }
+
+    private void Novo() =>
+        Navigation.NavigateTo("/funcoes/novo");
+
+    private void Editar(long id) =>
+        Navigation.NavigateTo($"/funcoes/editar/{id}");
+
+    private async Task ConfirmarExclusao(long id)
+    {
+        if (await DialogHelper.ConfirmarAsync(DialogService, "Deseja realmente excluir esta função?"))
+        {
+            await Excluir(id);
+        }
+    }
+
+    private async Task Excluir(long id)
+    {
+        try
+        {
+            await FuncaoApiService.DeleteAsync(id);
+            _funcoes = await FuncaoApiService.GetAllAsync();
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Sucesso",
+                    Detail = "Função excluída com sucesso!",
+                    Duration = 4000
+                });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Erro",
+                    Detail = $"Erro ao excluir função: {ex.Message}",
+                    Duration = 5000
+                });
+        }
+    }
+}

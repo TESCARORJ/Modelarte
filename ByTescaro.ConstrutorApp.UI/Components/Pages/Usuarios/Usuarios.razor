@@ -1,0 +1,175 @@
+﻿@page "/usuarios"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@inject UsuarioApiService UsuarioApiService
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+@attribute [Authorize]
+
+<PageTitle>Usuários</PageTitle>
+
+<RadzenCard Style="margin: 1rem;">
+    <RadzenHeading Size="H4" Text="Usuários do Sistema" />
+
+    <div class="row mb-3">
+        <div class="col-md-6 mb-2">
+            <RadzenTextBox @bind-Value="_filtro"
+                           Placeholder="Buscar por nome ou e-mail"
+                           Icon="search"
+                           Style="width: 100%;" />
+        </div>
+        <div class="col-md-3 mb-2">
+            <RadzenDropDown @bind-Value="_statusFiltro"
+                            Data="@statusOptions"
+                            TextProperty="Label"
+                            ValueProperty="Value"
+                            Style="width: 100%;"
+                            Placeholder="Status" />
+
+        </div>
+        <div class="col-md-3 d-flex justify-content-end align-items-center mb-2">
+            <RadzenButton Text="Novo Usuário"
+                          Icon="person_add"
+                          Style="width: 100%;"
+                          Click="@NovoUsuario" />
+        </div>
+    </div>
+
+    <RadzenDataGrid TItem="UsuarioDto"
+                    Data="@FiltrarUsuarios()"
+                    AllowPaging="true"
+                    AllowSorting="true"
+                    PageSize="10"
+                    ShowPagingSummary="true"
+                    FilterMode="FilterMode.Simple"
+                    Responsive="true">
+
+        <Columns>
+            <RadzenDataGridColumn TItem="UsuarioDto" Property="Nome" Title="Nome" />
+            <RadzenDataGridColumn TItem="UsuarioDto" Property="Email" Title="E-mail" />
+            <RadzenDataGridColumn TItem="UsuarioDto" Property="Telefone" Title="Telefone" />
+            <RadzenDataGridColumn TItem="UsuarioDto" Title="Status">
+                <Template Context="u">
+                    @if (u.Ativo)
+                    {
+                        <RadzenText Text="Ativo" Color="Color.Success" />
+                    }
+                    else
+                    {
+                        <RadzenText Text="Inativo" Color="Color.Danger" />
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="UsuarioDto" Title="Ações" Filterable="false" Sortable="false" Width="150px">
+                <Template Context="u">
+                    <RadzenButton Icon="edit"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Size="ButtonSize.Small"
+                                  Click="@(() => Editar(u.Id))"
+                                  Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="delete"
+                                  ButtonStyle="ButtonStyle.Danger"
+                                  Size="ButtonSize.Small"
+                                  Click="@(() => ConfirmarExclusao(u.Id, u.Nome))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<UsuarioDto> _usuarios = new();
+    private string _filtro = string.Empty;
+
+    private bool? _statusFiltro = null;
+
+    private List<StatusOption> statusOptions = new()
+{
+    new() { Value = null, Label = "-- Todos --" },
+    new() { Value = true, Label = "Ativo" },
+    new() { Value = false, Label = "Inativo" }
+};
+
+    private class StatusOption
+    {
+        public bool? Value { get; set; }
+        public string Label { get; set; } = string.Empty;
+    }
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        _usuarios = await UsuarioApiService.GetAllAsync();
+
+    }
+
+    private List<UsuarioDto> FiltrarUsuarios()
+    {
+        var query = _usuarios.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(_filtro))
+        {
+            query = query.Where(u =>
+                u.Nome.Contains(_filtro, StringComparison.OrdinalIgnoreCase) ||
+                (u.Email ?? "").Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (_statusFiltro is not null)
+        {
+            query = query.Where(u => u.Ativo == _statusFiltro.Value);
+        }
+
+        return query.ToList();
+    }
+
+
+    private void NovoUsuario() =>
+        NavigationManager.NavigateTo("/usuario/novo");
+
+    private void Editar(long id) =>
+        NavigationManager.NavigateTo($"/usuario/editar/{id}");
+
+    private async Task ConfirmarExclusao(long id, string nome)
+    {
+        var confirm = await DialogService.Confirm($"Deseja realmente excluir o usuário \"{nome}\"?",
+                                                  "Confirme a exclusão",
+                                                  new ConfirmOptions { OkButtonText = "Sim", CancelButtonText = "Cancelar" });
+
+        if (confirm == true)
+        {
+            await Excluir(id);
+        }
+    }
+
+    private async Task Excluir(long id)
+    {
+        try
+        {
+            await UsuarioApiService.DeleteAsync(id);
+            _usuarios = await UsuarioApiService.GetAllAsync();
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Sucesso",
+                    Detail = "Usuário excluído com sucesso!",
+                    Duration = 4000
+                });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Erro",
+                    Detail = $"Erro ao excluir usuário: {ex.Message}",
+                    Duration = 5000
+                });
+        }
+    }
+}
+}

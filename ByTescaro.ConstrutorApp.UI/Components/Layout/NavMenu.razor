@@ -1,0 +1,89 @@
+﻿@using ByTescaro.ConstrutorApp.Application.Interfaces
+@using ByTescaro.ConstrutorApp.UI.Authentication
+@using Microsoft.AspNetCore.Components.Authorization
+@implements IDisposable
+@inject NavigationManager NavigationManager
+@inject IUsuarioLogadoService UsuarioLogadoService
+@inject AuthenticationStateProvider AuthProvider
+@inject IJSRuntime JSRuntime
+@inject AuthCookieService AuthService
+
+<AuthorizeView>
+    <Authorized>
+        <RadzenPanelMenu Style="width: 100%;">
+            <RadzenPanelMenuItem Text=@($"Olá {nomeUsuario}") Disabled="true" />
+            <RadzenPanelMenuItem Text="Dashboard" Icon="home" Path="" />           
+
+
+            <AuthorizeView Roles="Administrador,SA" Context="adminContext">
+                <Authorized>
+                    <RadzenPanelMenuItem Text="Gestão de Projetos" Icon="Settings">
+                        <RadzenPanelMenuItem Text="Clientes" Icon="people" Path="clientes" />
+                        <RadzenPanelMenuItem Text="Projetos" Icon="business" Path="projetos" />
+                        <RadzenPanelMenuItem Text="Etapas da Obra" Icon="format_list_numbered" Path="obraetapaspadrao" />
+                        <RadzenPanelMenuItem Text="Itens da Etapa" Icon="checklist" Path="obraitensetapapadrao" />
+                        <RadzenPanelMenuItem Text="Equipamentos" Icon="build" Path="equipamentos" />
+                        <RadzenPanelMenuItem Text="Funcionários" Icon="work" Path="funcionarios" />
+                        <RadzenPanelMenuItem Text="Funções" Icon="badge" Path="funcoes" />
+                        <RadzenPanelMenuItem Text="Insumos" Icon="inventory" Path="insumos" />
+                    </RadzenPanelMenuItem>
+
+                </Authorized>
+            </AuthorizeView>
+
+
+            <RadzenPanelMenuItem Text="Importações" Icon="upload">
+                <RadzenPanelMenuItem Text="Clientes" Path="/clientes/importar" Icon="group" />
+            </RadzenPanelMenuItem>
+
+
+            <AuthorizeView Roles="Administrador,SA" Context="adminContext">
+                <Authorized>
+                    <RadzenPanelMenuItem Text="Gestão de Usuários" Icon="admin_panel_settings">
+                        <RadzenPanelMenuItem Text="Perfis de Usuários" Icon="list" Path="perfilUsuarios" />
+                        <RadzenPanelMenuItem Text="Lista de Usuários" Icon="list" Path="usuarios" />
+                        <RadzenPanelMenuItem Text="Novo Usuário" Icon="person_add" Path="usuario/novo" />
+                        <RadzenPanelMenuItem Text="Auditoria de Usuários" Icon="history" Path="/auditoria?entidade=Usuario" />
+                    </RadzenPanelMenuItem>
+
+                </Authorized>
+            </AuthorizeView>
+
+            <RadzenPanelMenuItem Text="Auditoria" Icon="history" Path="/auditoria" />
+
+            <RadzenPanelMenuItem Text="Logout" Icon="logout">
+                <Template>
+                    <form method="post" action="/auth/logout" style="margin: 0;">
+                        <button type="submit" class="rz-button rz-button-text" style="width:100%; text-align:left;">Logout</button>
+                    </form>
+                </Template>
+            </RadzenPanelMenuItem>
+
+        </RadzenPanelMenu>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private string? currentUrl;
+    private string? nomeUsuario;
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+
+        var usuario = await UsuarioLogadoService.ObterUsuarioAtualAsync();
+        nomeUsuario = usuario?.Nome ?? "Usuário";
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}

@@ -1,0 +1,158 @@
+﻿@using AutoMapper
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Interfaces
+@using ByTescaro.ConstrutorApp.Domain.Entities
+@using ByTescaro.ConstrutorApp.Domain.Interfaces
+@inject NavigationManager NavigationManager
+@inject IUsuarioLogadoService UsuarioLogadoService
+@inject IJSRuntime JS
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+@inject IObraImagemRepository ObraImagemRepo
+@inject IAuditoriaService AuditoriaService
+@inject IMapper Mapper
+
+<RadzenCard Variant="Variant.Outlined" Class="rz-pa-4">
+    <RadzenHeading Size="H6" Text="Galeria de Fotos da Obra" />
+
+    <RadzenUpload Accept=".jpg,.jpeg,.png,.bmp" Multiple="true" Change="@OnUpload" ChooseText="Selecionar Imagens"
+                  InputAttributes="@(new Dictionary<string, object> { { "aria-label", "selecionar imagens" } })" />
+       
+
+    <RadzenDivider Class="rz-my-3" />
+
+    @if (Obra.Imagens?.Any() == true)
+    {
+        <RadzenRow>
+            @foreach (var img in Obra.Imagens)
+            {
+                <RadzenColumn Size="6" SizeSM="4" SizeMD="3" SizeLG="2">
+                    <div style="position: relative;">
+                        <RadzenButton Icon="delete" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger"
+                                      Style="position: absolute; top: 4px; right: 4px; z-index: 10;"
+                                      Click="@(() => ConfirmarRemocao(img))" />
+
+                        <div style="cursor:pointer;" @onclick="() => AbrirGaleria(img)">
+                            <img src="/@img.CaminhoRelativo" alt="@img.NomeOriginal" style="width: 100%; height: 120px; object-fit: cover; border-radius: 5px;" />
+                            <div class="rz-mt-1 rz-text-caption">@img.NomeOriginal</div>
+                        </div>
+                    </div>
+                </RadzenColumn>
+            }
+        </RadzenRow>
+    }
+    else
+    {
+        <RadzenText Text="Nenhuma imagem adicionada." />
+    }
+</RadzenCard>
+
+@code {
+    [Parameter] public ObraDto Obra { get; set; } = new();
+    private string? nomeUsuarioLogado;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var usuario = await UsuarioLogadoService.ObterUsuarioAtualAsync();
+        nomeUsuarioLogado = usuario?.Nome ?? "Sistema";
+    }
+
+    private async void OnUpload(UploadChangeEventArgs args)
+    {
+        foreach (var file in args.Files)
+        {
+            try
+            {
+                var nomeOriginal = Path.GetFileName(file.Name);
+                var extensao = Path.GetExtension(file.Name).ToLower();
+                var nomeUnico = $"{Guid.NewGuid()}{extensao}";
+
+                var pastaDestino = Path.Combine("wwwroot", "Uploads", "Projetos", Obra.ProjetoId.ToString(), Obra.Id.ToString(), "Imagens");
+                Directory.CreateDirectory(pastaDestino);
+
+                var caminhoFinal = Path.Combine(pastaDestino, nomeUnico);
+                var stream = file.OpenReadStream(5_000_000);
+                await using var fs = File.Create(caminhoFinal);
+                await stream.CopyToAsync(fs);
+                await fs.FlushAsync();
+                stream.Close();
+
+                var caminhoRelativo = Path.Combine("Uploads", "Projetos", Obra.ProjetoId.ToString(), Obra.Id.ToString(), "Imagens", nomeUnico).Replace("\\", "/");
+                var tamanhoKb = (int)(file.Size / 1024);
+
+                var imagemDto = new ObraImagemDto
+                    {
+                        ObraId = Obra.Id,
+                        NomeOriginal = nomeOriginal,
+                        CaminhoRelativo = caminhoRelativo,
+                        TamanhoEmKb = tamanhoKb,
+                        DataHoraCadastro = DateTime.Now,
+                        UsuarioCadastro = nomeUsuarioLogado ?? "Sistema"
+                    };
+
+                var entidade = Mapper.Map<ObraImagem>(imagemDto);
+                await ObraImagemRepo.AddAsync(entidade);
+                await AuditoriaService.RegistrarCriacaoAsync(imagemDto, nomeUsuarioLogado);
+
+                imagemDto.Id = entidade.Id;
+                Obra.Imagens.Add(imagemDto);
+
+                NotificationService.Notify(NotificationSeverity.Success, "Imagem salva", $"Imagem '{nomeOriginal}' salva com sucesso.");
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Erro ao salvar", ex.Message);
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private void AbrirGaleria(ObraImagemDto imagemSelecionada)
+    {
+        if (Obra.Imagens == null || !Obra.Imagens.Any())
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Aviso", "Não há imagens para exibir na galeria.");
+            return;
+        }
+
+        var parametros = new Dictionary<string, object>
+        {
+            { "Imagens", new List<ObraImagemDto>(Obra.Imagens) },
+            { "ImagemInicial", imagemSelecionada }
+        };
+
+        DialogService.Open<DialogGaleriaImagens>("Galeria de Fotos", parametros, new DialogOptions { Width = "90%", Height = "90%", ShowClose = true });
+    }
+
+    private async Task ConfirmarRemocao(ObraImagemDto imagem)
+    {
+        bool? confirm = await DialogService.Confirm($"Deseja realmente remover a imagem '{imagem.NomeOriginal}'?", "Remover Imagem");
+
+        if (confirm == true)
+        {
+            try
+            {
+                var caminhoFisico = Path.Combine("wwwroot", imagem.CaminhoRelativo.Replace("/", Path.DirectorySeparatorChar.ToString()));
+                if (File.Exists(caminhoFisico))
+                    File.Delete(caminhoFisico);
+
+                var entidade = await ObraImagemRepo.GetByIdAsync(imagem.Id);
+                if (entidade != null)
+                {
+                    await ObraImagemRepo.RemoveAsync(entidade);
+                    await AuditoriaService.RegistrarExclusaoAsync(imagem, nomeUsuarioLogado);
+                }
+
+                Obra.Imagens.Remove(imagem);
+                NotificationService.Notify(NotificationSeverity.Info, "Removida", $"Imagem '{imagem.NomeOriginal}' removida.");
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Erro", $"Erro ao excluir imagem: {ex.Message}");
+            }
+
+            StateHasChanged();
+        }
+    }
+}

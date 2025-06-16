@@ -1,0 +1,95 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject NotificationService NotificationService
+
+<RadzenMediaQuery Query="(max-width: 768px)" Change="OnMediaChanged" />
+
+<RadzenCard Class="rz-p-4">
+    <RadzenHeading Size="H6" Text="Listas de Insumos da Obra" />
+
+    <RadzenRow Class="rz-mb-2 rz-align-items-end" Style="gap: 0.5rem;">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenDropDown Data="@ResponsaveisDisponiveis"
+                            TextProperty="FuncionarioNome"
+                            ValueProperty="FuncionarioId"
+                            @bind-Value="ResponsavelSelecionadoId"
+                            Placeholder="Selecionar Responsável"
+                            Style="width: 100%;" />
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="3">
+            <RadzenButton Icon="add_circle_outline"
+                          Text="Nova Lista"
+                          Click="@NovaLista"
+                          Style="width: 100%;" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenAccordion>
+        <Items>
+            @if (Obra.ListasInsumo?.Any() == true)
+            {
+                foreach (var lista in Obra.ListasInsumo)
+                {
+                    <RadzenAccordionItem Text="@($"{lista.NomeResponsavel} - Id: {lista.Id}")" Icon="list_alt">
+                        <ObraInsumoListaEditor Lista="lista"
+                                               Obra="Obra"
+                                               OnChanged="StateHasChanged" />
+                    </RadzenAccordionItem>
+                }
+            }
+            else
+            {
+                <RadzenAccordionItem Text="Nenhuma lista cadastrada" Icon="info" Disabled="true">
+                    <p style="padding: 1rem;">Nenhuma lista de insumos foi adicionada a esta obra.</p>
+                </RadzenAccordionItem>
+            }
+        </Items>
+    </RadzenAccordion>
+</RadzenCard>
+
+@code {
+    private bool isMobile;
+    private void OnMediaChanged(bool matches) => isMobile = matches;
+
+    [Parameter] public ObraDto Obra { get; set; } = new();
+    private List<ObraFuncionarioDto> ResponsaveisDisponiveis = new();
+    private long? ResponsavelSelecionadoId;
+
+    protected override Task OnInitializedAsync()
+    {
+        ResponsaveisDisponiveis = Obra.Funcionarios ?? new();
+        return Task.CompletedTask;
+    }
+
+    private Task NovaLista()
+    {
+        if (ResponsavelSelecionadoId is null || ResponsavelSelecionadoId == 0)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Responsável não selecionado", "Selecione um responsável para a nova lista.");
+            return Task.CompletedTask;
+        }
+
+        var funcionario = Obra.Funcionarios.FirstOrDefault(f => f.FuncionarioId == ResponsavelSelecionadoId);
+        if (funcionario == null)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", "Funcionário não encontrado.");
+            return Task.CompletedTask;
+        }
+
+        var nova = new ObraInsumoListaDto
+            {
+                ObraId = Obra.Id,
+                ResponsavelId = funcionario.FuncionarioId,
+                NomeResponsavel = funcionario.FuncionarioNome,
+                Data = DateOnly.FromDateTime(DateTime.Today),
+                Itens = new()
+            };
+
+        Obra.ListasInsumo ??= new();
+        Obra.ListasInsumo.Add(nova);
+        ResponsavelSelecionadoId = null;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+}

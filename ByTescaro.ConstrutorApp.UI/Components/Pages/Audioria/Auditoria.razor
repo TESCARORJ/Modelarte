@@ -1,0 +1,41 @@
+﻿@page "/auditoria"
+@using ByTescaro.ConstrutorApp.Application.Interfaces
+@using ByTescaro.ConstrutorApp.Domain.Entities
+@using Microsoft.AspNetCore.Authorization
+@inject ILogAuditoriaService LogService
+@attribute [Authorize]
+
+<RadzenCard Style="margin: 1rem;">
+    <RadzenHeading Size="H5" Text="Registros de Auditoria" />
+
+    <RadzenDataGrid TItem="LogAuditoria" Data="@_logs" Class="mt-4"
+                    AllowPaging="true" PageSize="10"
+                    AllowSorting="true" AllowFiltering="true"
+                    FilterMode="FilterMode.Advanced"
+                    ShowPagingSummary="true"
+                    Responsive="true">
+
+        <Columns>
+            <RadzenDataGridColumn TItem="LogAuditoria" Property="Id" Title="ID" Width="80px" TextAlign="TextAlign.Center" />
+            <RadzenDataGridColumn TItem="LogAuditoria" Title="Data" Width="160px">
+                <Template Context="log">
+                    @log.DataHora.ToString("dd/MM/yyyy HH:mm")
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="LogAuditoria" Property="Usuario" Title="Usuário" />
+            <RadzenDataGridColumn TItem="LogAuditoria" Property="Entidade" Title="Entidade" />
+            <RadzenDataGridColumn TItem="LogAuditoria" Property="IdEntidade" Title="ID Entidade" TextAlign="TextAlign.Center" />
+            <RadzenDataGridColumn TItem="LogAuditoria" Property="Acao" Title="Ação" />
+            <RadzenDataGridColumn TItem="LogAuditoria" Property="Descricao" Title="Descrição" />
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<LogAuditoria> _logs = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _logs = await LogService.ObterTodosAsync();
+    }
+}

@@ -1,0 +1,49 @@
+﻿@page "/perfilUsuario/detalhe/{Id:long}"
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject PerfilUsuarioApiService PerfilUsuarioApiService
+@inject NavigationManager Navigation
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<PageTitle>Detalhes do Perfil</PageTitle>
+
+<RadzenCard Class="rz-pa-4">
+    <RadzenHeading Size="H5" Text="Detalhes do Perfil de Usuário" />
+
+    @if (perfilUsuario is null)
+    {
+        <RadzenAlert Severity="AlertSeverity.Error" Summary="Erro" Detail="Perfil não encontrado." />
+    }
+    else
+    {
+        <RadzenFieldset Text="Informações">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenTextBox Name="Nome" @bind-Value="perfilUsuario.Nome" ReadOnly="true" Style="width: 100%;" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
+
+        <RadzenSeparator />
+
+        <RadzenRow class="rz-mt-4">
+            <RadzenColumn Size="12" class="rz-text-align-end">
+                <RadzenButton Text="Voltar" ButtonStyle="ButtonStyle.Light" Click="@(() => Navigation.NavigateTo("/perfilUsuarios"))" Class="rz-mr-2" />
+                <RadzenButton Text="Editar" Icon="edit" ButtonStyle="ButtonStyle.Primary" Click="@(() => Navigation.NavigateTo($"/perfilUsuarios/editar/{perfilUsuario.Id}"))" />
+            </RadzenColumn>
+        </RadzenRow>
+    }
+</RadzenCard>
+
+@code {
+    [Parameter] public long Id { get; set; }
+
+    private PerfilUsuarioDto? perfilUsuario;
+
+    protected override async Task OnInitializedAsync()
+    {
+        perfilUsuario = await PerfilUsuarioApiService.GetByIdAsync(Id);
+    }
+}

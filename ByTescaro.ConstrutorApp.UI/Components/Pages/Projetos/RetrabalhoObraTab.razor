@@ -1,0 +1,140 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Utils
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject ObraRetrabalhoApiService ObraRetrabalhoApiService
+@inject FuncionarioApiService FuncionarioApiService
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+
+
+<RadzenCard Class="rz-pa-4">
+    <RadzenButton Text="Adicionar Retrabalho"
+    Icon="add_circle"
+    Click="@AdicionarRetrabalho"
+    Style="margin-bottom: 1rem;"
+    ButtonStyle="ButtonStyle.Primary" />
+
+    @if (!Obra.Retrabalhos.Any())
+    {
+        <RadzenText Text="Nenhum retrabalho registrado nesta obra." Style="margin-top: 1rem;" />
+    }
+    else
+    {
+        @foreach (var retrabalho in Obra.Retrabalhos.OrderByDescending(r => r.DataHoraCadastro))
+        {
+            <RadzenCard Style="margin-bottom: 1rem;" Class="rz-p-3">
+                <RadzenRow>
+                    <RadzenColumn Size="12">
+                        <RadzenLabel Text="Descrição" />
+                        <RadzenTextBox Style="width: 100%;" @bind-Value="retrabalho.Descricao" />
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenLabel Text="Responsável" />
+                        <RadzenDropDown @bind-Value="retrabalho.ResponsavelId"
+                        Data="@Funcionarios"
+                        TextProperty="Nome"
+                        ValueProperty="Id"
+                        Placeholder="-- Selecione --"
+                        Style="width: 100%;" />
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="2">
+                        <RadzenLabel Text="Status" />
+                        <RadzenDropDown @bind-Value="retrabalho.Status"
+                        Data="@statusList"
+                        TextProperty="Label"
+                        ValueProperty="Value"
+                        Style="width: 100%;"
+                        Placeholder="-- Selecione --" />
+
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="delete"
+                        Text="Remover"
+                        Click="@(() => ConfirmarRemocao(retrabalho))"
+                        ButtonStyle="ButtonStyle.Danger"
+                        Style="margin-top: 1rem;" />
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenCard>
+        }
+
+        @if (Obra.Retrabalhos.Any())
+        {
+            <RadzenButton Text="Salvar Retrabalhos"
+            Icon="save"
+            Click="SalvarRetrabalhos"
+            ButtonStyle="ButtonStyle.Success"
+            Style="margin-top: 1rem;" />
+        }
+
+    }
+</RadzenCard>
+
+@code {
+    [Parameter] public ObraDto Obra { get; set; } = new();
+
+    private List<FuncionarioDto> Funcionarios = new();
+    private List<EnumOption<StatusRetrabalho>> statusList = EnumHelper.ListarOpcoes<StatusRetrabalho>(incluirNulo: true);
+
+    protected override async Task OnInitializedAsync()
+    {
+        Funcionarios = await FuncionarioApiService.GetAllAsync();
+    }
+
+    private void AdicionarRetrabalho()
+    {
+        Obra.Retrabalhos.Add(new ObraRetrabalhoDto
+            {
+                Descricao = "",
+                ResponsavelId = 0,
+                Status = StatusRetrabalho.Pendente,
+                DataHoraCadastro = DateTime.Now,
+                UsuarioCadastro = "Sistema"
+            });
+    }
+
+
+    private async Task ConfirmarRemocao(ObraRetrabalhoDto retrabalho)
+    {
+        bool? confirm = await DialogService.Confirm($"Deseja realmente remover este retrabalho?", "Remover Retrabalho");
+
+        if (confirm == true)
+        {
+            Obra.Retrabalhos.Remove(retrabalho);
+            NotificationService.Notify(NotificationSeverity.Warning, "Removido", "Retrabalho removido da lista.");
+            StateHasChanged();
+        }
+    }
+
+
+    private async Task SalvarRetrabalhos()
+    {
+        foreach (var retrabalho in Obra.Retrabalhos)
+        {
+            if (string.IsNullOrWhiteSpace(retrabalho.Descricao))
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Aviso", "Descrição é obrigatória.");
+                return;
+            }
+
+            if (retrabalho.ResponsavelId == 0)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Aviso", "Selecione o responsável.");
+                return;
+            }
+            retrabalho.ObraId = Obra.Id;
+
+            if (retrabalho.Id == 0)
+                await ObraRetrabalhoApiService.CreateAsync(retrabalho);
+            else
+                await ObraRetrabalhoApiService.UpdateAsync(retrabalho);
+        }
+
+        NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Retrabalhos salvos com sucesso.");
+    }
+
+}

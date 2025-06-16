@@ -1,0 +1,106 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@inject IJSRuntime JS
+
+<style>
+    ul[role="tablist"] {
+        display: flex !important;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 0;
+        margin: 0;
+        gap: 0.5rem;
+    }
+
+        ul[role="tablist"] li {
+            flex: 1 1 auto;
+            text-align: center;
+            min-width: 120px;
+        }
+
+            ul[role="tablist"] li a {
+                display: block;
+                padding: 0.75rem 1rem;
+                font-weight: 500;
+            }
+</style>
+
+<RadzenAccordionItem Text="@TituloObra" @key="Obra">
+    <RadzenRow>
+        <RadzenColumn Size="12" SizeMD="4">
+            <RadzenLabel Text="Nome da Obra" />
+            <RadzenTextBox @bind-Value="Obra.Nome" Style="width: 100%;" />
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="4">
+            <RadzenLabel Text="Responsável Materiais" />
+            <RadzenDropDown @bind-Value="Obra.ResponsavelMaterial"
+                            TValue="ResponsavelMaterialEnum?"
+                            Data="@ResponsavelOptions"
+                            TextProperty="Label" ValueProperty="Value"
+                            Style="width: 100%;" />
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="4">
+            <RadzenLabel Text="Status da Obra" />
+            <RadzenDropDown @bind-Value="Obra.Status"
+                            TValue="StatusObra?"
+                            Data="@StatusOptions"
+                            TextProperty="Label" ValueProperty="Value"
+                            Style="width: 100%;" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenTabs Class="rz-mt-4" Change="@OnTabChanged">
+        <Tabs>
+
+            <RadzenTabsItem Text="Checklist">
+                <ChecklistObraTab Obra="@Obra" />
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Funcionários">
+                <ObraFuncionarioTab Obra="@Obra" />
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Equipamentos">
+                <ObraEquipamentoTab Obra="@Obra" />
+            </RadzenTabsItem> 
+            <RadzenTabsItem Text="Insumos">
+                <ObraInsumoTab Obra="@Obra" />
+''            </RadzenTabsItem>
+            <RadzenTabsItem Text="Documentos">
+                <DocumentosObraTab Obra="@Obra" />
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Imagens">
+                <ImagensObraTab Obra="@Obra" />
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Retrabalhos">
+                <RetrabalhoObraTab Obra="@Obra" />
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Pendências">
+                <PendenciaObraTab Obra="@Obra" />
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+
+    <RadzenButton Text="Remover Obra"
+                  Icon="delete"
+                  ButtonStyle="ButtonStyle.Danger"
+                  Style="margin-top: 1rem;"
+                  Click="@(() => OnRemover.InvokeAsync(Obra))" />
+</RadzenAccordionItem>
+
+@code {
+    [Parameter] public ObraDto Obra { get; set; } = new();
+    [Parameter] public EventCallback<ObraDto> OnRemover { get; set; }
+    [Parameter] public string TituloObra { get; set; } = string.Empty;
+    [Parameter] public List<object> ResponsavelOptions { get; set; } = new();
+    [Parameter] public List<object> StatusOptions { get; set; } = new();
+
+  
+
+
+    private async Task OnTabChanged(int index)
+    {
+        await JS.InvokeVoidAsync("document.activeElement.blur");
+    }
+
+}

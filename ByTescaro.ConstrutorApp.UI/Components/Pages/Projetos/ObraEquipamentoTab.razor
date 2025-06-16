@@ -1,0 +1,234 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject ObraEquipamentoApiService ObraEquipamentoApiService
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+
+<RadzenMediaQuery Query="(max-width: 768px)" Change="OnMobileChanged" />
+
+<RadzenCard Class="rz-p-4">
+    <RadzenHeading Size="H6" Text="Equipamentos Alocados na Obra" />
+
+    <RadzenDropDown Data="@EquipamentosDisponiveis" TextProperty="Nome" ValueProperty="Id"
+                    Multiple="true" @bind-Value="_equipamentosSelecionados"
+                    Placeholder="Selecionar Equipamentos" Style="width:100%"
+                    Class="rz-mb-2" />
+
+    <RadzenRow Style="margin-bottom: 1rem; gap: 0.5rem">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenButton Text="Adicionar Selecionados" Icon="add_circle_outline" Style="width: 100%;"
+                          Disabled="@(!_equipamentosSelecionados.Any())"
+                          Click="@AdicionarEquipamentos" />
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenButton Text="Salvar Equipamentos" Icon="save" ButtonStyle="ButtonStyle.Primary"
+                          Style="width: 100%;"
+                          Click="SalvarEquipamentosAsync" Disabled="@IsBotaoSalvarDesabilitado" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    @if (Obra.Equipamentos?.Any() == true)
+    {
+        <div style="overflow-x: auto;">
+            <RadzenDataGrid @ref="grid" Data="@Obra.Equipamentos" TItem="ObraEquipamentoDto" ShowPagingSummary="false" AllowPaging="false" AllowColumnResize="true" AllowSorting="true" PagerHorizontalAlign="HorizontalAlign.Left" ColumnWidth="300px">
+                <Columns>
+                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="EquipamentoNome" Title="Nome"/>
+                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Title="Patrimônio">
+                        <Template Context="equip">
+                            @{
+                                var patrimonio = EquipamentosDisponiveis
+                                .FirstOrDefault(e => e.Id == equip.EquipamentoId)?.Patrimonio ?? "N/A";
+                            }
+                            @patrimonio
+                        </Template>
+                    </RadzenDataGridColumn>
+
+                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataInicioUso" Title="Início" FormatString="{0:dd/MM/yyyy}" />
+                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataFimUso" Title="Fim" FormatString="{0:dd/MM/yyyy}" />
+                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataHoraCadastro" Title="Data Cadastro" FormatString="{0:dd/MM/yyyy}" />
+                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="UsuarioCadastro" Title="Cadastrado por" />
+                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Title="">
+                        <Template Context="equip">
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                          Click="@(() => ConfirmarRemocao(equip))" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </div>
+    }
+    else
+    {
+        <RadzenAlert Severity="AlertSeverity.Info" Style="margin-top: 1rem">Nenhum equipamento adicionado à obra.</RadzenAlert>
+    }
+</RadzenCard>
+
+@code {
+    private bool isMobile;
+    private void OnMobileChanged(bool matches) => isMobile = matches;
+
+    [Parameter] public ObraDto Obra { get; set; } = new();
+    [Parameter] public List<EquipamentoDto> EquipamentosDisponiveis { get; set; } = new();
+    private List<ObraEquipamentoDto> _equipamentosOriginais = new();
+    private bool IsBotaoSalvarDesabilitado => Obra.Equipamentos == null || !Obra.Equipamentos.Any();
+
+    private List<long> _equipamentosSelecionados = new();
+    private RadzenDataGrid<ObraEquipamentoDto>? grid;
+
+    private void AdicionarEquipamentos()
+    {
+        if (Obra.Equipamentos == null)
+            Obra.Equipamentos = new List<ObraEquipamentoDto>();
+
+        var novos = new List<ObraEquipamentoDto>();
+
+        foreach (var id in _equipamentosSelecionados)
+        {
+            if (Obra.Equipamentos.Any(e => e.EquipamentoId == id))
+            {
+                var nome = EquipamentosDisponiveis.FirstOrDefault(e => e.Id == id)?.Nome ?? "Equipamento";
+                NotificationService.Notify(NotificationSeverity.Warning, "Já adicionado", $"{nome} já foi adicionado à obra.");
+                continue;
+            }
+
+            var equipamento = EquipamentosDisponiveis.FirstOrDefault(f => f.Id == id);
+            if (equipamento is null)
+                continue;
+
+            var patrimonioDuplicado = Obra.Equipamentos.Any(e =>
+            {
+                var existente = EquipamentosDisponiveis.FirstOrDefault(ed => ed.Id == e.EquipamentoId);
+                return existente?.Patrimonio == equipamento.Patrimonio;
+            });
+
+            if (patrimonioDuplicado)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Duplicado", $"Já existe um equipamento com o patrimônio '{equipamento.Patrimonio}' na obra.");
+                continue;
+            }
+
+            novos.Add(new ObraEquipamentoDto
+                {
+                    ObraId = Obra.Id,
+                    EquipamentoId = equipamento.Id,
+                    EquipamentoNome = equipamento.Nome,
+                    DataInicioUso = DateTime.Today
+                });
+        }
+
+        if (novos.Any())
+        {
+            Obra.Equipamentos = Obra.Equipamentos.Concat(novos).ToList();
+            grid?.Reload();
+        }
+
+        _equipamentosSelecionados.Clear();
+    }
+
+    private async Task ConfirmarRemocao(ObraEquipamentoDto equipamento)
+    {
+        bool? confirm = await DialogService.Confirm($"Deseja realmente remover a equipamento '{equipamento.EquipamentoNome}'?", "Remover Equipamento");
+
+        if (confirm == true)
+        {
+            Obra.Equipamentos = Obra.Equipamentos
+                                    .Where(f => f.EquipamentoId != equipamento.EquipamentoId)
+                                    .ToList();
+            NotificationService.Notify(NotificationSeverity.Warning, "Removido", "Equipamento removido da lista.");
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!EquipamentosDisponiveis.Any())
+        {
+            EquipamentosDisponiveis = (await ObraEquipamentoApiService.GetEquipamentosDisponiveisAsync(Obra.Id)).ToList();
+        }
+
+        _equipamentosOriginais = Obra.Equipamentos?
+            .Select(e => new ObraEquipamentoDto { Id = e.Id, EquipamentoId = e.EquipamentoId, ObraId = e.ObraId })
+            .ToList() ?? new();
+    }
+
+    private async Task SalvarEquipamentosAsync()
+    {
+        var patrimonios = Obra.Equipamentos
+            .Select(e => EquipamentosDisponiveis.FirstOrDefault(ed => ed.Id == e.EquipamentoId)?.Patrimonio)
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .ToList();
+
+        var duplicados = patrimonios
+            .GroupBy(p => p)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+
+        if (duplicados.Any())
+        {
+            foreach (var pat in duplicados)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Patrimônio duplicado", $"O patrimônio '{pat}' está alocado mais de uma vez.");
+            }
+            return;
+        }
+
+        if (Obra.Equipamentos == null || !Obra.Equipamentos.Any())
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Nenhum equipamento", "Adicione ao menos um equipamento.");
+            return;
+        }
+
+        var erros = new List<string>();
+
+        foreach (var eq in Obra.Equipamentos)
+        {
+            if (eq.DataInicioUso == default)
+                erros.Add($"Equipamento '{eq.EquipamentoNome}' está sem data de início.");
+
+            if (eq.DataFimUso.HasValue && eq.DataFimUso < eq.DataInicioUso)
+                erros.Add($"Equipamento '{eq.EquipamentoNome}' possui data de fim anterior à de início.");
+        }
+
+        if (erros.Any())
+        {
+            foreach (var erro in erros)
+                NotificationService.Notify(NotificationSeverity.Error, "Erro de Validação", erro);
+            return;
+        }
+
+        try
+        {
+            foreach (var equipamento in Obra.Equipamentos)
+            {
+                if (equipamento.Id == 0)
+                    await ObraEquipamentoApiService.CreateAsync(equipamento);
+                else
+                    await ObraEquipamentoApiService.UpdateAsync(equipamento);
+            }
+
+            var idsAtuais = Obra.Equipamentos.Select(e => e.Id).ToHashSet();
+            var removidos = _equipamentosOriginais
+                .Where(e => !idsAtuais.Contains(e.Id) && e.Id > 0)
+                .ToList();
+
+            foreach (var rem in removidos)
+                await ObraEquipamentoApiService.DeleteAsync(rem.Id);
+
+            _equipamentosOriginais = Obra.Equipamentos
+                .Select(e => new ObraEquipamentoDto
+                    {
+                        Id = e.Id,
+                        ObraId = e.ObraId,
+                        EquipamentoId = e.EquipamentoId
+                    }).ToList();
+
+            NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Equipamentos salvos com sucesso.");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Erro ao salvar equipamentos: {ex.Message}");
+        }
+    }
+}

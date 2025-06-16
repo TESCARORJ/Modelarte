@@ -1,0 +1,124 @@
+﻿@page "/perfilUsuarios"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@inject PerfilUsuarioApiService PerfilUsuarioApiService
+@inject NavigationManager Navigation
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+@attribute [Authorize]
+
+<PageTitle>Perfis de Usuário</PageTitle>
+
+<RadzenCard Style="margin: 1rem;">
+    <RadzenHeading Size="H4" Text="Perfis de Usuário" />
+
+    <div class="row mt-4 mb-2">
+        <div class="col-md-9">
+            <RadzenTextBox @bind-Value="Filtro"
+                           Placeholder="Pesquisar por nome"
+                           Icon="search"
+                           Style="width: 100%;" />
+        </div>
+        <div class="col-md-3 d-flex justify-content-end">
+            <RadzenButton Text="Novo Perfil de Usuário" Icon="add_circle"
+                          Click="@NovoPerfilUsuario" Style="width: 100%;" />
+        </div>
+    </div>
+
+    <RadzenDataGrid TItem="PerfilUsuarioDto"
+                    Data="@_perfilUsuariosFiltrados"
+                    AllowPaging="true"
+                    AllowSorting="true"
+                    FilterMode="FilterMode.Simple"
+                    PageSize="10"
+                    ShowPagingSummary="true"
+                    Responsive="true">
+
+        <Columns>
+            <RadzenDataGridColumn TItem="PerfilUsuarioDto" Property="Nome" Title="Nome" />
+            <RadzenDataGridColumn TItem="PerfilUsuarioDto" Title="Ações" Filterable="false" Sortable="false" Width="160px">
+                <Template Context="p">
+                    <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
+                                  Click="@(() => VerDetalhes(p.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                  Click="@(() => EditarPerfilUsuario(p.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                  Click="@(() => ConfirmarExclusao(p.Id, p.Nome))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<PerfilUsuarioDto> _perfilUsuarios = new();
+    private string _filtro = string.Empty;
+
+    private string Filtro
+    {
+        get => _filtro;
+        set
+        {
+            _filtro = value;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<PerfilUsuarioDto> _perfilUsuariosFiltrados =>
+        string.IsNullOrWhiteSpace(_filtro)
+            ? _perfilUsuarios
+            : _perfilUsuarios.Where(e => e.Nome.Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _perfilUsuarios = (await PerfilUsuarioApiService.GetAllAsync()).ToList();
+    }
+
+    private void NovoPerfilUsuario() =>
+        Navigation.NavigateTo("/perfilUsuario/novo");
+
+    private void EditarPerfilUsuario(long id) =>
+        Navigation.NavigateTo($"/perfilUsuario/editar/{id}");
+
+    private void VerDetalhes(long id) =>
+        Navigation.NavigateTo($"/perfilUsuario/detalhe/{id}");
+
+    private async Task ConfirmarExclusao(long id, string nome)
+    {
+        var confirm = await DialogService.Confirm($"Deseja realmente excluir o perfil de usuário \"{nome}\"?",
+                                                  "Confirme a exclusão",
+                                                  new ConfirmOptions { OkButtonText = "Sim", CancelButtonText = "Cancelar" });
+
+        if (confirm == true)
+        {
+            await ExcluirConfirmado(id);
+        }
+    }
+
+    private async Task ExcluirConfirmado(long id)
+    {
+        try
+        {
+            await PerfilUsuarioApiService.DeleteAsync(id);
+            _perfilUsuarios = (await PerfilUsuarioApiService.GetAllAsync()).ToList();
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Sucesso",
+                    Detail = "Perfil de usuário excluído com sucesso!",
+                    Duration = 4000
+                });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Erro",
+                    Detail = $"Erro ao excluir perfil de usuário: {ex.Message}",
+                    Duration = 5000
+                });
+        }
+    }
+}

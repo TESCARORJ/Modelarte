@@ -1,0 +1,133 @@
+﻿using AutoMapper;
+using ByTescaro.ConstrutorApp.Application.DTOs;
+using ByTescaro.ConstrutorApp.Domain.Entities;
+using ByTescaro.ConstrutorApp.Domain.Entities.Admin;
+
+namespace ByTescaro.ConstrutorApp.Application.Mappings;
+
+public class ApplicationProfile : Profile
+{
+    public ApplicationProfile()
+    {
+        // ==== Administração ====
+        CreateMap<PerfilUsuario, PerfilUsuarioDto>().ReverseMap();
+        CreateMap<Usuario, UsuarioDto>().ReverseMap();
+
+        // ==== Cadastros Básicos ====
+        CreateMap<Cliente, ClienteDto>().ReverseMap();
+
+        CreateMap<Funcionario, FuncionarioDto>()
+            .ForMember(dest => dest.FuncaoNome, opt => opt.MapFrom(src => src.Funcao.Nome))
+            .ReverseMap()
+            .ForMember(dest => dest.Funcao, opt => opt.Ignore());
+
+        CreateMap<Funcao, FuncaoDto>().ReverseMap();
+        CreateMap<Equipamento, EquipamentoDto>().ReverseMap();
+        CreateMap<Insumo, InsumoDto>().ReverseMap();
+
+        // ==== Projeto ====
+        CreateMap<Projeto, ProjetoDto>()
+            .ForMember(dest => dest.DataInicio, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.DataInicio)))
+            .ForMember(dest => dest.DataFim, opt => opt.MapFrom(src => src.DataFim.HasValue ? DateOnly.FromDateTime(src.DataFim.Value) : (DateOnly?)null))
+            .ForMember(dest => dest.Obras, opt => opt.Ignore())
+            .ReverseMap()
+            .ForMember(dest => dest.DataInicio, opt => opt.MapFrom(src => src.DataInicio.HasValue ? src.DataInicio.Value.ToDateTime(TimeOnly.MinValue) : default))
+            .ForMember(dest => dest.DataFim, opt => opt.MapFrom(src => src.DataFim.HasValue ? src.DataFim.Value.ToDateTime(TimeOnly.MinValue) : (DateTime?)null))
+            .ForMember(dest => dest.Obras, opt => opt.Ignore());
+
+        // ==== Obra ====
+        CreateMap<Obra, ObraDto>()
+        .ForMember(dest => dest.Documentos, opt => opt.MapFrom(src => src.Documentos))
+        .ForMember(dest => dest.Imagens, opt => opt.MapFrom(src => src.Imagens))
+        .ReverseMap()
+        .ForMember(dest => dest.Id, opt => opt.Ignore())
+        .ForMember(dest => dest.Projeto, opt => opt.Ignore()) // evitar loop ou entidade já rastreada
+        .ForMember(dest => dest.Etapas, opt => opt.Ignore())
+        .ForMember(dest => dest.Funcionarios, opt => opt.Ignore())
+        .ForMember(dest => dest.Insumos, opt => opt.Ignore())
+        .ForMember(dest => dest.ListasInsumo, opt => opt.Ignore())
+        .ForMember(dest => dest.Equipamentos, opt => opt.Ignore())
+        .ForMember(dest => dest.Retrabalhos, opt => opt.Ignore())
+        .ForMember(dest => dest.Pendencias, opt => opt.Ignore())
+        .ForMember(dest => dest.Documentos, opt => opt.Ignore())
+        .ForMember(dest => dest.Imagens, opt => opt.Ignore());
+
+
+    
+        // ==== ObraFuncionario ====
+        CreateMap<ObraFuncionario, ObraFuncionarioDto>()
+            .ReverseMap()
+            .ForMember(dest => dest.Funcionario, opt => opt.Ignore())
+            .ForMember(dest => dest.Obra, opt => opt.Ignore());
+
+        // ==== ObraInsumo ====
+        CreateMap<ObraInsumo, ObraInsumoDto>()
+            .ForMember(dest => dest.InsumoNome, opt => opt.MapFrom(src => src.Insumo.Nome))
+            .ForMember(dest => dest.UnidadeMedida, opt => opt.MapFrom(src => src.Insumo.UnidadeMedida))
+            .ReverseMap()
+            .ForMember(dest => dest.Insumo, opt => opt.Ignore())
+            .ForMember(dest => dest.Lista, opt => opt.Ignore());
+
+        // ==== ObraInsumoLista ====
+        CreateMap<ObraInsumoLista, ObraInsumoListaDto>()
+            .ForMember(dest => dest.NomeResponsavel, opt => opt.MapFrom(src => src.Responsavel.Nome))
+            .ForMember(dest => dest.Data, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.Data)))
+            .ReverseMap()
+            .ForMember(dest => dest.Data, opt => opt.MapFrom(src => src.Data.ToDateTime(TimeOnly.MinValue)))
+            .ForMember(dest => dest.Itens, opt => opt.MapFrom(src => src.Itens))                
+            .ForMember(dest => dest.Responsavel, opt => opt.Ignore())
+            .ForMember(dest => dest.Obra, opt => opt.Ignore());
+
+
+        // ==== ObraEquipamento ====
+        CreateMap<ObraEquipamento, ObraEquipamentoDto>()
+            .ReverseMap()
+            .ForMember(dest => dest.Equipamento, opt => opt.Ignore())
+            .ForMember(dest => dest.Obra, opt => opt.Ignore());
+
+        // ==== Etapas Padrão ====
+
+        CreateMap<ObraItemEtapaPadrao, ObraItemEtapaPadraoDto>()
+            .ForMember(dest => dest.ObraEtapaId, opt => opt.MapFrom(src => src.ObraEtapaPadrao != null ? src.ObraEtapaPadrao.Id : src.ObraEtapaPadraoId))
+            .ForMember(dest => dest.ObraEtapaNome, opt => opt.MapFrom(src => src.ObraEtapaPadrao != null ? src.ObraEtapaPadrao.Nome : ""))
+            .ReverseMap()
+            .ForMember(dest => dest.ObraEtapaPadrao, opt => opt.Ignore());
+
+        CreateMap<ObraEtapaPadrao, ObraEtapaPadraoDto>()
+            .ForMember(dest => dest.Itens, opt => opt.MapFrom(src => src.Itens))
+            .ReverseMap();
+
+        // ==== Etapas Executadas ====
+        CreateMap<ObraEtapa, ObraEtapaDto>()
+            .ForMember(dest => dest.Itens, opt => opt.MapFrom(src => src.Itens))
+            .ReverseMap()
+            .ForMember(dest => dest.Id, opt => opt.Ignore());
+
+        CreateMap<ObraItemEtapa, ObraItemEtapaDto>()
+            .ReverseMap()
+            .ForMember(dest => dest.Id, opt => opt.Ignore());
+
+        // ==== ObraPendencia ====
+        CreateMap<ObraPendencia, ObraPendenciaDto>()
+            .ForMember(dest => dest.NomeResponsavel, opt => opt.MapFrom(src => src.Responsavel.Nome))
+            .ReverseMap()
+            .ForMember(dest => dest.Obra, opt => opt.Ignore())
+            .ForMember(dest => dest.Responsavel, opt => opt.Ignore());
+
+        // ==== ObraRetrabalho ====
+        CreateMap<ObraRetrabalho, ObraRetrabalhoDto>()
+            .ForMember(dest => dest.NomeResponsavel, opt => opt.MapFrom(src => src.Responsavel.Nome))
+            .ReverseMap()
+            .ForMember(dest => dest.Obra, opt => opt.Ignore())
+            .ForMember(dest => dest.Responsavel, opt => opt.Ignore());
+
+        CreateMap<ObraDocumentoDto, ObraDocumento>()
+            .ForMember(d => d.Obra, opt => opt.Ignore())
+            .ReverseMap();
+
+        CreateMap<ObraImagemDto, ObraImagem>()
+            .ForMember(d => d.Obra, opt => opt.Ignore())
+            .ReverseMap();
+
+    }
+}

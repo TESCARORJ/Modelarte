@@ -1,0 +1,135 @@
+﻿@page "/"
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject ProjetoApiService ProjetoService
+@inject ClienteApiService ClienteService
+@inject FuncionarioApiService FuncionarioService
+@inject EquipamentoApiService EquipamentoService
+@inject InsumoApiService InsumoService
+
+<PageTitle>Dashboard</PageTitle>
+
+<RadzenCard Class="rz-pa-4 rz-mb-6" Variant="Variant.Filled">
+    <RadzenStack Gap="0.5rem">
+        <RadzenText Text="Dashboard" TextStyle="TextStyle.H4" />
+        <RadzenText Text="Resumo executivo das operações e indicadores-chave do sistema"
+                    Style="margin-bottom: 1rem; color: gray;" />
+
+        <RadzenStack Orientation="Orientation.Horizontal" Wrap="FlexWrap.Wrap" >
+            <!-- Clientes e Projetos -->
+            @Card("Total de Clientes", Clientes, "people_alt", "/clientes")
+            @Card("Total de Projetos", Projetos, "assignment", "/projetos")
+        </RadzenStack>
+
+        <RadzenStack Orientation="Orientation.Horizontal" Wrap="FlexWrap.Wrap" >
+            @Card("Projetos Agendados", ProjetosAgendados, "event", "/ProjetosAgendados")
+            @Card("Projetos em Andamento", ProjetosEmAndamento, "sync", "/ProjetosEmAndamento")
+            @Card("Projetos em Planejamento", ProjetosEmPlanejamento, "chat", "/ProjetosEmPlanejamento")
+            @Card("Projetos Concluídos", ProjetosConcluidos, "check_circle", "/ProjetosConcluidos")
+            @Card("Projetos Cancelados", ProjetosCancelados, "cancel", "/ProjetosCancelados")
+            @Card("Projetos Pausados", ProjetosPausados, "pause", "/ProjetosPausados")
+        </RadzenStack>
+
+        <RadzenStack Orientation="Orientation.Horizontal" Wrap="FlexWrap.Wrap" >
+            @Card("Total de Funcionários", Funcionarios, "engineering", "/funcionarios")
+            @Card("Disponíveis", FuncionariosDisponiveis, "person_outline", "/funcionarios/disponiveis")
+            @Card("Alocados", FuncionariosAlocados, "groups", "/funcionarios/alocados")
+        </RadzenStack>
+
+        <RadzenStack Orientation="Orientation.Horizontal" Wrap="FlexWrap.Wrap">
+            @Card("Total de Equipamentos", Equipamentos, "construction", "/equipamentos")
+            @Card("Disponíveis", EquipamentosDisponiveis, "person_outline", "/equipamentos/disponiveis")
+            @Card("Alocados", EquipamentosAlocados, "groups", "/equipamentos/alocados")
+        </RadzenStack>
+
+      @*   <RadzenStack Orientation="Orientation.Horizontal" Wrap="FlexWrap.Wrap">
+            @Card("Total de Insumos", Insumos, "inventory", "/insumos")
+        </RadzenStack> *@
+    </RadzenStack>
+</RadzenCard>
+
+@code {
+    string Projetos = "0";
+    string ProjetosAgendados = "0";
+    string ProjetosEmAndamento = "0";
+    string ProjetosEmPlanejamento = "0";
+    string ProjetosConcluidos = "0";
+    string ProjetosCancelados = "0";
+    string ProjetosPausados = "0";
+    string Funcionarios = "0";
+    string FuncionariosDisponiveis = "0";
+    string FuncionariosAlocados = "0";
+    string EquipamentosDisponiveis = "0";
+    string EquipamentosAlocados = "0";
+    string Equipamentos = "0";
+    string Clientes = "0";
+    string Insumos = "0";
+
+    RenderFragment Card(string title, string value, string icon, string? link = null) => builder =>
+    {
+    builder.OpenComponent<RadzenCard>(0);
+    builder.AddAttribute(1, "Style", "min-width: 250px; max-width: 400px; flex: 1;");
+    builder.AddAttribute(2, "Variant", Variant.Outlined);
+    builder.AddAttribute(3, "ChildContent", (RenderFragment)(content =>
+    {
+        content.OpenElement(4, "div");
+        if (!string.IsNullOrEmpty(link))
+        {
+            content.AddAttribute(5, "onclick", EventCallback.Factory.Create(this, () => NavigationManager.NavigateTo(link)));
+            content.AddAttribute(6, "style", "cursor: pointer;");
+        }
+
+        content.OpenComponent<RadzenStack>(7);
+        content.AddAttribute(8, "Gap", "1rem");
+        content.AddAttribute(9, "Orientation", Orientation.Horizontal);
+        content.AddAttribute(10, "AlignItems", AlignItems.Center);
+        content.AddAttribute(11, "Style", "padding: 1rem");
+
+        content.AddAttribute(12, "ChildContent", (RenderFragment)(inner =>
+        {
+            inner.OpenElement(13, "div");
+            inner.AddMarkupContent(14, $"<i class='material-icons' style='font-size: 30px; color: #594ae2;'>{icon}</i>");
+            inner.CloseElement();
+
+            inner.OpenElement(15, "div");
+            inner.AddMarkupContent(16, $@"<div style='font-size: 20px; color: gray;'>{title}: <span style='font-weight: bold; color: black;'>{value}</span></div>");
+            inner.CloseElement();
+        }));
+
+        content.CloseComponent(); // RadzenStack
+        content.CloseElement();   // div (click wrapper)
+    }));
+    builder.CloseComponent(); // RadzenCard
+    };
+
+
+
+    [Inject] NavigationManager NavigationManager { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var projetos = await ProjetoService.GetAllAsync();
+        Projetos = projetos.Count().ToString();
+        ProjetosAgendados = projetos.Count(p => p.Status == StatusProjeto.Agendado).ToString();
+        ProjetosEmPlanejamento = projetos.Count(p => p.Status == StatusProjeto.EmPlanejamento).ToString();
+        ProjetosEmAndamento = projetos.Count(p => p.Status == StatusProjeto.EmAndamento).ToString();
+        ProjetosConcluidos = projetos.Count(p => p.Status == StatusProjeto.Concluido).ToString();
+        ProjetosCancelados = projetos.Count(p => p.Status == StatusProjeto.Cancelado).ToString();
+        ProjetosPausados = projetos.Count(p => p.Status == StatusProjeto.Pausado).ToString();
+
+        Funcionarios = (await FuncionarioService.GetAllAsync()).Count().ToString();
+        var (alocadosFuncionario, naoAlocadosFuncionarios) = await FuncionarioService.ObterResumoAlocacaoAsync();
+        FuncionariosAlocados = alocadosFuncionario.ToString();
+        FuncionariosDisponiveis = naoAlocadosFuncionarios.ToString();
+
+        Equipamentos = (await EquipamentoService.GetAllAsync()).Count().ToString();
+        var (alocadosEquipamentos, naoAlocadosEquipamentos) = await EquipamentoService.ObterResumoAlocacaoAsync();
+        EquipamentosAlocados = alocadosEquipamentos.ToString();
+        EquipamentosDisponiveis = naoAlocadosEquipamentos.ToString();
+
+        Clientes = (await ClienteService.GetAllAsync()).Count().ToString();
+        Insumos = (await InsumoService.GetAllAsync()).Count().ToString();
+    }
+}

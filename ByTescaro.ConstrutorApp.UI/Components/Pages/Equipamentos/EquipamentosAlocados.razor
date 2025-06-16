@@ -1,0 +1,33 @@
+﻿@page "/equipamentos/alocados"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject ObraEquipamentoApiService ObraEquipamentoApiService
+
+<PageTitle>Funcionários Alocados</PageTitle>
+
+<RadzenCard Style="margin: 1rem;">
+    <RadzenHeading Size="H4" Text="Equipamentos Alocados em Obras" />
+
+    <RadzenDataGrid TItem="EquipamentoDto"
+                    Data="@_equipamentosAlocados"
+                    AllowPaging="true"
+                    PageSize="10"
+                    Responsive="true"
+                    ShowPagingSummary="true">
+        <Columns>
+            <RadzenDataGridColumn TItem="EquipamentoDto" Property="Nome" Title="Nome" />
+            <RadzenDataGridColumn TItem="EquipamentoDto" Property="ObraNome" Title="Obra" />
+            <RadzenDataGridColumn TItem="EquipamentoDto" Property="ProjetoNome" Title="Projeto" />
+            <RadzenDataGridColumn TItem="EquipamentoDto" Property="ClienteNome" Title="Cliente" />
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<EquipamentoDto> _equipamentosAlocados = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _equipamentosAlocados = (await ObraEquipamentoApiService.GetEquipamentosAlocadosAsync()).ToList();
+    }
+}

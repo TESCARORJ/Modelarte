@@ -1,0 +1,121 @@
+﻿@page "/clientes/importar"
+@inject HttpClient Http
+@inject ClienteImportacaoApiService ImportacaoService
+@inject NotificationService NotificationService
+
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Components.Forms
+@using Radzen
+
+<RadzenCard Style="max-width: 1300px; margin: auto; padding: 2rem;">
+    <RadzenHeading Size="H4" Text="Importador de Clientes" />
+
+    <!-- Upload Excel -->
+    <div class="rz-mb-4">
+        <label class="rz-button rz-button-md rz-button-outlined">
+            <span class="material-icons">upload</span>&nbsp;Selecionar Excel
+            <InputFile OnChange="OnFileSelected" accept=".xlsx,.xls" style="display:none" />
+        </label>
+    </div>
+
+    <!-- Preview Editável -->
+    @if (clientesPreview?.Any() == true)
+    {
+        <RadzenDataGrid TItem="ClienteDto" Data="@clientesPreview" @ref="grid" Editable="true" EditMode="DataGridEditMode.Single">
+            <Columns>
+                <RadzenDataGridColumn TItem="ClienteDto" Property="Nome" Title="Nome" />
+                <RadzenDataGridColumn TItem="ClienteDto" Property="TipoPessoa" Title="Tipo Pessoa" />
+                <RadzenDataGridColumn TItem="ClienteDto" Property="CpfCnpj" Title="CPF/CNPJ" />
+                <RadzenDataGridColumn TItem="ClienteDto" Property="TelefonePrincipal" Title="Telefone" />
+                <RadzenDataGridColumn TItem="ClienteDto" Property="TelefoneWhatsApp" Title="WhatsApp" />
+                <RadzenDataGridColumn TItem="ClienteDto" Property="Email" Title="Email" />
+                <RadzenDataGridColumn TItem="ClienteDto" Property="CEP" Title="CEP" />
+                <RadzenDataGridColumn TItem="ClienteDto">
+                    <Template Context="cliente">
+                        <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="() => grid.EditRow(cliente)" Text="Editar" />
+                    </Template>
+                    <EditTemplate Context="cliente">
+                        <RadzenButton Icon="check" Size="ButtonSize.Small" Click="() => grid.UpdateRow(cliente)" Text="Salvar" />
+                        <RadzenButton Icon="close" Size="ButtonSize.Small" Click="() => grid.CancelEditRow(cliente)" Text="Cancelar" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+
+        <RadzenButton Text="Importar"
+        Style="margin-top: 1.5rem"
+        Icon="upload"
+        ButtonStyle="ButtonStyle.Primary"
+        Click="@Importar" />
+    }
+
+    <!-- Lista de Erros -->
+    @if (errosImportacao?.Any() == true)
+    {
+        <RadzenPanel Text="Erros encontrados durante a importação" Style="margin-top:2rem;">
+            <ul>
+                @foreach (var erro in errosImportacao)
+                {
+                    <li><b>@erro.Referencia:</b> @erro.Mensagem</li>
+                }
+            </ul>
+        </RadzenPanel>
+    }
+</RadzenCard>
+
+@code {
+    private List<ClienteDto> clientesPreview = new();
+    private List<ErroImportacaoDto> errosImportacao = new();
+    private RadzenDataGrid<ClienteDto>? grid;
+
+    async Task OnFileSelected(InputFileChangeEventArgs args)
+    {
+        try
+        {
+            var file = args.File;
+            if (file == null)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "Nenhum arquivo selecionado.");
+                return;
+            }
+
+            using var stream = file.OpenReadStream();
+            clientesPreview = await ImportacaoService.PreviewExcelClientesAsync(stream, file.Name);
+
+            NotificationService.Notify(NotificationSeverity.Success, "Pré-visualização pronta", "Dados carregados com sucesso.");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", ex.Message);
+        }
+    }
+
+    async Task Importar()
+    {
+        try
+        {
+            errosImportacao = await ImportacaoService.ImportarClientesAsync(clientesPreview);
+
+            if (errosImportacao.Count == 0)
+            {
+                //     NotificationService.Notify(NotificationSeverity.Success, "Importação concluída", "Todos os clientes foram importados.");
+                clientesPreview.Clear();
+                NotificationMessage message = new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Todos os clientes foram importados!", Duration = 4000 };
+                NotificationService.Notify(message);
+
+
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Importação parcial", "Alguns clientes não foram importados.");
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro ao importar", ex.Message);
+        }
+    }
+
+}

@@ -1,0 +1,127 @@
+﻿@page "/obraitensetapapadrao"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@inject ObraItemEtapaPadraoApiService ObraItemEtapaPadraoApiService
+@inject NavigationManager Navigation
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+@attribute [Authorize]
+
+<PageTitle>Itens da Etapa</PageTitle>
+
+<RadzenCard Style="margin: 1rem;">
+    <RadzenHeading Size="H4" Text="Itens da Etapa" />
+
+    <div class="row mt-4 mb-2">
+        <div class="col-md-9">
+            <RadzenTextBox @bind-Value="Filtro"
+                           Placeholder="Pesquisar por nome"
+                           Icon="search"
+                           Style="width: 100%;" />
+        </div>
+        <div class="col-md-3 d-flex justify-content-end align-items-center">
+            <RadzenButton Text="Novo Item" Icon="add_circle" Style="width: 100%;" Click="@Novo" />
+        </div>
+    </div>
+
+    <RadzenDataGrid TItem="ObraItemEtapaPadraoDto"
+                    Data="@_itensFiltrados"
+                    AllowPaging="true"
+                    AllowSorting="true"
+                    PageSize="10"
+                    ShowPagingSummary="true"
+                    FilterMode="FilterMode.Simple"
+                    Responsive="true">
+
+        <Columns>
+            <RadzenDataGridColumn TItem="ObraItemEtapaPadraoDto" Property="Nome" Title="Nome" />
+            <RadzenDataGridColumn TItem="ObraItemEtapaPadraoDto" Property="Ordem" Title="Ordem" Width="100px" TextAlign="TextAlign.Center" />
+            <RadzenDataGridColumn TItem="ObraItemEtapaPadraoDto" Property="ObraEtapaNome" Title="Etapa" />
+            <RadzenDataGridColumn TItem="ObraItemEtapaPadraoDto" Title="Dias de Prazo">
+                <Template Context="i">
+                    @if (i.IsDataPrazo)
+                    {
+                        <RadzenChip Text="@($"{i.DiasPrazo} dias")" Style="margin: 0;" Color="Color.Info" />
+                    }
+                    else
+                    {
+                        <RadzenChip Text="Não aplicável" Style="margin: 0; opacity: 0.6;" Color="Color.Default" />
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="ObraItemEtapaPadraoDto" Title="Ações" Filterable="false" Sortable="false" Width="140px">
+                <Template Context="i">
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                  Click="@(() => Editar(i.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                  Click="@(() => ConfirmarExclusao(i.Id, i.Nome))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<ObraItemEtapaPadraoDto> _itens = new();
+    private string _filtro = string.Empty;
+
+    private string Filtro
+    {
+        get => _filtro;
+        set
+        {
+            _filtro = value;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<ObraItemEtapaPadraoDto> _itensFiltrados =>
+        string.IsNullOrWhiteSpace(_filtro)
+            ? _itens
+            : _itens.Where(i => i.Nome.Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _itens = (await ObraItemEtapaPadraoApiService.GetAllAsync()).ToList();
+    }
+
+    private void Novo() =>
+        Navigation.NavigateTo("/obraitemetapapadrao/novo");
+
+    private void Editar(long id) =>
+        Navigation.NavigateTo($"/obraitemetapapadrao/editar/{id}");
+
+    private async Task ConfirmarExclusao(long id, string nome)
+    {
+        var confirm = await DialogService.Confirm($"Deseja realmente excluir o item \"{nome}\" da etapa?",
+                                                  "Confirme a exclusão",
+                                                  new ConfirmOptions { OkButtonText = "Sim", CancelButtonText = "Cancelar" });
+
+        if (confirm == true)
+        {
+            try
+            {
+                await ObraItemEtapaPadraoApiService.DeleteAsync(id);
+                _itens = (await ObraItemEtapaPadraoApiService.GetAllAsync()).ToList();
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Sucesso",
+                    Detail = "Item excluído com sucesso!",
+                    Duration = 4000
+                });
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Erro",
+                    Detail = $"Erro ao excluir item: {ex.Message}",
+                    Duration = 5000
+                });
+            }
+        }
+    }
+}

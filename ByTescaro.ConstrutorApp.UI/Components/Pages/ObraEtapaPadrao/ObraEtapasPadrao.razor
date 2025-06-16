@@ -1,0 +1,111 @@
+﻿@page "/obraetapaspadrao"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject ObraEtapaPadraoApiService ObraEtapaPadraoApiService
+@inject NavigationManager Navigation
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Etapas da Obra</PageTitle>
+
+<RadzenCard Style="margin: 1rem;">
+    <RadzenHeading Size="H4" Text="Etapas da Obra" />
+
+    <div class="row mt-4 mb-2">
+        <div class="col-md-9">
+            <RadzenTextBox @bind-Value="Filtro"
+                           Placeholder="Pesquisar por nome"
+                           Icon="search"
+                           Style="width: 100%;" />
+        </div>
+        <div class="col-md-3 d-flex justify-content-end">
+            <RadzenButton Text="Nova Etapa" Icon="add_circle" Style="width: 100%;" Click="@Novo" />
+        </div>
+    </div>
+
+    <RadzenDataGrid TItem="ObraEtapaPadraoDto"
+                    Data="@_etapasFiltradas"
+                    AllowPaging="true"
+                    PageSize="10"
+                    AllowSorting="true"
+                    FilterMode="FilterMode.Simple"
+                    Responsive="true"
+                    ShowPagingSummary="true">
+
+        <Columns>
+            <RadzenDataGridColumn TItem="ObraEtapaPadraoDto" Property="Ordem" Title="Ordem" Width="100px" />
+            <RadzenDataGridColumn TItem="ObraEtapaPadraoDto" Property="Nome" Title="Nome" />
+            <RadzenDataGridColumn TItem="ObraEtapaPadraoDto" Title="Ações" Filterable="false" Sortable="false" Width="150px">
+                <Template Context="etapa">
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                  Click="@(() => Editar(etapa.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                  Click="@(() => ConfirmarExclusao(etapa.Id))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<ObraEtapaPadraoDto> _etapas = new();
+    private string _filtro = string.Empty;
+
+    private string Filtro
+    {
+        get => _filtro;
+        set
+        {
+            _filtro = value;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<ObraEtapaPadraoDto> _etapasFiltradas =>
+        string.IsNullOrWhiteSpace(_filtro)
+            ? _etapas
+            : _etapas.Where(e => e.Nome.Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _etapas = (await ObraEtapaPadraoApiService.GetAllAsync()).ToList();
+    }
+
+    private void Novo() =>
+        Navigation.NavigateTo("/obraetapapadrao/novo");
+
+    private void Editar(long id) =>
+        Navigation.NavigateTo($"/obraetapapadrao/editar/{id}");
+
+    private async Task ConfirmarExclusao(long id)
+    {
+        var confirm = await DialogService.Confirm("Deseja realmente excluir esta etapa?", "Confirme a exclusão",
+            new ConfirmOptions { OkButtonText = "Sim", CancelButtonText = "Cancelar" });
+
+        if (confirm == true)
+        {
+            try
+            {
+                await ObraEtapaPadraoApiService.DeleteAsync(id);
+                _etapas = (await ObraEtapaPadraoApiService.GetAllAsync()).ToList();
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Sucesso",
+                        Detail = "Etapa excluída com sucesso!",
+                        Duration = 4000
+                    });
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Erro",
+                        Detail = $"Erro ao excluir etapa: {ex.Message}",
+                        Duration = 5000
+                    });
+            }
+        }
+    }
+}

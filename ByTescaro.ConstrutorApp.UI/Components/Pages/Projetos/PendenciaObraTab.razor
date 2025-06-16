@@ -1,0 +1,140 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Utils
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject ObraPendenciaApiService ObraPendenciaApiService
+@inject FuncionarioApiService FuncionarioApiService
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+
+
+<RadzenCard Class="rz-pa-4">
+    <RadzenButton Text="Adicionar Pendencia"
+                  Icon="add_circle"
+                  Click="@AdicionarPendencia"
+                  Style="margin-bottom: 1rem;"
+                  ButtonStyle="ButtonStyle.Primary" />
+
+    @if (!Obra.Pendencias.Any())
+    {
+        <RadzenText Text="Nenhum pendencia registrado nesta obra." Style="margin-top: 1rem;" />
+    }
+    else
+    {
+        @foreach (var pendencia in Obra.Pendencias.OrderByDescending(r => r.DataHoraCadastro))
+        {
+            <RadzenCard Style="margin-bottom: 1rem;" Class="rz-p-3">
+                <RadzenRow>
+                    <RadzenColumn Size="12">
+                        <RadzenLabel Text="Descrição" />
+                        <RadzenTextBox Style="width: 100%;" @bind-Value="pendencia.Descricao" />
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenLabel Text="Responsável" />
+                        <RadzenDropDown @bind-Value="pendencia.ResponsavelId"
+                                        Data="@Funcionarios"
+                                        TextProperty="Nome"
+                                        ValueProperty="Id"
+                                        Placeholder="-- Selecione --"
+                                        Style="width: 100%;" />
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="2">
+                        <RadzenLabel Text="Status" />
+                        <RadzenDropDown @bind-Value="pendencia.Status"
+                                        Data="@statusList"
+                                        TextProperty="Label"
+                                        ValueProperty="Value"
+                                        Style="width: 100%;"
+                                        Placeholder="-- Selecione --" />
+
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="delete"
+                                      Text="Remover"
+                                      Click="@(() => ConfirmarRemocao(pendencia))"
+                                      ButtonStyle="ButtonStyle.Danger"
+                                      Style="margin-top: 1rem;" />
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenCard>
+        }
+
+        @if (Obra.Pendencias.Any())
+        {
+            <RadzenButton Text="Salvar Pendencias"
+                          Icon="save"
+                          Click="SalvarPendencias"
+                          ButtonStyle="ButtonStyle.Success"
+                          Style="margin-top: 1rem;" />
+        }
+
+    }
+</RadzenCard>
+
+@code {
+    [Parameter] public ObraDto Obra { get; set; } = new();
+
+    private List<FuncionarioDto> Funcionarios = new();
+    private List<EnumOption<StatusPendencia>> statusList = EnumHelper.ListarOpcoes<StatusPendencia>(incluirNulo: true);
+
+    protected override async Task OnInitializedAsync()
+    {
+        Funcionarios = await FuncionarioApiService.GetAllAsync();
+    }
+
+    private void AdicionarPendencia()
+    {
+        Obra.Pendencias.Add(new ObraPendenciaDto
+            {
+                Descricao = "",
+                ResponsavelId = 0,
+                Status = StatusPendencia.Pendente,
+                DataHoraCadastro = DateTime.Now,
+                UsuarioCadastro = "Sistema"
+            });
+    }
+
+
+    private async Task ConfirmarRemocao(ObraPendenciaDto pendencia)
+    {
+        bool? confirm = await DialogService.Confirm($"Deseja realmente remover este pendência?", "Remover Pendência");
+
+        if (confirm == true)
+        {
+            Obra.Pendencias.Remove(pendencia);
+            NotificationService.Notify(NotificationSeverity.Warning, "Removido", "Pendência removido da lista.");
+            StateHasChanged();
+        }
+    }
+
+
+    private async Task SalvarPendencias()
+    {
+        foreach (var pendencia in Obra.Pendencias)
+        {
+            if (string.IsNullOrWhiteSpace(pendencia.Descricao))
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Aviso", "Descrição é obrigatória.");
+                return;
+            }
+
+            if (pendencia.ResponsavelId == 0)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Aviso", "Selecione o responsável.");
+                return;
+            }
+            pendencia.ObraId = Obra.Id;
+
+            if (pendencia.Id == 0)
+                await ObraPendenciaApiService.CreateAsync(pendencia);
+            else
+                await ObraPendenciaApiService.UpdateAsync(pendencia);
+        }
+
+        NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Pendencias salvos com sucesso.");
+    }
+
+}

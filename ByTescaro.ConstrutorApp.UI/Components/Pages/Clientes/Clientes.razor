@@ -1,0 +1,116 @@
+﻿@page "/clientes"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Components.Utils
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@inject DialogService DialogService
+@inject ClienteApiService ClienteApiService
+@inject NotificationService NotificationService
+@inject NavigationManager Navigation
+@attribute [Authorize]
+
+<PageTitle>Clientes</PageTitle>
+
+<RadzenCard Style="margin: 1rem;">
+    <RadzenHeading Size="H4" Text="Clientes" />
+
+    <!-- Filtro e botão -->
+    <div class="row mt-4 mb-2">
+        <div class="col-md-9">
+            <RadzenTextBox @bind-Value="Filtro" Placeholder="Pesquisar por nome ou CPF/CNPJ"
+                           Style="width: 100%;" Icon="search" />
+        </div>
+        <div class="col-md-3 d-flex justify-content-end">
+            <RadzenButton Text="Novo Cliente" Icon="add_circle" Style="width: 100%;" Click="@NovoCliente" />
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <RadzenDataGrid TItem="ClienteDto"
+                    Data="@_clientesFiltrados"
+                    AllowFiltering="true"
+                    AllowPaging="true"
+                    AllowSorting="true"
+                    PageSize="10"
+                    FilterMode="FilterMode.Advanced"
+                    Responsive="true"
+                    ShowPagingSummary="true">
+
+        <Columns>
+            <RadzenDataGridColumn TItem="ClienteDto" Property="Nome" Title="Nome" />
+            <RadzenDataGridColumn TItem="ClienteDto" Property="CpfCnpj" Title="CPF/CNPJ" />
+            <RadzenDataGridColumn TItem="ClienteDto" Property="TipoPessoa" Title="Tipo" />
+            <RadzenDataGridColumn TItem="ClienteDto" Property="TelefonePrincipal" Title="Telefone" />
+            <RadzenDataGridColumn TItem="ClienteDto" Property="Email" Title="Email" />
+            <RadzenDataGridColumn TItem="ClienteDto" Title="Ações" Filterable="false" Sortable="false">
+                <Template Context="cliente">
+                    <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
+                                  Click="@(() => VerDetalhes(cliente.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                  Click="@(() => EditarCliente(cliente.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                  Click="@(() => ConfirmarExclusao(cliente.Id))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<ClienteDto> _clientes = new();
+    private string _filtro = string.Empty;
+
+    private string Filtro
+    {
+        get => _filtro;
+        set
+        {
+            _filtro = value;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<ClienteDto> _clientesFiltrados =>
+        string.IsNullOrWhiteSpace(_filtro)
+            ? _clientes
+            : _clientes.Where(c =>
+                c.Nome.Contains(_filtro, StringComparison.OrdinalIgnoreCase) ||
+                c.CpfCnpj.Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _clientes = (await ClienteApiService.GetAllAsync()).ToList();
+    }
+
+    private void NovoCliente() =>
+        Navigation.NavigateTo("/cliente/novo");
+
+    private void EditarCliente(long id) =>
+        Navigation.NavigateTo($"/cliente/editar/{id}");
+
+    private void VerDetalhes(long id) =>
+        Navigation.NavigateTo($"/cliente/detalhes/{id}");
+
+    private async Task ConfirmarExclusao(long id)
+    {
+        if (await DialogHelper.ConfirmarAsync(DialogService, "Deseja realmente excluir este cliente?"))
+        {
+            await ExcluirConfirmado(id);
+        }
+    }
+
+
+    private async Task ExcluirConfirmado(long id)
+    {
+        try
+        {
+            await ClienteApiService.DeleteAsync(id);
+            _clientes = (await ClienteApiService.GetAllAsync()).ToList();
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Cliente excluído com sucesso", Duration = 4000 });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao excluir cliente: {ex.Message}", Duration = 5000 });
+        }
+    }
+}

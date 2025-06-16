@@ -1,0 +1,195 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+@inject ObraInsumoApiService InsumoService
+@inject ObraInsumoListaApiService ListaService
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+
+<RadzenCard Style="padding: 1rem; margin-bottom: 1rem">
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" Style="margin-bottom: 1rem;">
+        <div>
+            <RadzenLabel Text="Data de Envio" />
+            <RadzenDatePicker @bind-Value="Lista.Data" Style="width: 200px;" />
+        </div>
+
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+            <RadzenButton Icon="save"
+                          Text="Salvar Alterações"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Size="ButtonSize.Small"
+                          Click="SalvarLista" />
+
+            <RadzenButton Icon="delete"
+                          Text="Excluir Lista"
+                          ButtonStyle="ButtonStyle.Danger"
+                          Size="ButtonSize.Small"
+                          Click="ConfirmarRemocaoLista" />
+        </RadzenStack>
+    </RadzenStack>
+
+    <!-- Input de Insumos -->
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Style="margin-bottom: 1rem;">
+        <RadzenDropDown Data="@InsumosDisponiveis"
+                        TextProperty="Nome"
+                        ValueProperty="Id"
+                        Multiple="true"
+                        @bind-Value="_insumosSelecionados"
+                        Placeholder="Selecionar Insumos"
+                        Style="width: 100%;" />
+
+        <RadzenNumeric @bind-Value="QuantidadeSelecionada"
+                       TValue="decimal"
+                       Style="width: 120px;"
+                       Min="0.1m"
+                       Step="1"
+                       Placeholder="Qtd."
+                       ShowUpDown="true" />
+    </RadzenStack>
+
+    <RadzenButton Text="Adicionar Selecionados" Icon="add_circle_outline"
+                  Disabled="@(!_insumosSelecionados.Any())"
+                  Click="@AdicionarInsumos" />
+
+    <!-- Grid -->
+    <RadzenDataGrid TItem="ObraInsumoDto" Data="@Lista.Itens" ShowPagingSummary="false" AllowPaging="false" llowColumnResize="true" AllowSorting="true" PagerHorizontalAlign="HorizontalAlign.Left" ColumnWidth="300px"
+                    Editable="true" EditMode="DataGridEditMode.Single" AutoGenerateColumns="false" Class="rz-mt-2">
+        <Columns>
+            <RadzenDataGridColumn TItem="ObraInsumoDto" Property="InsumoNome" Title="Insumo" />
+            <RadzenDataGridColumn TItem="ObraInsumoDto" Property="Quantidade" Title="Quantidade">
+                <EditTemplate Context="item">
+                    <RadzenNumeric TValue="decimal" @bind-Value="item.Quantidade" Style="width:100%;" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="ObraInsumoDto" Title="Unidade de Medida">
+                <Template Context="item">
+                    <RadzenText> @ObterNomeUnidade(item.UnidadeMedida) </RadzenText>
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="ObraInsumoDto" Property="DataHoraCadastro" Title="Data Cadastro" FormatString="{0:dd/MM/yyyy}" />
+            <RadzenDataGridColumn TItem="ObraInsumoDto" Property="UsuarioCadastro" Title="Cadastrador por" />
+
+            <RadzenDataGridColumn TItem="ObraInsumoDto" Title="">
+                <Template Context="item">
+                    <RadzenButton Icon="delete"
+                                  ButtonStyle="ButtonStyle.Danger"
+                                  Size="ButtonSize.Small"
+                                  Click="@(() => ConfirmarRemocaoItem(item))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    [Parameter] public ObraInsumoListaDto? Lista { get; set; }
+    [Parameter] public ObraDto Obra { get; set; } = new();
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private List<InsumoDto> InsumosDisponiveis = new();
+    private List<long> _insumosSelecionados = new();
+    private decimal QuantidadeSelecionada { get; set; } = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        InsumosDisponiveis = await InsumoService.GetInsumosDisponiveisAsync(Obra.Id);
+        Lista ??= new ObraInsumoListaDto { ObraId = Obra.Id, Data = DateOnly.FromDateTime(DateTime.Today) };
+    }
+
+    private async Task SalvarLista()
+    {
+        if (Lista is null || Lista.Itens is null || !Lista.Itens.Any())
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Validação", "Adicione ao menos um item à lista.");
+            return;
+        }
+
+        try
+        {
+            if (Lista.Id == 0)
+            {
+                var novaLista = await ListaService.CreateAsync(Lista);
+                if (novaLista is not null)
+                {
+                    var index = Obra.ListasInsumo.FindIndex(l => l == Lista);
+                    if (index >= 0)
+                        Obra.ListasInsumo[index] = novaLista;
+
+                    Lista = novaLista; // Atualiza com novos IDs
+                }
+            }
+            else
+            {
+                await ListaService.UpdateAsync(Lista);
+            }
+
+            NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Lista de insumos salva com sucesso.");
+            await OnChanged.InvokeAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Falha ao salvar lista: {ex.Message}");
+        }
+    }
+
+
+    private async Task ConfirmarRemocaoItem(ObraInsumoDto item)
+    {
+        bool? confirm = await DialogService.Confirm($"Remover o insumo '{item.InsumoNome}'?", "Confirmação");
+        if (confirm == true)
+        {
+            Lista!.Itens = Lista.Itens.Where(i => i.InsumoId != item.InsumoId).ToList();
+            StateHasChanged();
+        }
+    }
+
+    private async Task ConfirmarRemocaoLista()
+    {
+        bool? confirm = await DialogService.Confirm($"Excluir a lista de {Lista!.NomeResponsavel}?", "Excluir Lista");
+        if (confirm == true)
+        {
+            if (Lista.Id > 0)
+                await ListaService.DeleteAsync(Lista.Id);
+
+            Obra.ListasInsumo?.Remove(Lista);
+            await OnChanged.InvokeAsync();
+        }
+    }
+
+    private async Task AdicionarInsumos()
+    {
+        Lista!.Itens ??= new();
+        foreach (var id in _insumosSelecionados)
+        {
+            if (Lista.Itens.Any(i => i.InsumoId == id)) continue;
+
+            var insumo = InsumosDisponiveis.FirstOrDefault(i => i.Id == id);
+            if (insumo is not null)
+            {
+                Lista.Itens.Add(new ObraInsumoDto
+                    {
+                        ObraInsumoListaId = Lista.Id,
+                        InsumoId = insumo.Id,
+                        InsumoNome = insumo.Nome,
+                        UnidadeMedida = insumo.UnidadeMedida,
+                        Quantidade = QuantidadeSelecionada
+                    });
+            }
+        }
+        _insumosSelecionados.Clear();
+        QuantidadeSelecionada = 1;
+        Lista.Itens = Lista.Itens.ToList();
+        StateHasChanged();
+    }
+
+    private static string ObterNomeUnidade(UnidadeMedida? unidade)
+    {
+        if (unidade is null) return "";
+        var member = unidade.Value.GetType().GetMember(unidade.ToString() ?? "").FirstOrDefault();
+        var display = member?.GetCustomAttribute<DisplayAttribute>();
+        return display?.Name ?? unidade.ToString();
+    }
+}

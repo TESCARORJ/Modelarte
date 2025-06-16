@@ -1,0 +1,249 @@
+﻿@* @page "/usuarios/perfis"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Interfaces
+@using ByTescaro.ConstrutorApp.Infrastructure.Data
+@using Microsoft.AspNetCore.Identity
+@inject RoleManager<IdentityRole> RoleManager
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+@inject IAuditoriaService AuditoriaService
+@inject IHttpContextAccessor HttpContextAccessor
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+
+<MudPaper Class="p-4">
+    <MudText Typo="Typo.h5" Class="mb-4">Gestão de Perfis</MudText>
+
+    <MudTextField @bind-Value="_novoPerfil" Label="Novo perfil" Variant="Variant.Outlined" />
+    <MudButton OnClick="CriarPerfil" Color="Color.Primary" Class="ml-2">Adicionar</MudButton>
+
+    <MudDivider Class="my-4" />
+
+    <MudTable T="PerfilInfo" Items="_perfis" Dense="true" Hover="true">
+    <HeaderContent>
+        <MudTh>Nome</MudTh>
+        <MudTh>Usuários</MudTh>
+        <MudTh>Ações</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>
+            @if (context.Editando)
+            {
+                <MudTextField @bind-Value="context.NomeEditado" Dense="true" />
+            }
+            else
+            {
+                @context.Nome
+            }
+        </MudTd>
+        <MudTd>@context.Usuarios</MudTd>
+        <MudTd>
+            @if (context.Editando)
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.Check" Color="Color.Success" OnClick="@(() => SalvarEdicao(context))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Secondary" OnClick="@(() => CancelarEdicao(context))" />
+            }
+            else
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="@(() => EditarPerfil(context))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                               Color="Color.Error"
+                               Disabled="context.Usuarios > 0"
+                               OnClick="@(() => ConfirmarExclusao(context.Nome))" />
+            }
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+
+</MudPaper>
+
+<MudDialog @bind-IsOpen="_excluirDialog" MaxWidth="MaxWidth.Small">
+    <DialogContent>
+        <MudText>Tem certeza que deseja excluir o perfil <strong>@_perfilParaExcluir</strong>?</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="ExcluirPerfil" Color="Color.Error">Excluir</MudButton>
+        <MudButton OnClick="() => _excluirDialog = false">Cancelar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private string _novoPerfil = string.Empty;
+    private List<PerfilInfo> _perfis = new();
+    private bool _excluirDialog = false;
+    private string? _perfilParaExcluir;
+    private string UsuarioLogado => HttpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Sistema";
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarPerfis();
+    }
+
+    private async Task CarregarPerfis()
+    {
+        var perfis = RoleManager.Roles.ToList();
+        _perfis.Clear();
+
+        foreach (var role in perfis)
+        {
+            var usuarios = await UserManager.GetUsersInRoleAsync(role.Name!);
+            _perfis.Add(new PerfilInfo
+                {
+                    Nome = role.Name!,
+                    NomeEditado = role.Name!,
+                    Usuarios = usuarios.Count
+                });
+        }
+
+        _perfis = _perfis.OrderBy(p => p.Nome).ToList();
+    }
+
+
+    private async Task CriarPerfil()
+    {
+        if (string.IsNullOrWhiteSpace(_novoPerfil)) return;
+
+        var existe = await RoleManager.RoleExistsAsync(_novoPerfil);
+        if (existe)
+        {
+            Snackbar.Add("Perfil já existe.", Severity.Warning);
+            return;
+        }
+
+        var result = await RoleManager.CreateAsync(new IdentityRole(_novoPerfil));
+        if (result.Succeeded)
+        {
+            Snackbar.Add("Perfil criado com sucesso!", Severity.Success);
+            _novoPerfil = string.Empty;
+
+            await AuditoriaService.RegistrarCriacaoAsync(new PerfilAuditoria { Id = _novoPerfil, Nome = _novoPerfil }, UsuarioLogado);
+            
+            await CarregarPerfis();
+
+        }
+        else
+        {
+            Snackbar.Add("Erro ao criar perfil.", Severity.Error);
+        }
+    }
+
+    private void ConfirmarExclusao(string perfil)
+    {
+        _perfilParaExcluir = perfil;
+        _excluirDialog = true;
+    }
+
+    private async Task ExcluirPerfil()
+    {
+        if (string.IsNullOrEmpty(_perfilParaExcluir)) return;
+
+        var role = await RoleManager.FindByNameAsync(_perfilParaExcluir);
+        if (role == null)
+        {
+            Snackbar.Add("Perfil não encontrado.", Severity.Error);
+            return;
+        }
+
+        // Proteção simples: evitar excluir perfis em uso
+        var users = await UserManager.GetUsersInRoleAsync(_perfilParaExcluir); 
+        if (users.Any())
+        {
+            Snackbar.Add("Não é possível excluir um perfil atribuído a usuários.", Severity.Warning);
+            _excluirDialog = false;
+            return;
+        }
+
+        var result = await RoleManager.DeleteAsync(role);
+        if (result.Succeeded)
+        {
+            Snackbar.Add("Perfil excluído com sucesso!", Severity.Success);
+
+            await AuditoriaService.RegistrarExclusaoAsync(new PerfilAuditoria { Id = _perfilParaExcluir!, Nome = _perfilParaExcluir! }, UsuarioLogado);
+
+            await CarregarPerfis();
+        }
+        else
+        {
+            Snackbar.Add("Erro ao excluir perfil.", Severity.Error);
+        }
+
+        _excluirDialog = false;
+
+    }
+
+    private class PerfilInfo
+    {
+        public string Nome { get; set; } = string.Empty;
+        public string NomeEditado { get; set; } = string.Empty;
+        public int Usuarios { get; set; }
+        public bool Editando { get; set; } = false;
+    }
+
+    private void EditarPerfil(PerfilInfo perfil)
+    {
+        perfil.Editando = true;
+    }
+
+    private void CancelarEdicao(PerfilInfo perfil)
+    {
+        perfil.NomeEditado = perfil.Nome;
+        perfil.Editando = false;
+    }
+
+    private async Task SalvarEdicao(PerfilInfo perfil)
+    {
+        if (string.IsNullOrWhiteSpace(perfil.NomeEditado))
+        {
+            Snackbar.Add("O nome não pode estar em branco.", Severity.Warning);
+            return;
+        }
+
+        if (perfil.NomeEditado == perfil.Nome)
+        {
+            perfil.Editando = false;
+            return;
+        }
+
+        var jaExiste = await RoleManager.RoleExistsAsync(perfil.NomeEditado);
+        if (jaExiste)
+        {
+            Snackbar.Add("Já existe um perfil com esse nome.", Severity.Warning);
+            return;
+        }
+
+        var role = await RoleManager.FindByNameAsync(perfil.Nome);
+        if (role == null)
+        {
+            Snackbar.Add("Perfil não encontrado.", Severity.Error);
+            return;
+        }
+
+        role.Name = perfil.NomeEditado;
+        var result = await RoleManager.UpdateAsync(role);
+
+        if (result.Succeeded)
+        {
+            Snackbar.Add("Perfil atualizado com sucesso!", Severity.Success);
+            await AuditoriaService.RegistrarAtualizacaoAsync(
+                new PerfilAuditoria { Id = perfil.Nome, Nome = perfil.Nome },
+                new PerfilAuditoria { Id = perfil.Nome, Nome = perfil.NomeEditado },
+                UsuarioLogado);
+
+
+            await CarregarPerfis();
+        }
+        else
+        {
+            Snackbar.Add("Erro ao atualizar perfil.", Severity.Error);
+        }
+
+        perfil.Editando = false;
+    }
+
+
+}
+ *@

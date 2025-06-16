@@ -1,0 +1,26 @@
+﻿@inject Radzen.NotificationService NotificationService
+
+@code {
+    public void ShowSuccess(string summary, string detail = "", int duration = 4000)
+        => Notify(summary, detail, NotificationSeverity.Success, duration);
+
+    public void ShowInfo(string summary, string detail = "", int duration = 4000)
+        => Notify(summary, detail, NotificationSeverity.Info, duration);
+
+    public void ShowWarning(string summary, string detail = "", int duration = 4000)
+        => Notify(summary, detail, NotificationSeverity.Warning, duration);
+
+    public void ShowError(string summary, string detail = "", int duration = 4000)
+        => Notify(summary, detail, NotificationSeverity.Error, duration);
+
+    private void Notify(string summary, string detail, NotificationSeverity severity, int duration)
+    {
+        NotificationService.Notify(new NotificationMessage
+            {
+                Severity = severity,
+                Summary = summary,
+                Detail = detail,
+                Duration = duration
+            });
+    }
+}

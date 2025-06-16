@@ -1,0 +1,49 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@inject Radzen.DialogService DialogService
+
+<RadzenCard Style="width:100%; height:80vh; display: flex; flex-direction: column; padding: 0;">
+    @if (Imagens.Count > 0)
+    {
+        <RadzenCarousel @ref=carousel @bind-SelectedIndex="@selectedIndex" Auto="false" AllowPaging="@allowPaging"
+                        Style="height: 400px;" PagerPosition="@pagerPosition" PagerOverlay="@pagerOverlay">
+            <Items>
+
+                @foreach (var imagem in Imagens)
+                {
+                    <RadzenCarouselItem>
+                        <RadzenImage Path="@($"/{imagem.CaminhoRelativo}")" class="rz-w-100" />
+                    </RadzenCarouselItem>
+                }
+            </Items>
+        </RadzenCarousel>
+    }
+    else
+    {
+        <div class="sem-imagens">
+            <RadzenHeading Size="H6" Style="color: red;">Nenhuma imagem encontrada.</RadzenHeading>
+        </div>
+    }
+
+    <RadzenButton Text="Fechar"
+                  Click="Fechar"
+                  ButtonStyle="ButtonStyle.Secondary"
+                  Icon="close"
+                  Style="margin: 1rem auto;" />
+</RadzenCard>
+
+@code {
+    RadzenCarousel carousel;
+    bool allowPaging = true;
+    bool pagerOverlay = true;
+    PagerPosition pagerPosition = PagerPosition.Bottom;
+    int selectedIndex;
+
+
+    [Parameter] public List<ObraImagemDto> Imagens { get; set; } = new();
+    [Parameter] public ObraImagemDto? ImagemInicial { get; set; }
+
+    private void Fechar()
+    {
+        DialogService.Close();
+    }
+}

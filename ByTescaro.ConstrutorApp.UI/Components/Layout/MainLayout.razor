@@ -1,0 +1,65 @@
+﻿@inherits LayoutComponentBase
+@inject IJSRuntime JSRuntime
+
+<RadzenLayout>
+
+    <RadzenHeader Style="padding: 0.5rem 1rem; background: #0d6efd; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10px">
+            <RadzenSidebarToggle Icon="menu" Click="@ToggleSidebar" />
+            <RadzenLabel Text="Modelarte" Style="font-size: 1.25rem; font-weight: bold;" />
+        </RadzenStack>
+    </RadzenHeader>
+
+    <RadzenSidebar @bind-Expanded="@sidebarExpanded"  Responsive="true" Style="background-color: #f8f9fa;">
+        <NavMenu />
+    </RadzenSidebar>
+
+    <RadzenBody>
+        <div class="rz-p-4">
+            @Body
+        </div>
+    </RadzenBody>
+
+    <RadzenFooter Style="text-align: center; padding: 1rem;">
+        <small>&copy; 2025 Modelarte</small>
+    </RadzenFooter>
+
+    <RadzenDialog />
+    <RadzenNotification />
+
+    <RadzenNotification/>
+
+
+</RadzenLayout>
+
+@code {
+    private bool sidebarExpanded = true;
+    private DotNetObjectReference<MainLayout>? dotNetHelper;
+
+    private void ToggleSidebar()
+    {
+        sidebarExpanded = !sidebarExpanded;
+    }
+
+    [JSInvokable]
+    public void CloseSidebar()
+    {
+        sidebarExpanded = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            dotNetHelper = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("sidebarHelper.enableAutoClose", dotNetHelper, ".rz-sidebar");
+        }
+    }
+
+    public void Dispose()
+    {
+        dotNetHelper?.Dispose();
+    }
+}
+

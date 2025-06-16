@@ -1,0 +1,235 @@
+﻿@page "/funcionarios/novo"
+@page "/funcionarios/editar/{Id:long}"
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Utils
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@using ByTescaro.ConstrutorApp.UI.Utils
+@using Microsoft.AspNetCore.Authorization
+@inject FuncionarioApiService FuncionarioApiService
+@inject FuncaoApiService FuncaoApiService
+@inject NavigationManager Navigation
+@inject CepService CepService
+@inject NotificationService NotificationService
+@attribute [Authorize]
+
+<PageTitle>Funcionário</PageTitle>
+
+<RadzenCard Class="rz-mt-5 rz-p-4 rz-shadow-md rz-rounded-md rz-mx-auto" Style="max-width: 1300px; width: 100%;">
+    <RadzenTemplateForm TItem="FuncionarioDto" Data="@funcionario" Submit="Salvar" InvalidSubmit="ExibirErros">
+        <RadzenHeading Size="H4" Text="@Titulo" Class="rz-mb-3" />
+
+        <!-- Dados Pessoais -->
+        <RadzenFieldset Text="Dados Pessoais" Style="margin-bottom: 1.5rem;">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Nome" />
+                    <RadzenTextBox @bind-Value="funcionario.Nome" Name="Nome" Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="Nome" Text="O nome é obrigatório" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenLabel Text="Função" />
+                    <RadzenDropDown @bind-Value="funcionario.FuncaoId" TValue="long" Data="@funcoes" TextProperty="Nome" ValueProperty="Id" Name="FuncaoId" Style="width: 100%;" Placeholder="-- Selecione a Função --" />
+                    <RadzenRequiredValidator Component="FuncaoId" Text="A função é obrigatória" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenLabel Text="Tipo de Pessoa" />
+                    <RadzenDropDown @bind-Value="funcionario.TipoPessoa"
+                                    Data="@tipoPessoaOptions"
+                                    TextProperty="Label"
+                                    ValueProperty="Value"
+                                    TValue="TipoPessoa?"
+                                    Name="TipoPessoa"
+                                    Style="width: 100%;"
+                                    Placeholder="-- Selecione --" />
+                    <RadzenRequiredValidator Component="TipoPessoa" Text="O tipo de pessoa é obrigatório" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="CPF/CNPJ" />
+                    <RadzenMask @bind-Value="funcionario.CpfCnpj"
+                                Mask="@(funcionario.TipoPessoa == TipoPessoa.Fisica ? "***.***.***-**" : "**.***.***/***-**")"
+                                CharacterPattern="[0-9]"
+                                Placeholder="CPF ou CNPJ"
+                                Name="CpfCnpj"
+                                Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="CpfCnpj" Text="CPF/CNPJ é obrigatório" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="Salário (R$)" />
+                    <RadzenNumeric @bind-Value="funcionario.Salario" Name="Salario" Format="n2" Placeholder="0,00" Style="width: 100%;" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="Data de Admissão" />
+                    <RadzenDatePicker @bind-Value="funcionario.DataAdmissao" Name="DataAdmissao" DateFormat="dd/MM/yyyy" Style="width: 100%;" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="Data de Demissão" />
+                    <RadzenDatePicker @bind-Value="funcionario.DataDemissao" Name="DataDemissao" DateFormat="dd/MM/yyyy" Style="width: 100%;" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
+
+        <!-- Contato -->
+        <RadzenFieldset Text="Contato" Style="margin-bottom: 1.5rem;">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="Telefone Principal" />
+                    <RadzenMask @bind-Value="funcionario.TelefonePrincipal" Mask="(**) *****-****" CharacterPattern="[0-9]" Name="TelefonePrincipal" Placeholder="Telefone" Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="TelefonePrincipal" Text="Telefone principal é obrigatório" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="WhatsApp" />
+                    <RadzenMask @bind-Value="funcionario.TelefoneWhatsApp" Mask="(**) *****-****" CharacterPattern="[0-9]" Name="TelefoneWhatsApp" Placeholder="WhatsApp" Style="width: 100%;" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="Email" />
+                    <RadzenTextBox @bind-Value="funcionario.Email" Name="Email" Placeholder="Email" Style="width: 100%;" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
+
+        <!-- Endereço -->
+        <RadzenFieldset Text="Endereço" Style="margin-bottom: 1.5rem;">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenLabel Text="CEP" />
+                    <RadzenMask @bind-Value="funcionario.CEP" Mask="*****-***" CharacterPattern="[0-9]" Name="CEP" Placeholder="CEP" Change="@((string _) => PreencherEndereco())" Style="width: 100%;" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Logradouro" />
+                    <RadzenTextBox @bind-Value="funcionario.Logradouro" Name="Logradouro" ReadOnly Style="width: 100%;" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenLabel Text="Número" />
+                    <RadzenTextBox @bind-Value="funcionario.Numero" Name="Numero" Style="width: 100%;" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="Complemento" />
+                    <RadzenTextBox @bind-Value="funcionario.Complemento" Name="Complemento" Style="width: 100%;" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="Bairro" />
+                    <RadzenTextBox @bind-Value="funcionario.Bairro" Name="Bairro" ReadOnly Style="width: 100%;" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="Cidade" />
+                    <RadzenTextBox @bind-Value="funcionario.Cidade" Name="Cidade" ReadOnly Style="width: 100%;" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Estado" />
+                    <RadzenTextBox @bind-Value="funcionario.Estado" Name="Estado" ReadOnly Style="width: 100%;" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenLabel Text="UF" />
+                    <RadzenTextBox @bind-Value="funcionario.UF" Name="UF" ReadOnly MaxLength="2" Style="width: 100%;" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
+
+        <!-- Botões -->
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-3">
+            <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="@Cancelar" />
+            <RadzenButton Text="Salvar" ButtonType="ButtonType.Submit" Icon="save" Style="min-width: 120px;" />
+        </RadzenStack>
+    </RadzenTemplateForm>
+</RadzenCard>
+
+@code {
+    [Parameter] public long Id { get; set; }
+
+    private FuncionarioDto funcionario = new();
+    private List<FuncaoDto> funcoes = new();
+    private string Titulo => Id == 0 ? "Novo Funcionário" : "Editar Funcionário";
+
+    private List<EnumOption<TipoPessoa>> tipoPessoaOptions = EnumHelper.ListarOpcoes<TipoPessoa>(incluirNulo: true);
+
+    // public class TipoPessoaOption
+    // {
+    //     public TipoPessoa? Value { get; set; }
+    //     public string Label { get; set; } = string.Empty;
+    // }
+
+    // private List<TipoPessoaOption> tipoPessoaOptions = new()
+    // {
+    //     new() { Value = TipoPessoa.Fisica, Label = "Física" },
+    //     new() { Value = TipoPessoa.Juridica, Label = "Jurídica" }
+    // };
+
+    protected override async Task OnInitializedAsync()
+    {
+        funcoes = await FuncaoApiService.GetAllAsync();
+
+        if (Id != 0)
+        {
+            var existente = await FuncionarioApiService.GetByIdAsync(Id);
+            if (existente is not null)
+                funcionario = existente;
+        }
+    }
+
+    private async Task PreencherEndereco()
+    {
+        await EnderecoAutoPreenchimentoHelper.PreencherEnderecoAsync(
+            funcionario.CEP,
+            CepService,
+            NotificationService,
+            logradouro => funcionario.Logradouro = logradouro,
+            bairro => funcionario.Bairro = bairro,
+            cidade => funcionario.Cidade = cidade,
+            estado => funcionario.Estado = estado,
+            uf => funcionario.UF = uf
+        );
+    }
+
+    private async Task Salvar(FuncionarioDto model)
+    {
+        try
+        {
+            if (model.Id == 0)
+            {
+                await FuncionarioApiService.CreateAsync(model);
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Funcionário cadastrado com sucesso!", Duration = 4000 });
+            }
+            else
+            {
+                await FuncionarioApiService.UpdateAsync(model);
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Funcionário atualizado com sucesso!", Duration = 4000 });
+            }
+
+            Navigation.NavigateTo("/funcionarios");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao salvar funcionário: {ex.Message}", Duration = 5000 });
+        }
+    }
+
+    private void ExibirErros()
+    {
+        NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Warning,
+            Summary = "Atenção",
+            Detail = "Existem erros de validação no formulário.",
+            Duration = 4000
+        });
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/funcionarios");
+}

@@ -1,0 +1,164 @@
+﻿@page "/insumo/novo"
+@page "/insumo/editar/{Id:long}"
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@using System.Globalization
+@using System.Reflection
+@using System.ComponentModel.DataAnnotations
+@inject InsumoApiService InsumoApiService
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+@attribute [Authorize]
+
+<PageTitle>Insumo</PageTitle>
+
+<RadzenCard Class="rz-mt-5 rz-p-4 rz-shadow-md rz-rounded-md rz-mx-auto" Style="max-width: 1300px; width: 100%;">
+    <RadzenTemplateForm TItem="InsumoDto" Data="@insumo" Submit="Salvar" InvalidSubmit="ExibirErros">
+        <RadzenHeading Size="H4" Text="@(Id == 0 ? "Novo Insumo" : "Editar Insumo")" Class="rz-mb-3" />
+
+        <!-- Identificação -->
+        <RadzenFieldset Text="Identificação" Style="margin-bottom: 1.5rem;">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Nome" />
+                    <RadzenTextBox @bind-Value="insumo.Nome" Name="Nome" Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="Nome" Text="O nome é obrigatório" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenLabel Text="Unidade de Medida" />
+                    <RadzenDropDown @bind-Value="insumo.UnidadeMedida"
+                                    TValue="UnidadeMedida?"
+                                    Data="@UnidadeMedidaOptions"
+                                    TextProperty="Label"
+                                    ValueProperty="Value"
+                                    Name="UnidadeMedida"
+                                    Style="width: 100%;"/>
+                    <RadzenRequiredValidator Component="UnidadeMedida" Text="Unidade de Medida é obrigatória" />
+                </RadzenColumn>
+
+
+                <RadzenColumn Size="12">
+                    <RadzenLabel Text="Descrição" />
+                    <RadzenTextBox @bind-Value="insumo.Descricao" Name="Descricao" Multiline="true" Rows="3" Style="width: 100%;" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
+
+       
+        <!-- Botões -->
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-3">
+            <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="@Cancelar" />
+            <RadzenButton Text="Salvar" ButtonType="ButtonType.Submit" Icon="save" Style="min-width: 120px;" />
+        </RadzenStack>
+    </RadzenTemplateForm>
+</RadzenCard>
+
+@code {
+    [Parameter] public long Id { get; set; }
+
+    private InsumoDto insumo = new();
+    private readonly CultureInfo _br = CultureInfo.GetCultureInfo("pt-BR");
+
+    public class UnidadeMedidaOption
+    {
+        public UnidadeMedida? Value { get; set; }
+        public string Label { get; set; } = string.Empty;
+    }
+
+    // private List<UnidadeMedidaOption> UnidadeMedidaOptions = new()
+    // {
+    //     new() { Value = (UnidadeMedida?)null, Label = "-- Selecione --" },
+    //     new() { Value = UnidadeMedida.Unidade, Label = "Unidade" },
+    //     new() { Value = UnidadeMedida.Metro, Label = "Metro" },
+    //     new() { Value = UnidadeMedida.MetroQuadrado, Label = "Metro Quadrado" },
+    //     new() { Value = UnidadeMedida.MetroCubico, Label = "Metro Cúbico" },
+    //     new() { Value = UnidadeMedida.Quilograma, Label = "Quilograma" },
+    //     new() { Value = UnidadeMedida.Tonelada, Label = "Tonelada" },
+    //     new() { Value = UnidadeMedida.Peca, Label = "Peça" },
+    //     new() { Value = UnidadeMedida.Caixa, Label = "Caixa" }
+    // };
+
+    private List<UnidadeMedidaOption> UnidadeMedidaOptions =>
+    Enum.GetValues(typeof(UnidadeMedida))
+        .Cast<UnidadeMedida>()
+        .Select(e => new UnidadeMedidaOption
+            {
+                Value = e,
+                Label = e.GetType()
+                         .GetMember(e.ToString())
+                         .FirstOrDefault()?
+                         .GetCustomAttribute<DisplayAttribute>()?
+                         .Name ?? e.ToString()
+            })
+            .OrderBy(x => x.Label)
+            .Prepend(new UnidadeMedidaOption { Value = null, Label = "-- Selecione --" })
+            .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id != 0)
+        {
+            var existente = await InsumoApiService.GetByIdAsync(Id);
+            if (existente is not null)
+                insumo = existente;
+        }
+    }
+
+    private async Task Salvar(InsumoDto model)
+    {
+        try
+        {
+            if (model.Id == 0)
+            {
+                await InsumoApiService.CreateAsync(model);
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Sucesso",
+                        Detail = "Insumo cadastrado com sucesso!",
+                        Duration = 4000
+                    });
+            }
+            else
+            {
+                await InsumoApiService.UpdateAsync(model);
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Sucesso",
+                        Detail = "Insumo atualizado com sucesso!",
+                        Duration = 4000
+                    });
+            }
+
+            Navigation.NavigateTo("/insumos");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Erro",
+                    Detail = $"Erro ao salvar insumo: {ex.Message}",
+                    Duration = 5000
+                });
+        }
+    }
+
+    private void ExibirErros()
+    {
+        NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Warning,
+                Summary = "Atenção",
+                Detail = "Existem erros de validação no formulário.",
+                Duration = 4000
+            });
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/insumos");
+}

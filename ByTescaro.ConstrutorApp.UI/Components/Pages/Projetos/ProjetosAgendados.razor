@@ -1,0 +1,177 @@
+﻿@page "/ProjetosAgendados"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@inject ProjetoApiService ProjetoApiService
+@inject NavigationManager Navigation
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+@attribute [Authorize]
+
+<PageTitle>Projetos</PageTitle>
+
+<RadzenCard Style="margin: 1rem;">
+    <RadzenHeading Size="H4" Text="Projetos" />
+
+    <div class="row mt-4 mb-2">
+        <div class="col-md-9">
+            <RadzenTextBox @bind-Value="Filtro"
+                           Placeholder="Pesquisar por nome"
+                           Icon="search"
+                           Style="width: 100%;" />
+        </div>
+        <div class="col-md-3 d-flex justify-content-end">
+            <RadzenButton Text="Novo Projeto" Icon="add_circle" Style="width: 100%;" Click="@NovoProjeto" />
+        </div>
+    </div>
+
+    <RadzenDataGrid TItem="ProjetoDto"
+                    Data="@_projetosFiltrados"
+                    AllowPaging="true"
+                    AllowSorting="true"
+                    PageSize="10"
+                    ShowPagingSummary="true"
+                    Responsive="true"
+                    FilterMode="FilterMode.Simple">
+
+        <Columns>
+            <RadzenDataGridColumn TItem="ProjetoDto" Property="Nome" Title="Nome" />
+            <RadzenDataGridColumn TItem="ProjetoDto" Title="Status">
+                <Template Context="p">
+                    @switch (p.Status)
+                    {
+                        case StatusProjeto.Agendado:
+                            <RadzenChip Text="Agendado" Color="Color.Info" />
+                            break;
+                        case StatusProjeto.EmAndamento:
+                            <RadzenChip Text="Em Andamento" Color="Color.Warning" />
+                            break;
+                        case StatusProjeto.Concluido:
+                            <RadzenChip Text="Concluído" Color="Color.Success" />
+                            break;
+                        case StatusProjeto.Cancelado:
+                            <RadzenChip Text="Cancelado" Color="Color.Danger" />
+                            break;
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="ProjetoDto" Title="Data Início">
+                <Template Context="p">@(p.DataInicio?.ToString("dd/MM/yyyy"))</Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="ProjetoDto" Title="Data Término">
+                <Template Context="p">@(p.DataFim?.ToString("dd/MM/yyyy"))</Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="ProjetoDto" Title="Custo Estimado">
+                <Template Context="p">R$ @p.CustoEstimado.ToString("N2")</Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="ProjetoDto" Title="Custo Real">
+                <Template Context="p">R$ @p.CustoReal.ToString("N2")</Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="ProjetoDto" Title="Andamento (%)">
+                <Template Context="p">@p.ProgressoProjeto %</Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="ProjetoDto" Title="Ações" Filterable="false" Sortable="false">
+                <Template Context="p">
+                    <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
+                                  Click="@(() => VerDetalhes(p.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                  Click="@(() => EditarProjeto(p.Id))" Style="margin-right: 0.25rem;" />                    
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                  Click="@(() => ConfirmarExclusao(p.Id))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<ProjetoDto> _projetos = new();
+    private string _filtro = string.Empty;
+
+    private string Filtro
+    {
+        get => _filtro;
+        set
+        {
+            _filtro = value;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<ProjetoDto> _projetosFiltrados =>
+        string.IsNullOrWhiteSpace(_filtro)
+            ? _projetos
+            : _projetos.Where(p =>
+                p.Nome.Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _projetos = (await ProjetoApiService.GetAllAgendadosAsync()).ToList();
+    }
+
+    private void NovoProjeto() =>
+        Navigation.NavigateTo("/projetos/novo");
+
+    private void EditarProjeto(long id) =>
+        Navigation.NavigateTo($"/projetos/editar/{id}");
+
+    private void VerDetalhes(long id) =>
+        Navigation.NavigateTo($"/projetos/detalhes/{id}");
+
+    private async Task ConfirmarExclusao(long id)
+    {
+        var confirm = await DialogService.Confirm("Deseja realmente excluir este projeto?", "Confirme a exclusão",
+            new ConfirmOptions { OkButtonText = "Sim", CancelButtonText = "Cancelar" });
+
+        if (confirm == true)
+        {
+            await ExcluirConfirmado(id);
+        }
+    }
+
+    private async Task ExcluirConfirmado(long id)
+    {
+        try
+        {
+            await ProjetoApiService.DeleteAsync(id);
+            _projetos = (await ProjetoApiService.GetAllAsync()).ToList();
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Sucesso",
+                Detail = "Projeto excluído com sucesso!",
+                Duration = 4000
+            });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Erro",
+                Detail = $"Erro ao excluir projeto: {ex.Message}",
+                Duration = 5000
+            });
+        }
+    }
+
+    private async Task AbrirEtapas(long projetoId)
+    {
+        var parametros = new Dictionary<string, object>
+    {
+        { "ProjetoId", projetoId }
+    };
+
+        var opcoes = new DialogOptions
+            {
+                Resizable = true,
+                Draggable = true,
+                Width = "700px",
+                Height = "500px"
+            };
+
+        await DialogService.OpenAsync<VisualizarEtapasDialog>("Etapas do Projeto", parametros, opcoes);
+    }
+
+}

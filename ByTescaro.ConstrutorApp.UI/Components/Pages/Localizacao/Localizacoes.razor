@@ -1,0 +1,119 @@
+﻿@* @page "/localizacoes"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Web.Services
+@using ByTescaro.ConstrutorApp.Web.Shared
+@inject IDialogService DialogService
+@inject LocalizacaoEstoqueApiService LocalizacaoApiService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize] *@
+
+@* <PageTitle>Localizações de Estoque</PageTitle>
+ *@
+@* <MudPaper Class="pa-4 mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Localizações de Estoque</MudText>
+
+    <div class="d-flex justify-space-between align-center mb-12" style="gap: 16px;">
+        <MudTextField @bind-Value="_filtro"
+                      Immediate="true"
+                      Placeholder="Pesquisar por nome"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Style="flex: 1;" />
+
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="@NovaLocalizacao">
+            Nova Localização
+        </MudButton>
+    </div>
+
+    <MudTable Items="_localizacoesFiltradas" Hover="true" Dense="true" Bordered="true" Striped="true">
+        <HeaderContent>
+            <MudTh>Nome</MudTh>
+            <MudTh>Descrição</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Ações</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Nome</MudTd>
+            <MudTd>@context.Descricao</MudTd>
+            <MudTd>@(context.Ativo ? "Ativa" : "Inativa")</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="@(() => EditarLocalizacao(context.Id))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => ConfirmarExclusao(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudPaper> *@
+
+@* @code {
+    private List<LocalizacaoEstoqueDto> _localizacoes = new();
+    private string _filtro = string.Empty;
+
+    private string Filtro
+    {
+        get => _filtro;
+        set
+        {
+            _filtro = value;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<LocalizacaoEstoqueDto> _localizacoesFiltradas =>
+        string.IsNullOrWhiteSpace(_filtro)
+            ? _localizacoes
+            : _localizacoes.Where(l =>
+                l.Nome.Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _localizacoes = (await LocalizacaoApiService.GetAllAsync()).ToList();
+    }
+
+    private void NovaLocalizacao()
+    {
+        Navigation.NavigateTo("/localizacoes/novo");
+    }
+
+    private void EditarLocalizacao(long id)
+    {
+        Navigation.NavigateTo($"/localizacoes/editar/{id}");
+    }
+
+    private async Task ConfirmarExclusao(long id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Message", "Deseja realmente excluir esta localização?" }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+
+        var dialog = DialogService.Show<ConfirmDialog>("Confirme a exclusão", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await ExcluirConfirmado(id);
+        }
+    }
+
+    private async Task ExcluirConfirmado(long id)
+    {
+        try
+        {
+            await LocalizacaoApiService.DeleteAsync(id);
+            _localizacoes = (await LocalizacaoApiService.GetAllAsync()).ToList();
+            Snackbar.Add("Localização excluída com sucesso!", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao excluir localização: {ex.Message}", Severity.Error);
+        }
+    }
+}
+ *@

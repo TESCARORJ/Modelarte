@@ -1,0 +1,171 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Interfaces
+@using ByTescaro.ConstrutorApp.Domain.Entities
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.Application.Utils
+@using ByTescaro.ConstrutorApp.Domain.Interfaces
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@inject IUsuarioLogadoService UsuarioLogadoService
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+@inject IObraDocumentoRepository ObraDocumentoRepository
+@inject IAuditoriaService AuditoriaService
+
+
+
+<RadzenCard Class="rz-p-4">
+    <RadzenHeading Size="H6" Text="Upload de Documentos" />
+
+    <RadzenUpload Style="width: 100%"
+                  Multiple="true"
+                  Change=@ProcessarUpload
+                  Accept=@accepts
+                  ChooseText="Selecionar Documentos"
+                  InputAttributes="@(new Dictionary<string,object>{{ "aria-label", "select file" }})" />
+
+    <RadzenDivider Style="margin: 1rem 0" />
+
+    @if (Obra.Documentos?.Any() == true)
+    {
+        <RadzenDataList Data="@Obra.Documentos" TItem="ObraDocumentoDto">
+            <Template Context="doc">
+                <RadzenPanel>
+                    <HeaderTemplate>
+                        <b>@doc.NomeOriginal (@doc.Extensao.ToUpper()) - @doc.TamanhoEmKb KB</b>
+                    </HeaderTemplate>
+                    <ChildContent>
+                        <RadzenButton Icon="open_in_new" Text="Abrir"
+                                      ButtonStyle="ButtonStyle.Light"
+                                      Click="@(() => AbrirDocumento(doc))" />
+                        <RadzenButton Icon="delete" Text="Excluir"
+                                      ButtonStyle="ButtonStyle.Danger"
+                                      Click="@(() => ConfirmarRemocao(doc))" />
+                    </ChildContent>
+                </RadzenPanel>
+            </Template>
+        </RadzenDataList>
+
+    }
+    else
+    {
+        <RadzenText Text="Nenhum documento enviado." />
+    }
+</RadzenCard>
+
+@code {
+    [Parameter] public ObraDto Obra { get; set; } = new();
+    private string? nomeUsuarioLogado;
+
+    private string accepts => string.Join(", ", Enum.GetValues<ExtensaoDocumentoPermitida>().Select(e => $".{e.ToString().ToLower()}"));
+
+    protected override async Task OnInitializedAsync()
+    {
+        var usuario = await UsuarioLogadoService.ObterUsuarioAtualAsync();
+        nomeUsuarioLogado = usuario?.Nome ?? "Sistema";
+    }
+
+    private async void ProcessarUpload(UploadChangeEventArgs args)
+    {
+        foreach (var file in args.Files)
+        {
+            var extensao = Path.GetExtension(file.Name).ToLower().TrimStart('.');
+
+            if (!Enum.TryParse<ExtensaoDocumentoPermitida>(extensao.ToUpper(), out _))
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Extensão '{extensao}' não permitida." });
+                continue;
+            }
+
+            try
+            {
+                var nomeOriginal = Path.GetFileName(file.Name);
+                var pastaDestino = Path.Combine("wwwroot", "Uploads", "Projetos", Obra.ProjetoId.ToString(), Obra.Id.ToString(), "Documentos");
+                Directory.CreateDirectory(pastaDestino);
+
+                var caminhoFinal = Path.Combine(pastaDestino, nomeOriginal);
+
+                await using var streamComprimido = await DocumentoCompressorService.ComprimirSeNecessarioAsync(file);
+                await using var fs = File.Create(caminhoFinal);
+                await streamComprimido.CopyToAsync(fs);
+
+                var tamanhoKb = streamComprimido.Length / 1024;
+
+                var documento = new ObraDocumentoDto
+                    {
+                        ObraId = Obra.Id,
+                        NomeOriginal = nomeOriginal,
+                        CaminhoRelativo = Path.Combine("Uploads", "Projetos", Obra.ProjetoId.ToString(), Obra.Id.ToString(), "Documentos", nomeOriginal).Replace("\\", "/"),
+                        Extensao = extensao,
+                        TamanhoEmKb = tamanhoKb,
+                        DataHoraCadastro = DateTime.Now,
+                        UsuarioCadastro = nomeUsuarioLogado ?? "Sistema"
+                    };
+
+                var entity = new ObraDocumento
+                    {
+                        ObraId = documento.ObraId,
+                        NomeOriginal = documento.NomeOriginal,
+                        CaminhoRelativo = documento.CaminhoRelativo,
+                        Extensao = documento.Extensao,
+                        TamanhoEmKb = documento.TamanhoEmKb,
+                        DataHoraCadastro = documento.DataHoraCadastro,
+                        UsuarioCadastro = documento.UsuarioCadastro
+                    };
+
+                await ObraDocumentoRepository.AddAsync(entity);
+                await AuditoriaService.RegistrarCriacaoAsync(documento, nomeUsuarioLogado);
+
+                documento.Id = entity.Id;
+                Obra.Documentos.Add(documento);
+
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = $"Documento '{nomeOriginal}' salvo com sucesso." });
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao salvar '{file.Name}': {ex.Message}" });
+            }
+        }
+
+        StateHasChanged();
+    }
+
+
+    private async Task AbrirDocumento(ObraDocumentoDto doc)
+    {
+        var url = NavigationManager.BaseUri + doc.CaminhoRelativo;
+        await JS.InvokeVoidAsync("open", url, "_blank");
+    }
+
+
+    private async Task ConfirmarRemocao(ObraDocumentoDto doc)
+    {
+        bool? confirm = await DialogService.Confirm($"Deseja realmente remover a documento '{doc.NomeOriginal}'?", "Remover Documento");
+
+        if (confirm == true)
+        {
+            try
+            {
+                var caminhoFisico = Path.Combine("wwwroot", doc.CaminhoRelativo.Replace("/", Path.DirectorySeparatorChar.ToString()));
+                if (File.Exists(caminhoFisico))
+                {
+                    File.Delete(caminhoFisico);
+                }
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Atenção", Detail = $"Erro ao excluir o arquivo físico: {ex.Message}" });
+            }
+
+            var entity = await ObraDocumentoRepository.GetByIdAsync(doc.Id);
+            if (entity is not null)
+            {
+                await ObraDocumentoRepository.RemoveAsync(entity);
+                await AuditoriaService.RegistrarExclusaoAsync(doc, nomeUsuarioLogado);
+            }
+
+            Obra.Documentos.Remove(doc);
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Info, Summary = "Removido", Detail = $"Documento '{doc.NomeOriginal}' removido." });
+        }
+    }
+}

@@ -1,0 +1,153 @@
+﻿@* @page "/projetosCancelados"
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.Web.Services
+@using ByTescaro.ConstrutorApp.Web.Shared
+@inject ProjetoApiService ProjetoApiService
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize] *@
+
+@* <PageTitle>Projetos Cancelados</PageTitle>
+
+<MudPaper Class="pa-4 mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Projetos Cancelados</MudText>
+
+    <div class="d-flex justify-space-between align-center mb-12" style="gap: 16px;">
+        <MudTextField @bind-Value="Filtro"
+                      Immediate="true"
+                      Placeholder="Pesquisar por nome"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Style="flex: 1;" />
+
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="@NovoProjeto">
+            Novo Projeto
+        </MudButton>
+    </div>
+
+    <MudTable Items="_projetosFiltrados" Hover="true" Dense="true" Bordered="true" Striped="true">
+        <HeaderContent>
+            <MudTh>Nome</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Data Início</MudTh>
+            <MudTh>Data Término</MudTh>
+            <MudTh>Custo Estimado</MudTh>
+            <MudTh>Custo Real</MudTh>
+            <MudTh>Ações</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Nome">@context.Nome</MudTd>
+            @* <MudTd DataLabel="Status">@context.Status</MudTd> *@
+
+@*             <MudTd DataLabel="Status">
+                @switch (context.Status)
+                {
+                    case StatusProjeto.Agendado:
+                        <MudChip T="string" Color="Color.Info"> Agendado </MudChip>
+                        break;
+                    case StatusProjeto.EmAndamento:
+                        <MudChip T="string" Color="Color.Warning"> Em Andamento </MudChip>
+                        break;
+                    case StatusProjeto.Concluido:
+                        <MudChip T="string" Color="Color.Success"> Concluído </MudChip>
+                        break;
+                    case StatusProjeto.Cancelado:
+                        <MudChip T="string" Color="Color.Error"> Cancelado </MudChip>
+                        break;
+                }
+            </MudTd>
+
+
+            <MudTd DataLabel="Data Início">@context.DataInicio?.ToString("dd/MM/yyyy")</MudTd>
+            <MudTd DataLabel="Data Término">@context.DataFim?.ToString("dd/MM/yyyy")</MudTd>
+            <MudTd DataLabel="Custo Estimado">R$ @context.CustoEstimado.ToString("N2")</MudTd>
+            <MudTd DataLabel="Custo Real">R$ @context.CustoReal.ToString("N2")</MudTd>
+            <MudTd DataLabel="Ações">
+                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" OnClick="@(() => VerDetalhes(context.Id))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="@(() => EditarProjeto(context.Id))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => ConfirmarExclusao(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudPaper> *@
+
+@* @code {
+    private List<ProjetoDto> _projetos = new();
+    private string _filtro = string.Empty;
+
+    private string Filtro
+    {
+        get => _filtro;
+        set
+        {
+            _filtro = value;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<ProjetoDto> _projetosFiltrados =>
+        string.IsNullOrWhiteSpace(_filtro)
+            ? _projetos
+            : _projetos.Where(p =>
+                p.Nome.Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _projetos = (await ProjetoApiService.GetAllCanceladosAsync()).ToList();
+    }
+
+    private void NovoProjeto()
+    {
+        Navigation.NavigateTo("/projetos/novo");
+    }
+
+    private void EditarProjeto(long id)
+    {
+        Navigation.NavigateTo($"/projetos/editar/{id}");
+    }
+
+    private void VerDetalhes(long id)
+    {
+        Navigation.NavigateTo($"/projetos/detalhes/{id}");
+    }
+
+    private async Task ConfirmarExclusao(long id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Message", "Deseja realmente excluir este projeto?" }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+
+        var dialog = DialogService.Show<ConfirmDialog>("Confirme a exclusão", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await ExcluirConfirmado(id);
+        }
+    }
+
+    private async Task ExcluirConfirmado(long id)
+    {
+        try
+        {
+            await ProjetoApiService.DeleteAsync(id);
+            _projetos = (await ProjetoApiService.GetAllAsync()).ToList();
+            Snackbar.Add("Projeto excluído com sucesso!", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao excluir projeto: {ex.Message}", Severity.Error);
+        }
+    }
+}
+ *@

@@ -1,0 +1,30 @@
+﻿@using Microsoft.AspNetCore.Components
+@using Radzen
+
+<RadzenCard Style="@($"background-color:{BackgroundColor}; padding: 1rem; border-radius: 8px; box-shadow: var(--rz-card-shadow); cursor: pointer; color: white;")"
+            Class="dashboard-card text-center"
+            @onclick="Navigate">
+    <div class="rz-d-flex rz-align-items-center rz-justify-content-center rz-flex-column">
+        <RadzenIcon Icon="@Icon" Style="font-size: 2rem; margin-bottom: 0.5rem;" />
+        <RadzenText Text="@Title" Style="font-size: 1rem;" />
+        <RadzenText Text="@Value" Style="font-size: 1.5rem; font-weight: bold;" />
+    </div>
+</RadzenCard>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public string Icon { get; set; } = "info";
+    [Parameter] public string BackgroundColor { get; set; } = "#594ae2";
+    [Parameter] public string? Link { get; set; }
+
+    [Inject] NavigationManager NavigationManager { get; set; }
+
+    private void Navigate()
+    {
+        if (!string.IsNullOrWhiteSpace(Link))
+        {
+            NavigationManager.NavigateTo(Link);
+        }
+    }
+}

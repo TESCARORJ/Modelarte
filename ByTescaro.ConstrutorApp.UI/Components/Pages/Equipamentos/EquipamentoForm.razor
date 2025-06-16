@@ -1,0 +1,131 @@
+﻿@page "/equipamentos/novo"
+@page "/equipamentos/editar/{Id:long}"
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@inject EquipamentoApiService EquipamentoApiService
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+@attribute [Authorize]
+
+<PageTitle>Equipamento</PageTitle>
+
+<RadzenCard Class="rz-mt-5 rz-p-4 rz-shadow-md rz-rounded-md rz-mx-auto" Style="max-width: 1300px; width: 100%;">
+    <RadzenTemplateForm TItem="EquipamentoDto" Data="@equipamento" Submit="Salvar" InvalidSubmit="ExibirErros">
+        <RadzenHeading Size="H4" Text="@(Id == 0 ? "Novo Equipamento" : "Editar Equipamento")" Class="rz-mb-3" />
+
+        <RadzenFieldset Text="Dados do Equipamento" Style="margin-bottom: 1.5rem;">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Nome" />
+                    <RadzenTextBox @bind-Value="equipamento.Nome" Name="Nome" Placeholder="Nome" Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="Nome" Text="O nome é obrigatório." />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Patrimônio" />
+                    <RadzenTextBox @bind-Value="equipamento.Patrimonio" Name="Patrimonio" Placeholder="Patrimônio" Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="Patrimonio" Text="O patrimônio é obrigatório." />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12">
+                    <RadzenLabel Text="Descrição" />
+                    <RadzenTextBox @bind-Value="equipamento.Descricao" Name="Descricao" Placeholder="Descrição" Style="width: 100%;" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Custo de Locação Diária (R$)" />
+                    <RadzenNumeric @bind-Value="equipamento.CustoLocacaoDiaria"
+                                   Name="CustoLocacaoDiaria"
+                                   Placeholder="0,00"
+                                   Min="0.01m"
+                                   Step="0.01m"
+                                   Format="n2"
+                                   ShowUpDown="false"
+                                   Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="CustoLocacaoDiaria" Text="O custo de locação diária é obrigatório." />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
+
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-3">
+            <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="@Cancelar" />
+            <RadzenButton Text="Salvar" ButtonType="ButtonType.Submit" Icon="save" Style="min-width: 120px;" />
+        </RadzenStack>
+    </RadzenTemplateForm>
+</RadzenCard>
+
+@code {
+    [Parameter] public long Id { get; set; }
+
+    private EquipamentoDto equipamento = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id != 0)
+        {
+            var existente = await EquipamentoApiService.GetByIdAsync(Id);
+            if (existente is not null)
+                equipamento = existente;
+        }
+    }
+
+    private async Task Salvar(EquipamentoDto model)
+    {
+        try
+        {
+            if (model.Id == 0)
+            {
+                await EquipamentoApiService.CreateAsync(model);
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Sucesso",
+                        Detail = "Equipamento cadastrado com sucesso!",
+                        Duration = 4000
+                    });
+            }
+            else
+            {
+                await EquipamentoApiService.UpdateAsync(model);
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Sucesso",
+                        Detail = "Equipamento atualizado com sucesso!",
+                        Duration = 4000
+                    });
+            }
+
+            Navigation.NavigateTo("/equipamentos");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Erro",
+                    Detail = $"Erro ao salvar equipamento: {ex.Message}",
+                    Duration = 5000
+                });
+        }
+    }
+
+    private void ExibirErros()
+    {
+        NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Warning,
+                Summary = "Atenção",
+                Detail = "Existem erros de validação no formulário.",
+                Duration = 4000
+            });
+    }
+
+    private void Cancelar()
+    {
+        Navigation.NavigateTo("/equipamentos");
+    }
+}

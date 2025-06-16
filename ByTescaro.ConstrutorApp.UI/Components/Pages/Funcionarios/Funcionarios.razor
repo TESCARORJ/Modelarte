@@ -1,0 +1,136 @@
+﻿@page "/funcionarios"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Utils
+@using ByTescaro.ConstrutorApp.UI.Components.Utils
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@inject Radzen.DialogService DialogService
+@inject FuncionarioApiService FuncionarioApiService
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+@attribute [Authorize]
+
+<PageTitle>Funcionários</PageTitle>
+
+<RadzenCard Style="margin: 1rem;">
+    <RadzenHeading Size="H4" Text="Funcionários" />
+
+    <div class="row mt-4 mb-2">
+        <div class="col-md-9">
+            <RadzenTextBox @bind-Value="Filtro"
+                           Placeholder="Pesquisar por nome ou CPF/CNPJ"
+                           Icon="search"
+                           Style="width: 100%;" />
+        </div>
+        <div class="col-md-3 d-flex justify-content-end">
+            <RadzenButton Text="Novo Funcionário" Icon="add_circle" Style="width: 100%;" Click="@NovoFuncionario" />
+        </div>
+    </div>
+
+    <RadzenDataGrid TItem="FuncionarioDto"
+                    Data="@_filtrados"
+                    AllowPaging="true"
+                    PageSize="10"
+                    AllowSorting="true"
+                    FilterMode="FilterMode.Simple"
+                    Responsive="true"
+                    ShowPagingSummary="true">
+
+        <Columns>
+            <RadzenDataGridColumn TItem="FuncionarioDto" Property="Nome" Title="Nome" />
+            <RadzenDataGridColumn TItem="FuncionarioDto" Property="FuncaoNome" Title="Função" />
+            <RadzenDataGridColumn TItem="FuncionarioDto" Property="CpfCnpj" Title="CPF/CNPJ" />
+            <RadzenDataGridColumn TItem="FuncionarioDto" Title="Tipo">
+                <Template Context="e">
+                    @EnumHelper.ObterDescricaoEnum(e.TipoPessoa)
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="FuncionarioDto" Title="Salário">
+                <Template Context="f">
+                    @f.Salario?.ToString("C")
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="FuncionarioDto" Title="Ações" Filterable="false" Sortable="false">
+                <Template Context="f">
+                    <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
+                                  Click="@(() => VerDetalhes(f.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                  Click="@(() => EditarFuncionario(f.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                  Click="@(() => ConfirmarExclusao(f.Id))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<FuncionarioDto> _funcionarios = new();
+    private string _filtro = string.Empty;
+
+    private string Filtro
+    {
+        get => _filtro;
+        set
+        {
+            _filtro = value;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<FuncionarioDto> _filtrados =>
+        string.IsNullOrWhiteSpace(_filtro)
+            ? _funcionarios
+            : _funcionarios.Where(f =>
+                f.Nome.Contains(_filtro, StringComparison.OrdinalIgnoreCase) ||
+                f.CpfCnpj.Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _funcionarios = (await FuncionarioApiService.GetAllAsync()).ToList();
+    }
+
+    private void NovoFuncionario() =>
+        Navigation.NavigateTo("/funcionarios/novo");
+
+    private void EditarFuncionario(long id) =>
+        Navigation.NavigateTo($"/funcionarios/editar/{id}");
+
+    private void VerDetalhes(long id) =>
+        Navigation.NavigateTo($"/funcionarios/detalhes/{id}");
+
+    private async Task ConfirmarExclusao(long id)
+    {
+        if (await DialogHelper.ConfirmarAsync(DialogService, "Deseja realmente excluir este funcionário?"))
+        {
+            await ExcluirConfirmado(id);
+        }
+    }
+
+    private async Task ExcluirConfirmado(long id)
+    {
+        try
+        {
+            await FuncionarioApiService.DeleteAsync(id);
+            _funcionarios = (await FuncionarioApiService.GetAllAsync()).ToList();
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Sucesso",
+                    Detail = "Funcionário excluído com sucesso!",
+                    Duration = 4000
+                });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Erro",
+                    Detail = $"Erro ao excluir funcionário: {ex.Message}",
+                    Duration = 5000
+                });
+        }
+    }
+}

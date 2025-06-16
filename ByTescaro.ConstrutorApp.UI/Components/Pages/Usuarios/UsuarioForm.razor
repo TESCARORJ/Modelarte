@@ -1,0 +1,130 @@
+﻿@page "/usuario/novo"
+@page "/usuario/editar/{Id:long}"
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@using FluentValidation
+@using Microsoft.AspNetCore.Authorization
+@inject UsuarioApiService UsuarioApiService
+@inject PerfilUsuarioApiService PerfilUsuarioApiService
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+@attribute [Authorize]
+
+<RadzenCard Class="rz-mt-4 rz-mx-auto rz-p-4" Style="max-width: 900px">
+    <RadzenTemplateForm TItem="UsuarioDto" Data="@usuario" Submit="Salvar">
+        <RadzenHeading Size="H5" Text="@(usuario.Id == 0 ? "Novo Usuário" : "Editar Usuário")" />
+
+        <RadzenFieldset Text="Dados do Usuário">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Nome" Component="Nome" />
+                    <RadzenTextBox @bind-Value="usuario.Nome" Name="Nome" Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="Nome" Text="O nome é obrigatório" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Sobrenome" Component="Sobrenome" />
+                    <RadzenTextBox @bind-Value="usuario.Sobrenome" Name="Sobrenome" Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="Sobrenome" Text="O sobrenome é obrigatório" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Email" Component="Email" />
+                    <RadzenTextBox @bind-Value="usuario.Email" Name="Email" Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="Email" Text="O email é obrigatório" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Telefone" Component="Telefone" />
+                    <RadzenMaskedTextBox bind-Value="usuario.Telefone" Name="Telefone"
+                                         Mask="(00) 00000-0000" Style="width: 100%;" Placeholder="Telefone Principal" />                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Senha" Component="Senha" />
+                    <RadzenTextBox @bind-Value="usuario.Senha" Name="Senha" Style="width: 100%;" Password="true" />
+                    <RadzenRequiredValidator Component="Senha" Text="Informe a senha" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Confirmar Senha" Component="ConfirmarSenha" />
+                    <RadzenTextBox @bind-Value="usuario.ConfirmarSenha" Name="ConfirmarSenha" Style="width: 100%;" Password="true" />
+                    <RadzenRequiredValidator Component="ConfirmarSenha" Text="Confirme a senha" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenDropDown @bind-Value="usuario.PerfilUsuarioId" Name="PerfilUsuarioId" Data="@PerfilUsuarioList" TextProperty="Nome" ValueProperty="Id" Style="width: 100%;" Placeholder="-- Selecione um perfil --" />
+                    <RadzenRequiredValidator Component="PerfilUsuarioId" Text="Perfil obrigatório" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenCheckBox @bind-Value="usuario.Ativo" Name="Ativo" />
+                    <RadzenLabel Text="Usuário Ativo" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
+
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem">
+            <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="@Cancelar" />
+            <RadzenButton Text="Salvar" ButtonType="ButtonType.Submit" Icon="save" />
+        </RadzenStack>
+    </RadzenTemplateForm>
+</RadzenCard>
+
+@code {
+    [Parameter] public long Id { get; set; }
+
+    private UsuarioDto usuario = new();
+    private List<PerfilUsuarioDto> PerfilUsuarioList = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        PerfilUsuarioList = await PerfilUsuarioApiService.GetAllAsync();
+
+        if (Id != 0)
+        {
+            var existente = await UsuarioApiService.GetByIdAsync(Id);
+            if (existente is not null)
+                usuario = existente;
+        }
+    }
+
+    private async Task Salvar(UsuarioDto model)
+    {
+        try
+        {
+            if (model.Id == 0)
+            {
+                await UsuarioApiService.CreateAsync(model);
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Sucesso",
+                    Detail = "Usuário criado com sucesso!",
+                    Duration = 4000
+                });
+            }
+            else
+            {
+                await UsuarioApiService.UpdateAsync(model);
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Sucesso",
+                    Detail = "Usuário atualizado com sucesso!",
+                    Duration = 4000
+                });
+            }
+
+            Navigation.NavigateTo("/usuarios");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Erro",
+                Detail = $"Erro ao salvar usuário: {ex.Message}",
+                Duration = 5000
+            });
+        }
+    }
+
+    private void Cancelar()
+    {
+        Navigation.NavigateTo("/usuarios");
+    }
+}

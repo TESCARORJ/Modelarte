@@ -1,0 +1,132 @@
+﻿@page "/equipamentos"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Utils
+@using ByTescaro.ConstrutorApp.UI.Components.Utils
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@inject EquipamentoApiService EquipamentoApiService
+@inject NavigationManager Navigation
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+@attribute [Authorize]
+
+<PageTitle>Equipamentos</PageTitle>
+
+<RadzenCard Style="margin: 1rem;">
+    <RadzenHeading Size="H4" Text="Equipamentos" />
+
+    <div class="row mt-4 mb-2">
+        <div class="col-md-9">
+            <RadzenTextBox @bind-Value="Filtro"
+                           Placeholder="Pesquisar por nome ou patrimônio"
+                           Icon="search"
+                           Style="width: 100%;" />
+        </div>
+        <div class="col-md-3 d-flex justify-content-end">
+            <RadzenButton Text="Novo Equipamento" Icon="add_circle" Click="@NovoEquipamento" Style="width: 100%;" />
+        </div>
+    </div>
+
+    <RadzenDataGrid TItem="EquipamentoDto"
+                    Data="@_equipamentosFiltrados"
+                    AllowPaging="true"
+                    PageSize="10"
+                    AllowSorting="true"
+                    AllowFiltering="true"
+                    FilterMode="FilterMode.Advanced"
+                    Responsive="true"
+                    ShowPagingSummary="true">
+
+        <Columns>
+            <RadzenDataGridColumn TItem="EquipamentoDto" Property="Nome" Title="Nome" />
+            <RadzenDataGridColumn TItem="EquipamentoDto" Property="Patrimonio" Title="Patrimônio" />
+            <RadzenDataGridColumn TItem="EquipamentoDto" Title="Status">
+                <Template Context="e">
+                    @EnumHelper.ObterDescricaoEnum(e.Status)
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="EquipamentoDto" Title="Valor Diária">
+                <Template Context="e">
+                    R$ @e.CustoLocacaoDiaria?.ToString("N2")
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="EquipamentoDto" Title="Ações" Filterable="false" Sortable="false">
+                <Template Context="e">
+                    <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Click="@(() => VerDetalhes(e.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Click="@(() => EditarEquipamento(e.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => ConfirmarExclusao(e.Id))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<EquipamentoDto> _equipamentos = new();
+    private string _filtro = string.Empty;
+
+    private string Filtro
+    {
+        get => _filtro;
+        set
+        {
+            _filtro = value;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<EquipamentoDto> _equipamentosFiltrados =>
+        string.IsNullOrWhiteSpace(_filtro)
+            ? _equipamentos
+            : _equipamentos.Where(e =>
+                e.Nome.Contains(_filtro, StringComparison.OrdinalIgnoreCase) ||
+                e.Patrimonio.Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _equipamentos = (await EquipamentoApiService.GetAllAsync()).ToList();
+    }
+
+    private void NovoEquipamento() =>
+        Navigation.NavigateTo("/equipamentos/novo");
+
+    private void EditarEquipamento(long id) =>
+        Navigation.NavigateTo($"/equipamentos/editar/{id}");
+
+    private void VerDetalhes(long id) =>
+        Navigation.NavigateTo($"/equipamentos/detalhes/{id}");
+
+    private async Task ConfirmarExclusao(long id)
+    {
+        if (await DialogHelper.ConfirmarAsync(DialogService, "Deseja realmente excluir este equipamento?"))
+        {
+            await ExcluirConfirmado(id);
+        }
+    }
+
+    private async Task ExcluirConfirmado(long id)
+    {
+        try
+        {
+            await EquipamentoApiService.DeleteAsync(id);
+            _equipamentos = (await EquipamentoApiService.GetAllAsync()).ToList();
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Sucesso",
+                    Detail = "Equipamento excluído com sucesso",
+                    Duration = 4000
+                });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Erro",
+                    Detail = $"Erro ao excluir equipamento: {ex.Message}",
+                    Duration = 5000
+                });
+        }
+    }
+}

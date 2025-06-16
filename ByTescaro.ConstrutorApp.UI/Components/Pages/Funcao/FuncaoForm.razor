@@ -1,0 +1,104 @@
+﻿@page "/funcoes/novo"
+@page "/funcoes/editar/{Id:long}"
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@inject FuncaoApiService FuncaoApiService
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+@attribute [Authorize]
+
+<PageTitle>Função</PageTitle>
+
+<RadzenCard Class="rz-mt-5 rz-p-4 rz-shadow-md rz-rounded-md rz-mx-auto" Style="max-width: 1300px; width: 100%;">
+    <RadzenTemplateForm TItem="FuncaoDto" Data="@funcao" Submit="Salvar" InvalidSubmit="ExibirErros">
+        <RadzenHeading Size="H5" Text="@Titulo" Class="rz-mb-3" />
+
+        <RadzenFieldset Text="Dados da Função" Style="margin-bottom: 1.5rem;">
+            <RadzenRow>
+                <RadzenColumn Size="12">
+                    <RadzenLabel Text="Nome da Função" Component="Nome" />
+                    <RadzenTextBox @bind-Value="funcao.Nome" Name="Nome" Placeholder="Informe o nome da função" Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="Nome" Text="O nome é obrigatório" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
+
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-3">
+            <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="@Cancelar" />
+            <RadzenButton Text="Salvar" ButtonType="ButtonType.Submit" Icon="save" Style="min-width: 120px;" />
+        </RadzenStack>
+    </RadzenTemplateForm>
+</RadzenCard>
+
+@code {
+    [Parameter] public long Id { get; set; }
+    private string Titulo => Id == 0 ? "Nova Função" : "Editar Função";
+
+    private FuncaoDto funcao = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id != 0)
+        {
+            var existente = await FuncaoApiService.GetByIdAsync(Id);
+            if (existente is not null)
+                funcao = existente;
+        }
+    }
+
+    private async Task Salvar(FuncaoDto model)
+    {
+        try
+        {
+            if (model.Id == 0)
+            {
+                await FuncaoApiService.CreateAsync(model);
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Sucesso",
+                        Detail = "Função cadastrada com sucesso!",
+                        Duration = 4000
+                    });
+            }
+            else
+            {
+                await FuncaoApiService.UpdateAsync(model);
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Sucesso",
+                        Detail = "Função atualizada com sucesso!",
+                        Duration = 4000
+                    });
+            }
+
+            Navigation.NavigateTo("/funcoes");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Erro",
+                    Detail = $"Erro ao salvar função: {ex.Message}",
+                    Duration = 5000
+                });
+        }
+    }
+
+    private void ExibirErros()
+    {
+        NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Warning,
+                Summary = "Atenção",
+                Detail = "Existem erros de validação no formulário.",
+                Duration = 4000
+            });
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/funcoes");
+}

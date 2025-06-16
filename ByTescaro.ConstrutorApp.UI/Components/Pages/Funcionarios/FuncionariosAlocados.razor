@@ -1,0 +1,34 @@
+﻿@page "/funcionarios/alocados"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject ObraFuncionarioApiService ObraFuncionarioApiService
+
+<PageTitle>Funcionários Alocados</PageTitle>
+
+<RadzenCard Style="margin: 1rem;">
+    <RadzenHeading Size="H4" Text="Funcionários Alocados em Obras" />
+
+    <RadzenDataGrid TItem="FuncionarioDto"
+                    Data="@_funcionariosAlocados"
+                    AllowPaging="true"
+                    PageSize="10"
+                    Responsive="true"
+                    ShowPagingSummary="true">
+        <Columns>
+            <RadzenDataGridColumn TItem="FuncionarioDto" Property="Nome" Title="Nome" />
+            <RadzenDataGridColumn TItem="FuncionarioDto" Property="FuncaoNome" Title="Função" />
+            <RadzenDataGridColumn TItem="FuncionarioDto" Property="ObraNome" Title="Obra" />
+            <RadzenDataGridColumn TItem="FuncionarioDto" Property="ProjetoNome" Title="Projeto" />
+            <RadzenDataGridColumn TItem="FuncionarioDto" Property="ClienteNome" Title="Cliente" />
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<FuncionarioDto> _funcionariosAlocados = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _funcionariosAlocados = (await ObraFuncionarioApiService.GetFuncionariosAlocadosAsync()).ToList();
+    }
+}

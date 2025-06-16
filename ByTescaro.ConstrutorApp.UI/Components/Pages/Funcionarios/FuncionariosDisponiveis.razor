@@ -1,0 +1,31 @@
+﻿@page "/funcionarios/disponiveis"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject ObraFuncionarioApiService ObraFuncionarioApiService
+
+<PageTitle>Funcionários Disponíveis</PageTitle>
+
+<RadzenCard Style="margin: 1rem;">
+    <RadzenHeading Size="H4" Text="Funcionários Disponíveis para Alocação" />
+
+    <RadzenDataGrid TItem="FuncionarioDto"
+                    Data="@_funcionariosDisponiveis"
+                    AllowPaging="true"
+                    PageSize="10"
+                    Responsive="true"
+                    ShowPagingSummary="true">
+        <Columns>
+            <RadzenDataGridColumn TItem="FuncionarioDto" Property="Nome" Title="Nome" />
+            <RadzenDataGridColumn TItem="FuncionarioDto" Property="FuncaoNome" Title="Função" />
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<FuncionarioDto> _funcionariosDisponiveis = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _funcionariosDisponiveis = (await ObraFuncionarioApiService.GetFuncionariosTotalDisponiveisAsync()).ToList();
+    }
+}

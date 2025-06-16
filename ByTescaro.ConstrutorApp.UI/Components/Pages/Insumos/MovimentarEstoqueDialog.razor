@@ -1,0 +1,121 @@
+﻿@* @using ByTescaro.ConstrutorApp.Application.Interfaces
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@inject IEstoqueService EstoqueService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+@inject IHttpContextAccessor HttpContextAccessor
+
+
+<MudDialog>
+    <DialogContent>
+
+        <MudForm @ref="form" Class="mt-2">
+            <MudGrid GutterSize="3">
+                <MudItem xs="12" md="6">
+                    <MudSelect T="long" Label="Insumo" @bind-Value="Movimentacao.InsumoId" Required="true">
+                        @foreach (var insumo in Insumos)
+                        {
+                            <MudSelectItem Value="@insumo.Id">@insumo.Nome</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudSelect T="long" Label="Localização" @bind-Value="Movimentacao.LocalizacaoEstoqueId" Required="true">
+                        <MudSelectItem Disabled="true" Value="0L">-- Selecione uma localização --</MudSelectItem>
+                        @foreach (var local in Localizacoes)
+                        {
+                            <MudSelectItem Value="@local.Id">@local.Nome</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+               
+
+                <MudItem xs="12" md="6">
+                    <MudSelect T="TipoMovimentacao" Label="Tipo" @bind-Value="Movimentacao.Tipo" Required="true">
+                        <MudSelectItem Value="TipoMovimentacao.Entrada">Entrada</MudSelectItem>
+                        <MudSelectItem Value="TipoMovimentacao.Saida">Saída</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudNumericField T="int" Label="Quantidade" @bind-Value="Movimentacao.Quantidade"
+                                     Immediate="true" Min="1" Required="true" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudTextField Label="Observação" @bind-Value="Movimentacao.Observacao" Lines="2" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Color="Color.Secondary" OnClick="@Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="@Salvar">Salvar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public long? InsumoId { get; set; }
+
+
+    private MudForm? form;
+    private List<InsumoDto> Insumos = new();
+    private List<LocalizacaoEstoqueDto> Localizacoes = new();
+    private string UsuarioLogado => HttpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Sistema";
+
+
+    private EstoqueDto Movimentacao = new()
+        {
+            Tipo = TipoMovimentacao.Entrada,
+            Quantidade = 1
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Idealmente você teria serviços de Insumo e Localização
+        Insumos = await EstoqueService.ObterInsumosDisponiveisAsync();
+        Localizacoes = await EstoqueService.ObterLocalizacoesAtivasAsync();
+
+        if (InsumoId.HasValue)
+            Movimentacao.InsumoId = InsumoId.Value;
+    }
+
+    private async Task Salvar()
+    {
+        if (form is null)
+            return;
+
+        await form.Validate();
+
+        if (!form.IsValid)
+            return;
+
+        try
+        {
+            await EstoqueService.RegistrarMovimentacaoAsync(
+                Movimentacao.InsumoId,
+                Movimentacao.LocalizacaoEstoqueId,
+                Movimentacao.Quantidade,
+                Movimentacao.Tipo,
+                UsuarioLogado, 
+                Movimentacao.Observacao
+            );
+
+            Snackbar.Add("Movimentação registrada com sucesso!", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao registrar movimentação: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
+ *@

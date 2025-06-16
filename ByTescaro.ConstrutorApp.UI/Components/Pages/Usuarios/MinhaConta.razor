@@ -1,0 +1,58 @@
+﻿@* @page "/conta"
+@using ByTescaro.ConstrutorApp.Application.Interfaces
+@using ByTescaro.ConstrutorApp.Domain.Entities.Admin
+@using Microsoft.AspNetCore.Authorization
+@inject IUsuarioLogadoService UsuarioLogadoService
+@inject IUsuarioService UsuarioService
+@inject NavigationManager Navigation
+@attribute [Authorize]
+
+<MudPaper Class="mx-auto mt-4" MaxWidth="MaxWidth.Medium" Elevation="4">
+    <MudText Typo="Typo.h5" Class="pa-4 pb-0">Minha Conta</MudText>
+
+    <MudForm @ref="_formRef" Validated="HandleValidSubmit" Class="pa-4">
+        <MudGrid GutterSize="3">
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_usuario.Nome" Label="Nome" Required="true" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_usuario.Telefone" Label="Telefone" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField Value="@_usuario.Email" Label="E-mail" Disabled="true" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudButton Color="Color.Primary" OnClick="Atualizar">Salvar Alterações</MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudForm>
+</MudPaper>
+
+@code {
+    private Usuario _usuario = new();
+    private MudForm? _formRef;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var usuarioAtual = await UsuarioLogadoService.ObterUsuarioAtualAsync();
+        if (usuarioAtual is not null)
+        {
+            _usuario = usuarioAtual;
+        }
+    }
+
+    private async Task Atualizar()
+    {
+        await _formRef!.Validate();
+        if (!_formRef.IsValid) return;
+
+        await UsuarioService.AtualizarAsync(_usuario);
+        Navigation.NavigateTo("/");
+    }
+
+    private Task HandleValidSubmit() => Task.CompletedTask;
+}
+ *@

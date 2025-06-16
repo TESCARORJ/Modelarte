@@ -1,0 +1,215 @@
+﻿@page "/cliente/novo"
+@page "/cliente/editar/{Id:long}"
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Utils
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@using ByTescaro.ConstrutorApp.UI.Utils
+@using Microsoft.AspNetCore.Authorization
+@inject ClienteApiService ClienteApiService
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+@inject CepService CepService
+@attribute [Authorize]
+
+<PageTitle>Cliente</PageTitle>
+
+<RadzenCard Class="rz-mt-5 rz-p-4 rz-shadow-md rz-rounded-md rz-mx-auto" Style="max-width: 1300px; width: 100%;">
+    <RadzenTemplateForm TItem="ClienteDto" Data="@cliente" Submit="Salvar" InvalidSubmit="ExibirErros">
+        <RadzenHeading Size="H4" Text="@(Id == 0 ? "Novo Cliente" : "Editar Cliente")" Class="rz-mb-3" />
+
+        <!-- Informações Pessoais -->
+        <RadzenFieldset Text="Informações Pessoais" Style="margin-bottom: 1.5rem">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Nome *" />
+                    <RadzenTextBox @bind-Value="cliente.Nome" Name="Nome" Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="Nome" Text="Nome obrigatório" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenLabel Text="Tipo de Pessoa *" />
+                    <RadzenDropDown @bind-Value="cliente.TipoPessoa"
+                                    TValue="TipoPessoa?"
+                                    Data="@tipoPessoaOptions"
+                                    TextProperty="Label"
+                                    ValueProperty="Value"
+                                    Name="TipoPessoa"
+                                    Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="TipoPessoa" Text="Obrigatório" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenLabel Text="CPF/CNPJ *" />
+                    <RadzenMask @bind-Value="cliente.CpfCnpj"
+                                Mask="@(cliente.TipoPessoa == TipoPessoa.Fisica ? "***.***.***-**" : "**.***.***/***-**")"
+                                CharacterPattern="[0-9]"
+                                Placeholder="CPF ou CNPJ"
+                                Name="CpfCnpj"
+                                Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="CpfCnpj" Text="Obrigatório" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
+
+        <!-- Contato -->
+        <RadzenFieldset Text="Contato" Style="margin-bottom: 1.5rem">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="Telefone Principal *" />
+                    <RadzenMask @bind-Value="cliente.TelefonePrincipal"
+                                Mask="(**) *****-****"
+                                CharacterPattern="[0-9]"
+                                Placeholder="(00) 00000-0000"
+                                Name="TelefonePrincipal"
+                                Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="TelefonePrincipal" Text="Obrigatório" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="WhatsApp *" />
+                    <RadzenMask @bind-Value="cliente.TelefoneWhatsApp"
+                                Mask="(**) *****-****"
+                                CharacterPattern="[0-9]"
+                                Placeholder="(00) 00000-0000"
+                                Name="TelefoneWhatsApp"
+                                Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="TelefoneWhatsApp" Text="Obrigatório" />
+
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="Email *" />
+                    <RadzenTextBox @bind-Value="cliente.Email"
+                                Name="Email"
+                                Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="Email" Text="Obrigatório" />
+
+                </RadzenColumn>
+
+            </RadzenRow>
+        </RadzenFieldset>
+
+        <!-- Endereço -->
+        <RadzenFieldset Text="Endereço" Style="margin-bottom: 1.5rem">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenLabel Text="CEP *" />
+                    <RadzenMask @bind-Value="cliente.CEP"
+                                Mask="*****-***"
+                                CharacterPattern="[0-9]"
+                                Placeholder="00000-000"
+                                Name="CEP"
+                                Change="@((string _) => PreencherEndereco())"
+                                Style="width: 100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Logradouro" />
+                    <RadzenTextBox @bind-Value="cliente.Logradouro" Name="Logradouro" ReadOnly Style="width: 100%;" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenLabel Text="Número" />
+                    <RadzenTextBox @bind-Value="cliente.Numero"
+                                CharacterPattern="[0-9]"
+                                Placeholder=""
+                                Name="Numero"
+                                Style="width: 100%;" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="Complemento" />
+                    <RadzenTextBox @bind-Value="cliente.Complemento" Name="Complemento" Style="width: 100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="Bairro" />
+                    <RadzenTextBox @bind-Value="cliente.Bairro" Name="Bairro" ReadOnly Style="width: 100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="Cidade" />
+                    <RadzenTextBox @bind-Value="cliente.Cidade" Name="Cidade" ReadOnly Style="width: 100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Estado" />
+                    <RadzenTextBox @bind-Value="cliente.Estado" Name="Estado" ReadOnly Style="width: 100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenLabel Text="UF" />
+                    <RadzenTextBox @bind-Value="cliente.UF" Name="UF" ReadOnly MaxLength="2" Style="width: 100%;" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
+
+        <!-- Botões -->
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-3">
+            <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="@Cancelar" />
+            <RadzenButton Text="Salvar" ButtonType="ButtonType.Submit" Icon="save" Style="min-width: 120px;" />
+        </RadzenStack>
+    </RadzenTemplateForm>
+</RadzenCard>
+
+@code {
+    [Parameter] public long Id { get; set; }
+
+    private ClienteDto cliente = new();
+
+    private List<EnumOption<TipoPessoa>> tipoPessoaOptions = EnumHelper.ListarOpcoes<TipoPessoa>(incluirNulo: true);
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id != 0)
+        {
+            var existente = await ClienteApiService.GetByIdAsync(Id);
+            if (existente is not null)
+                cliente = existente;
+        }
+    }
+
+    private async Task PreencherEndereco()
+    {
+        await EnderecoAutoPreenchimentoHelper.PreencherEnderecoAsync(
+            cliente.CEP,
+            CepService,
+            NotificationService,
+            logradouro => cliente.Logradouro = logradouro,
+            bairro => cliente.Bairro = bairro,
+            cidade => cliente.Cidade = cidade,
+            estado => cliente.Estado = estado,
+            uf => cliente.UF = uf
+        );
+    }
+
+    private async Task Salvar(ClienteDto model)
+    {
+        try
+        {
+            if (model.Id == 0)
+            {
+                await ClienteApiService.CreateAsync(model);
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Cliente cadastrado com sucesso!", Duration = 4000 });
+            }
+            else
+            {
+                await ClienteApiService.UpdateAsync(model);
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Cliente atualizado com sucesso!", Duration = 4000 });
+            }
+
+            Navigation.NavigateTo("/clientes");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao salvar cliente: {ex.Message}", Duration = 5000 });
+        }
+    }
+
+    private void ExibirErros()
+    {
+        NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Atenção", Detail = "Existem erros de validação no formulário.", Duration = 4000 });
+    }
+
+    private void Cancelar()
+    {
+        Navigation.NavigateTo("/clientes");
+    }
+}
