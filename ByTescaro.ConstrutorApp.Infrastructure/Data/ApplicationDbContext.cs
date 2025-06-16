@@ -16,14 +16,23 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Funcionario> Funcionario => Set<Funcionario>();
     public DbSet<Funcao> Funcao => Set<Funcao>();
     public DbSet<Equipamento> Equipamento => Set<Equipamento>();
+    public DbSet<Fornecedor> Fornecedor => Set<Fornecedor>();
     public DbSet<Insumo> Insumo => Set<Insumo>();
+    public DbSet<FornecedorInsumo> FornecedorInsumo => Set<FornecedorInsumo>();
+
+     public DbSet<Servico> Servico => Set<Servico>();
+    public DbSet<FornecedorServico> FornecedorServico => Set<FornecedorServico>();
+
 
     // === Projetos e Obras ===
     public DbSet<Projeto> Projeto => Set<Projeto>();
     public DbSet<Obra> Obra => Set<Obra>();
     public DbSet<ObraFuncionario> ObraFuncionario => Set<ObraFuncionario>();
+    public DbSet<ObraFornecedor> ObraFornecedor => Set<ObraFornecedor>();
     public DbSet<ObraInsumo> ObraInsumo => Set<ObraInsumo>();
-    public DbSet<ObraInsumoLista> ObraInsumoLista => Set<ObraInsumoLista>();
+    public DbSet<ObraInsumoLista> ObraInsumoLista => Set<ObraInsumoLista>(); 
+    public DbSet<ObraServico> ObraServico => Set<ObraServico>();
+    public DbSet<ObraServicoLista> ObraServicoLista => Set<ObraServicoLista>();
     public DbSet<ObraEquipamento> ObraEquipamento => Set<ObraEquipamento>();
     public DbSet<ObraRetrabalho> ObraRetrabalho => Set<ObraRetrabalho>();
     public DbSet<ObraPendencia> ObraPendencia => Set<ObraPendencia>();
@@ -41,6 +50,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     // === Auditoria ===
     public DbSet<LogAuditoria> LogAuditoria => Set<LogAuditoria>();
 
+    // === Orçamento ===
+    public DbSet<Orcamento> Orcamento => Set<Orcamento>();
+    public DbSet<OrcamentoItem> OrcamentoItem => Set<OrcamentoItem>();
+    public DbSet<OrcamentoObra> OrcamentoObra => Set<OrcamentoObra>();
+
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -53,17 +68,25 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         ConfigureObraItemEtapa(modelBuilder);
         ConfigureObraItemEtapaPadrao(modelBuilder);
         ConfigureFuncionario(modelBuilder);
-        ConfigureInsumo(modelBuilder);
         ConfigureFuncao(modelBuilder);
-        ConfigureObraInsumo(modelBuilder);
-        ConfigureObraInsumoLista(modelBuilder);
         ConfigureObraEquipamento(modelBuilder);
         ConfigureObraFuncionario(modelBuilder);
+        ConfigureObraFornecedor(modelBuilder);
         ConfigureEquipamento(modelBuilder);
         ConfigureRetrabalho(modelBuilder);
         ConfigurePendencia(modelBuilder);
         ConfigureObraDocumento(modelBuilder);
         ConfigureObraImagem(modelBuilder);
+        ConfigureCliente(modelBuilder);
+        ConfigureFornecedor(modelBuilder);
+        ConfigureInsumo(modelBuilder);
+        ConfigureObraInsumo(modelBuilder);
+        ConfigureObraInsumoLista(modelBuilder);
+        ConfigureFornecedorInsumo(modelBuilder);    
+        ConfigureServico(modelBuilder);
+        ConfigureObraServico(modelBuilder);
+        ConfigureObraServicoLista(modelBuilder);
+        ConfigureFornecedorServico(modelBuilder);
 
 
     }
@@ -85,6 +108,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     private static void ConfigureInsumo(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Insumo>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Nome).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.DataHoraCadastro).IsRequired();
+            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+        });
+    }
+
+    private static void ConfigureServico(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Servico>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Nome).IsRequired().HasMaxLength(100);
@@ -124,8 +158,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     {
         modelBuilder.Entity<ObraFuncionario>()
             .HasKey(x => x.Id);
+        
+        modelBuilder.Entity<ObraFornecedor>()
+            .HasKey(x => x.Id);
 
         modelBuilder.Entity<ObraInsumo>()
+            .HasKey(x => x.Id);
+        
+        modelBuilder.Entity<ObraServico>()
             .HasKey(x => x.Id);
 
         modelBuilder.Entity<ObraEquipamento>()
@@ -267,6 +307,47 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         });
     }
 
+     private static void ConfigureObraServico(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ObraServico>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Quantidade).HasPrecision(18, 2);
+            entity.Property(e => e.DataHoraCadastro).IsRequired();
+            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+
+            entity.HasOne(e => e.Lista)
+                  .WithMany(l => l.Itens)
+                  .HasForeignKey(e => e.ObraServicoListaId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Servico)
+                  .WithMany()
+                  .HasForeignKey(e => e.ServicoId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureObraServicoLista(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ObraServicoLista>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Data).IsRequired();
+
+            entity.HasOne(e => e.Obra)
+                  .WithMany(o => o.ListasServico)
+                  .HasForeignKey(e => e.ObraId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Responsavel)
+                  .WithMany()
+                  .HasForeignKey(e => e.ResponsavelId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
 
 
     private static void ConfigureObraFuncionario(ModelBuilder modelBuilder)
@@ -282,6 +363,23 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             entity.HasOne(e => e.Obra)
                   .WithMany(o => o.Funcionarios)
+                  .HasForeignKey(e => e.ObraId);
+
+         
+        });
+    }
+    private static void ConfigureObraFornecedor(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ObraFornecedor>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FornecedorNome).HasMaxLength(100);
+            entity.Property(e => e.DataInicio).IsRequired();
+            entity.Property(e => e.DataHoraCadastro).IsRequired();
+            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+
+            entity.HasOne(e => e.Obra)
+                  .WithMany(o => o.Fornecedores)
                   .HasForeignKey(e => e.ObraId);
 
          
@@ -386,6 +484,75 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                   .HasForeignKey(e => e.ObraId);
         });
     }
+
+    private static void ConfigureCliente(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Cliente>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Nome).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.CpfCnpj).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Email).HasMaxLength(100);
+            entity.Property(e => e.DataHoraCadastro).IsRequired();
+            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+        });
+    }
+
+    private static void ConfigureFornecedor(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Fornecedor>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Nome).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.CpfCnpj).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Email).HasMaxLength(100);
+            entity.Property(e => e.DataHoraCadastro).IsRequired();
+            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+        });
+    }
+
+    private static void ConfigureFornecedorInsumo(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<FornecedorInsumo>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PrecoUnitario).HasPrecision(18, 2);
+            entity.Property(e => e.DataHoraCadastro).IsRequired();
+            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+
+            entity.HasOne(e => e.Fornecedor)
+                  .WithMany()
+                  .HasForeignKey(e => e.FornecedorId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Insumo)
+                  .WithMany()
+                  .HasForeignKey(e => e.InsumoId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureFornecedorServico(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<FornecedorServico>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PrecoUnitario).HasPrecision(18, 2);
+            entity.Property(e => e.DataHoraCadastro).IsRequired();
+            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+
+            entity.HasOne(e => e.Fornecedor)
+                  .WithMany()
+                  .HasForeignKey(e => e.FornecedorId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Servico)
+                  .WithMany()
+                  .HasForeignKey(e => e.ServicoId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
 
     #endregion
 }

@@ -27,8 +27,11 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
 
         // Relacionamentos
         public List<ObraFuncionarioDto> Funcionarios { get; set; } = new();
+        public List<ObraFornecedorDto> Fornecedores { get; set; } = new();
         public List<ObraInsumoDto> Insumos { get; set; } = new();
-        public List<ObraInsumoListaDto> ListasInsumo { get; set; } = new();
+        public List<ObraInsumoListaDto> ListasInsumo { get; set; } = new();    
+        public List<ObraServicoDto> Servicos { get; set; } = new();
+        public List<ObraServicoListaDto> ListasServico { get; set; } = new();
 
         public List<ObraEquipamentoDto> Equipamentos { get; set; } = new();
         public List<ObraEtapaDto> Etapas { get; set; } = new();

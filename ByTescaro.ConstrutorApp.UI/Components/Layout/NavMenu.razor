@@ -12,45 +12,67 @@
     <Authorized>
         <RadzenPanelMenu Style="width: 100%;">
             <RadzenPanelMenuItem Text=@($"Olá {nomeUsuario}") Disabled="true" />
-            <RadzenPanelMenuItem Text="Dashboard" Icon="home" Path="" />           
+            <RadzenPanelMenuItem Text="Dashboard" Icon="home" Path="" />
 
-
+            <!-- Cadastros Gerais -->
             <AuthorizeView Roles="Administrador,SA" Context="adminContext">
                 <Authorized>
-                    <RadzenPanelMenuItem Text="Gestão de Projetos" Icon="Settings">
+                    <RadzenPanelMenuItem Text="Cadastros" Icon="folder_shared">
                         <RadzenPanelMenuItem Text="Clientes" Icon="people" Path="clientes" />
-                        <RadzenPanelMenuItem Text="Projetos" Icon="business" Path="projetos" />
-                        <RadzenPanelMenuItem Text="Etapas da Obra" Icon="format_list_numbered" Path="obraetapaspadrao" />
-                        <RadzenPanelMenuItem Text="Itens da Etapa" Icon="checklist" Path="obraitensetapapadrao" />
-                        <RadzenPanelMenuItem Text="Equipamentos" Icon="build" Path="equipamentos" />
+                        <RadzenPanelMenuItem Text="Fornecedores" Icon="contacts_product" Path="fornecedores" />
                         <RadzenPanelMenuItem Text="Funcionários" Icon="work" Path="funcionarios" />
                         <RadzenPanelMenuItem Text="Funções" Icon="badge" Path="funcoes" />
+                        <RadzenPanelMenuItem Text="Equipamentos" Icon="build" Path="equipamentos" />
                         <RadzenPanelMenuItem Text="Insumos" Icon="inventory" Path="insumos" />
+                        <RadzenPanelMenuItem Text="Serviços" Icon="design_services" Path="servicos" />
                     </RadzenPanelMenuItem>
-
                 </Authorized>
             </AuthorizeView>
 
-
-            <RadzenPanelMenuItem Text="Importações" Icon="upload">
-                <RadzenPanelMenuItem Text="Clientes" Path="/clientes/importar" Icon="group" />
-            </RadzenPanelMenuItem>
-
-
+            <!-- Gestão de Projetos -->
             <AuthorizeView Roles="Administrador,SA" Context="adminContext">
                 <Authorized>
-                    <RadzenPanelMenuItem Text="Gestão de Usuários" Icon="admin_panel_settings">
+                    <RadzenPanelMenuItem Text="Projetos" Icon="construction">
+                        <RadzenPanelMenuItem Text="Projetos" Icon="business" Path="projetos" />
+                        <RadzenPanelMenuItem Text="Etapas da Obra" Icon="format_list_numbered" Path="obraetapaspadrao" />
+                        <RadzenPanelMenuItem Text="Itens da Etapa" Icon="checklist" Path="obraitensetapapadrao" />
+                        <RadzenPanelMenuItem Text="Orçamentos" Icon="paid" Path="orcamentos" />
+                    </RadzenPanelMenuItem>
+                </Authorized>
+            </AuthorizeView>
+
+            <!-- Importações -->
+            <AuthorizeView Roles="Administrador,SA" Context="adminContext">
+                <Authorized>
+                    <RadzenPanelMenuItem Text="Importações" Icon="upload">
+                        <RadzenPanelMenuItem Text="Clientes" Path="/clientes/importar" Icon="people" />
+                        <RadzenPanelMenuItem Text="Fornecedores" Path="/fornecedores/importar" Icon="contacts_product" />
+                        <RadzenPanelMenuItem Text="Insumos" Path="/insumos/importar" Icon="inventory" />
+                        <RadzenPanelMenuItem Text="Serviços" Path="/servicos/importar" Icon="design_services" />
+                    </RadzenPanelMenuItem>
+                </Authorized>
+            </AuthorizeView>
+
+            <!-- Administração -->
+            <AuthorizeView Roles="Administrador,SA" Context="adminContext">
+                <Authorized>
+                    <RadzenPanelMenuItem Text="Administração" Icon="admin_panel_settings">
                         <RadzenPanelMenuItem Text="Perfis de Usuários" Icon="list" Path="perfilUsuarios" />
                         <RadzenPanelMenuItem Text="Lista de Usuários" Icon="list" Path="usuarios" />
                         <RadzenPanelMenuItem Text="Novo Usuário" Icon="person_add" Path="usuario/novo" />
                         <RadzenPanelMenuItem Text="Auditoria de Usuários" Icon="history" Path="/auditoria?entidade=Usuario" />
                     </RadzenPanelMenuItem>
-
                 </Authorized>
             </AuthorizeView>
 
-            <RadzenPanelMenuItem Text="Auditoria" Icon="history" Path="/auditoria" />
+            <!-- Auditoria -->
+            <AuthorizeView Roles="Administrador,SA" Context="adminContext">
+                <Authorized>
+                    <RadzenPanelMenuItem Text="Auditoria Geral" Icon="history" Path="/auditoria" />
+                </Authorized>
+            </AuthorizeView>
 
+            <!-- Logout -->
             <RadzenPanelMenuItem Text="Logout" Icon="logout">
                 <Template>
                     <form method="post" action="/auth/logout" style="margin: 0;">
@@ -58,7 +80,6 @@
                     </form>
                 </Template>
             </RadzenPanelMenuItem>
-
         </RadzenPanelMenu>
     </Authorized>
 </AuthorizeView>

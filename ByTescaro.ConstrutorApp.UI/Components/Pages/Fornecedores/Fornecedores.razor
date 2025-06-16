@@ -1,0 +1,116 @@
+﻿@page "/Fornecedores"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Components.Utils
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@inject DialogService DialogService
+@inject FornecedorApiService FornecedorApiService
+@inject NotificationService NotificationService
+@inject NavigationManager Navigation
+@attribute [Authorize]
+
+<PageTitle>Fornecedores</PageTitle>
+
+<RadzenCard Style="margin: 1rem;">
+    <RadzenHeading Size="H4" Text="Fornecedores" />
+
+    <!-- Filtro e botão -->
+    <div class="row mt-4 mb-2">
+        <div class="col-md-9">
+            <RadzenTextBox @bind-Value="Filtro" Placeholder="Pesquisar por nome ou CPF/CNPJ"
+                           Style="width: 100%;" Icon="search" />
+        </div>
+        <div class="col-md-3 d-flex justify-content-end">
+            <RadzenButton Text="Novo Fornecedor" Icon="add_circle" Style="width: 100%;" Click="@NovoFornecedor" />
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <RadzenDataGrid TItem="FornecedorDto"
+                    Data="@_FornecedoresFiltrados"
+                    AllowFiltering="true"
+                    AllowPaging="true"
+                    AllowSorting="true"
+                    PageSize="10"
+                    FilterMode="FilterMode.Advanced"
+                    Responsive="true"
+                    ShowPagingSummary="true">
+
+        <Columns>
+            <RadzenDataGridColumn TItem="FornecedorDto" Property="Nome" Title="Nome" />
+            <RadzenDataGridColumn TItem="FornecedorDto" Property="CpfCnpj" Title="CPF/CNPJ" />
+            <RadzenDataGridColumn TItem="FornecedorDto" Property="TipoPessoa" Title="Tipo" />
+            <RadzenDataGridColumn TItem="FornecedorDto" Property="TelefonePrincipal" Title="Telefone" />
+            <RadzenDataGridColumn TItem="FornecedorDto" Property="Email" Title="Email" />
+            <RadzenDataGridColumn TItem="FornecedorDto" Title="Ações" Filterable="false" Sortable="false">
+                <Template Context="Fornecedor">
+                    <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
+                                  Click="@(() => VerDetalhes(Fornecedor.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                  Click="@(() => EditarFornecedor(Fornecedor.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                  Click="@(() => ConfirmarExclusao(Fornecedor.Id))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<FornecedorDto> _Fornecedores = new();
+    private string _filtro = string.Empty;
+
+    private string Filtro
+    {
+        get => _filtro;
+        set
+        {
+            _filtro = value;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<FornecedorDto> _FornecedoresFiltrados =>
+        string.IsNullOrWhiteSpace(_filtro)
+            ? _Fornecedores
+            : _Fornecedores.Where(c =>
+                c.Nome.Contains(_filtro, StringComparison.OrdinalIgnoreCase) ||
+                c.CpfCnpj.Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _Fornecedores = (await FornecedorApiService.GetAllAsync()).ToList();
+    }
+
+    private void NovoFornecedor() =>
+        Navigation.NavigateTo("/fornecedor/novo");
+
+    private void EditarFornecedor(long id) =>
+        Navigation.NavigateTo($"/fornecedor/editar/{id}");
+
+    private void VerDetalhes(long id) =>
+        Navigation.NavigateTo($"/fornecedor/detalhes/{id}");
+
+    private async Task ConfirmarExclusao(long id)
+    {
+        if (await DialogHelper.ConfirmarAsync(DialogService, "Deseja realmente excluir este Fornecedor?"))
+        {
+            await ExcluirConfirmado(id);
+        }
+    }
+
+
+    private async Task ExcluirConfirmado(long id)
+    {
+        try
+        {
+            await FornecedorApiService.DeleteAsync(id);
+            _Fornecedores = (await FornecedorApiService.GetAllAsync()).ToList();
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Fornecedor excluído com sucesso", Duration = 4000 });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao excluir Fornecedor: {ex.Message}", Duration = 5000 });
+        }
+    }
+}

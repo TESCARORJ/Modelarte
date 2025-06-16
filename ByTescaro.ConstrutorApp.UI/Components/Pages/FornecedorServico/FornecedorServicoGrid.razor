@@ -1,0 +1,148 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject FornecedorServicoApiService FornecedorServicoApiService
+@inject ServicoApiService ServicoApiService
+@inject NotificationService NotificationService
+
+@if (FornecedorId == 0)
+{
+    <RadzenAlert Severity="Severity.Warning" Style="margin-top: 1rem;">
+        Fornecedor não identificado.
+    </RadzenAlert>
+}
+else
+{
+    <RadzenCard Style="margin-top: 1rem;">
+        <RadzenHeading Size="H5" Text="Serviços do Fornecedor" />
+
+        <RadzenDataGrid TItem="FornecedorServicoDto" Data="@servicosFornecedor" @ref="grid"
+                        Editable="true" EditMode="DataGridEditMode.Single"
+                        RowUpdate="@SalvarEdicao" RowCreate="@CriarNovo" RowRemove="@Excluir"
+                        Style="margin-bottom: 1rem">
+
+            <Columns>
+                <RadzenDataGridColumn TItem="FornecedorServicoDto" Property="ServicoNome" Title="Servico">
+                    <EditTemplate Context="item">
+                        <RadzenDropDown @bind-Value="item.ServicoId"
+                                        Data="@servicosDisponiveis"
+                                        TextProperty="Nome"
+                                        ValueProperty="Id"
+                                        Style="width:100%" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="FornecedorServicoDto" Property="PrecoUnitario" Title="Preço Unitário (R$)">
+                    <EditTemplate Context="item">
+                        <RadzenNumeric TValue="decimal" @bind-Value="item.PrecoUnitario" Style="width:100%" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="FornecedorServicoDto" Property="PrazoEntregaDias" Title="Prazo (dias)">
+                    <EditTemplate Context="item">
+                        <RadzenNumeric TValue="int" @bind-Value="item.PrazoEntregaDias" Style="width:100%" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="FornecedorServicoDto" Property="Observacao" Title="Observação">
+                    <EditTemplate Context="item">
+                        <RadzenTextBox @bind-Value="item.Observacao" Style="width:100%" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="FornecedorServicoDto" Context="item">
+                    <Template Context="item">
+                        <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="() => grid.EditRow(item)" />
+                        <RadzenButton Icon="delete" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger" Click="@(async () => await Excluir(item))" />
+                    </Template>
+                    <EditTemplate Context="item">
+                        <RadzenButton Icon="check" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Success" Click="() => grid.UpdateRow(item)" />
+                        <RadzenButton Icon="close" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light" Click="() => grid.CancelEditRow(item)" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+
+        <RadzenButton Text="Adicionar Novo Serviço"
+                      Icon="add"
+                      ButtonStyle="ButtonStyle.Primary"
+                      Click="@AdicionarNovo"
+                      Style="margin-top: 1rem;" />
+    </RadzenCard>
+}
+
+@code {
+    [Parameter] public long FornecedorId { get; set; }
+
+    private List<FornecedorServicoDto> servicosFornecedor = new();
+    private List<ServicoDto> servicosDisponiveis = new();
+    private RadzenDataGrid<FornecedorServicoDto>? grid; 
+    [Parameter] public EventCallback<List<FornecedorServicoDto>> OnServicosCarregados { get; set; }
+    public List<FornecedorServicoDto> Servicos => servicosFornecedor;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (FornecedorId > 0)
+        {
+            servicosFornecedor = await FornecedorServicoApiService.GetByFornecedorAsync(FornecedorId);
+            servicosDisponiveis = await ServicoApiService.GetAllAsync();
+            await OnServicosCarregados.InvokeAsync(servicosFornecedor); 
+        }
+    }
+
+    private async Task SalvarEdicao(FornecedorServicoDto item)
+    {
+        try
+        {
+            if (item.Id == 0)
+            {
+                item.FornecedorId = FornecedorId;
+                await FornecedorServicoApiService.CreateAsync(item);
+                NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Serviço vinculado.");
+            }
+            else
+            {
+                await FornecedorServicoApiService.UpdateAsync(item);
+                NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Registro atualizado.");
+            }
+
+            await Recarregar();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", ex.Message);
+        }
+    }
+
+    private async Task CriarNovo(FornecedorServicoDto item)
+    {
+        item.FornecedorId = FornecedorId;
+        await FornecedorServicoApiService.CreateAsync(item);
+        await Recarregar();
+    }
+
+    private async Task Excluir(FornecedorServicoDto item)
+    {
+        await FornecedorServicoApiService.DeleteAsync(item.Id);
+        await Recarregar();
+    }
+
+    private async Task Recarregar()
+    {
+        servicosFornecedor = await FornecedorServicoApiService.GetByFornecedorAsync(FornecedorId);
+        StateHasChanged();
+    }
+
+    private void AdicionarNovo()
+    {
+        var novo = new FornecedorServicoDto
+            {
+                FornecedorId = FornecedorId,
+                PrecoUnitario = 0,
+                PrazoEntregaDias = 1,
+                Ativo = true,
+                DataHoraCadastro = DateTime.Now
+            };
+
+        grid?.InsertRow(novo);
+    }
+}

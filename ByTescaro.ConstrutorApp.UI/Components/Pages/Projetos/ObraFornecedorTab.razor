@@ -1,0 +1,203 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject ObraFornecedorApiService ObraFornecedorApiService
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+
+<RadzenCard Class="pa-4">
+    <RadzenHeading Size="H6" Text="Fornecedores Alocados na Obra" class="mb-3" />
+
+    <RadzenDropDown TValue="List<long>"
+                    Data="@FornecedoresDisponiveis"
+                    TextProperty="Nome"
+                    ValueProperty="Id"
+                    Placeholder="Selecionar Fornecedores"
+                    Multiple="true"
+                    SelectAllText="Selecionar Todos"
+                    Style="width: 100%;"
+                    @bind-Value="_fornecedoresSelecionados" />
+
+    <RadzenButton Text="Adicionar Selecionados"
+                  Style="margin-top: 1rem; margin-bottom: 1rem;"
+                  Disabled="@(!_fornecedoresSelecionados.Any())"
+                  Click="AdicionarFornecedores" />
+
+    <RadzenDivider Style="margin: 1rem 0;" />
+
+    @if (Obra.Fornecedores?.Any() == true)
+    {
+        <RadzenDataGrid Data="@Obra.Fornecedores" TItem="ObraFornecedorDto" ShowPagingSummary="false" PageSize="10" Responsive="true">
+            <Columns>
+                <RadzenDataGridColumn TItem="ObraFornecedorDto" Property="FornecedorNome" Title="Nome" />
+                <RadzenDataGridColumn TItem="ObraFornecedorDto" Property="DataInicio" Title="Início" FormatString="{0:dd/MM/yyyy}" />
+                <RadzenDataGridColumn TItem="ObraFornecedorDto" Property="DataFim" Title="Fim" FormatString="{0:dd/MM/yyyy}" />
+                <RadzenDataGridColumn TItem="ObraFornecedorDto" Property="DataHoraCadastro" Title="Data Cadastro" FormatString="{0:dd/MM/yyyy}" />
+                <RadzenDataGridColumn TItem="ObraFornecedorDto" Property="UsuarioCadastro" Title="Cadastrador por" />
+                <RadzenDataGridColumn TItem="ObraFornecedorDto">
+                    <Template Context="fornecedor">
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => ConfirmarRemocao(fornecedor))" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    }
+    else
+    {
+        <RadzenText Text="Nenhum fornecedor adicionado à obra." />
+    }
+    <RadzenButton Text="Salvar Fornecedores"
+              Icon="save"
+              ButtonStyle="ButtonStyle.Primary"
+              Style="margin-top: 1rem;"
+              Click="SalvarFornecedoresAsync"
+                  Disabled="@IsBotaoSalvarDesabilitado" />
+
+
+</RadzenCard>
+
+@code {
+    [Parameter] public ObraDto Obra { get; set; } = new();
+    [Parameter] public List<FornecedorDto> FornecedoresDisponiveis { get; set; } = new();
+    private bool IsBotaoSalvarDesabilitado => Obra.Fornecedores == null || !Obra.Fornecedores.Any();
+    private List<ObraFornecedorDto> _fornecedoresOriginais = new();
+
+
+    private List<long> _fornecedoresSelecionados = new();
+
+
+    private void AdicionarFornecedores()
+    {
+        if (Obra.Fornecedores == null)
+            Obra.Fornecedores = new List<ObraFornecedorDto>();
+
+        var novos = new List<ObraFornecedorDto>();
+
+        foreach (var id in _fornecedoresSelecionados)
+        {
+            if (Obra.Fornecedores.Any(f => f.FornecedorId == id))
+                continue;
+
+            var fornecedor = FornecedoresDisponiveis.FirstOrDefault(f => f.Id == id);
+            if (fornecedor is not null)
+            {
+                novos.Add(new ObraFornecedorDto
+                    {
+                        ObraId = Obra.Id,
+                        FornecedorId = fornecedor.Id,
+                        FornecedorNome = fornecedor.Nome,
+                        DataInicio = DateTime.Today
+                    });
+            }
+        }
+
+        if (novos.Any())
+        {
+            // 🔁 recria a lista
+            Obra.Fornecedores = Obra.Fornecedores.Concat(novos).ToList();
+        }
+
+        _fornecedoresSelecionados.Clear();
+    }
+
+
+    private async Task ConfirmarRemocao(ObraFornecedorDto fornecedor)
+    {
+        bool? confirm = await DialogService.Confirm($"Deseja realmente remover o fornecedor '{fornecedor.FornecedorNome}'?", "Remover Fornecedor");
+
+        if (confirm == true)
+        {
+            Obra.Fornecedores = Obra.Fornecedores
+                        .Where(f => f.FornecedorId != fornecedor.FornecedorId)
+                        .ToList();
+
+            NotificationService.Notify(NotificationSeverity.Warning, "Removido", "Fornecedor removido da lista.");
+
+            StateHasChanged();
+
+        }
+    }
+
+ 
+    protected override async Task OnInitializedAsync()
+    {
+        if (!FornecedoresDisponiveis.Any())
+        {
+            FornecedoresDisponiveis = (await ObraFornecedorApiService.GetFornecedoresDisponiveisAsync(Obra.Id)).ToList();
+        }
+
+        // Clona os fornecedores atuais para controle de remoções
+        _fornecedoresOriginais = Obra.Fornecedores?.Select(f => new ObraFornecedorDto
+            {
+                Id = f.Id,
+                FornecedorId = f.FornecedorId,
+                ObraId = f.ObraId
+            }).ToList() ?? new();
+    }
+
+
+    private async Task SalvarFornecedoresAsync()
+    {
+        if (!Obra.Fornecedores.Any())
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Nenhum fornecedor", "Adicione ao menos um fornecedor.");
+            return;
+        }
+
+        var erros = new List<string>();
+
+        foreach (var func in Obra.Fornecedores)
+        {
+            if (func.DataInicio == default)
+                erros.Add($"Fornecedor '{func.FornecedorNome}' está sem data de início.");
+
+            if (func.DataFim.HasValue && func.DataFim < func.DataInicio)
+                erros.Add($"Fornecedor '{func.FornecedorNome}' possui data de fim anterior à de início.");
+        }
+
+        if (erros.Any())
+        {
+            foreach (var erro in erros)
+                NotificationService.Notify(NotificationSeverity.Error, "Erro de Validação", erro);
+            return;
+        }
+
+        try
+        {
+            // 🔁 Atualizar e adicionar
+            foreach (var fornecedor in Obra.Fornecedores)
+            {
+                if (fornecedor.Id == 0)
+                    await ObraFornecedorApiService.CreateAsync(fornecedor);
+                else
+                    await ObraFornecedorApiService.UpdateAsync(fornecedor);
+            }
+
+            // ❌ Remover os que saíram
+            var idsAtuais = Obra.Fornecedores.Select(f => f.Id).ToHashSet();
+            var removidos = _fornecedoresOriginais.Where(f => !idsAtuais.Contains(f.Id)).ToList();
+
+            foreach (var func in removidos)
+            {
+                if (func.Id > 0)
+                    await ObraFornecedorApiService.DeleteAsync(func.Id);
+            }
+
+            // ✅ Atualiza o controle de estado original
+            _fornecedoresOriginais = Obra.Fornecedores
+                .Select(f => new ObraFornecedorDto
+                    {
+                        Id = f.Id,
+                        FornecedorId = f.FornecedorId,
+                        ObraId = f.ObraId
+                    }).ToList();
+
+            NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Fornecedores salvos com sucesso.");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Erro ao salvar fornecedores: {ex.Message}");
+        }
+    }
+
+
+}

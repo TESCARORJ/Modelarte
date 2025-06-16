@@ -1,0 +1,226 @@
+﻿@page "/orcamento/novo"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Interfaces
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@inject OrcamentoApiService OrcamentoApiService
+@inject ObraApiService ObraApiService
+@inject IUsuarioLogadoService UsuarioLogadoService
+@inject InsumoApiService InsumoApiService
+@inject ServicoApiService ServicoApiService
+@inject FornecedorApiService FornecedorApiService
+@inject FornecedorInsumoApiService FornecedorInsumoApiService
+@inject FornecedorServicoApiService FornecedorServicoApiService
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+@attribute [Authorize]
+
+<PageTitle>Orçamento</PageTitle>
+
+<RadzenCard Class="rz-mt-5 rz-p-4 rz-shadow-md rz-rounded-md rz-mx-auto" Style="max-width: 1300px; width: 100%;">
+    <RadzenTemplateForm TItem="OrcamentoDto" Data="@orcamento" Submit="Salvar" InvalidSubmit="ExibirErros">
+        <RadzenHeading Size="H4" Text="Novo Orçamento" Class="rz-mb-3" />
+
+        <RadzenFieldset Text="Dados do Orçamento" Style="margin-bottom: 1.5rem">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Obra *" />
+                    <RadzenDropDown @bind-Value="orcamento.ObraId"
+                                    Data="@obras"
+                                    TextProperty="Nome"
+                                    ValueProperty="Id"
+                                    Name="ObraId"
+                                    Style="width:100%"
+                                    Placeholder="Selecione a Obra" />
+                    <RadzenRequiredValidator Component="ObraId" Text="Obra obrigatória" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Data de Referência *" />
+                    <RadzenDatePicker @bind-Value="orcamento.DataReferencia"
+                                      Name="DataReferencia"
+                                      DateFormat="MM/yyyy"
+                                      ShowTime="false"
+                                      Style="width:100%" />
+                    <RadzenRequiredValidator Component="DataReferencia" Text="Data obrigatória" />
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Responsável *" />
+                    <RadzenTextBox @bind-Value="orcamento.Responsavel"
+                                   Name="Responsavel"
+                                   ReadOnly="true"
+                                   Style="width:100%" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
+
+        <RadzenFieldset Text="Itens do Orçamento" Style="margin-bottom: 1.5rem">
+            @foreach (var item in orcamento.Itens)
+            {
+                <RadzenRow Style="margin-bottom: 1rem">
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenLabel Text="Insumo" />
+                        <RadzenDropDown @bind-Value="item.InsumoId"
+                                        Data="insumos"
+                                        TextProperty="Nome"
+                                        ValueProperty="Id"
+                                        Change="@(args => AtualizarPrecoFornecedor(item))"
+                                        Placeholder="Selecione o insumo"
+                                        Style="width:100%" />
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenLabel Text="Serviço" />
+                        <RadzenDropDown @bind-Value="item.ServicoId"
+                                        Data="servicos"
+                                        TextProperty="Nome"
+                                        ValueProperty="Id"
+                                        Change="@(args => AtualizarPrecoFornecedor(item))"
+                                        Placeholder="Selecione o serviço"
+                                        Style="width:100%" />
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="2">
+                        <RadzenLabel Text="Quantidade" />
+                        <RadzenNumeric TValue="decimal" @bind-Value="item.Quantidade"
+                                       Placeholder="Qtd" Style="width:100%" />
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="2">
+                        <RadzenLabel Text="Preço Unitário" />
+                        <RadzenNumeric TValue="decimal" @bind-Value="item.PrecoUnitario"
+                                       Placeholder="Preço Unit." Style="width:100%" />
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="1">
+                        <RadzenLabel Text="Total" />
+                        <RadzenLabel Text="@item.Total.ToString("C")" />
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="1">
+                        <RadzenLabel Text="Remover" Style="visibility:hidden;" />
+                        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger"
+                                      Size="ButtonSize.Small" Click="@(() => RemoverItem(item))" />
+                    </RadzenColumn>
+                </RadzenRow>
+
+                @if (item.InsumoId.HasValue && fornecedoresInsumo.Any(f => f.InsumoId == item.InsumoId))
+                {
+                    <div style="margin-bottom:0.5rem; margin-left:1rem">
+                        <i>Fornecedores para insumo: @string.Join(", ", fornecedoresInsumo.Where(f => f.InsumoId == item.InsumoId).Select(f => f.FornecedorNome))</i>
+                    </div>
+                }
+                @if (item.ServicoId.HasValue && fornecedoresServico.Any(f => f.ServicoId == item.ServicoId))
+                {
+                    <div style="margin-bottom:1rem; margin-left:1rem">
+                        <i>Fornecedores para serviço: @string.Join(", ", fornecedoresServico.Where(f => f.ServicoId == item.ServicoId).Select(f => f.FornecedorNome))</i>
+                    </div>
+                }
+            }
+            <RadzenButton Icon="add" Text="Adicionar Item" Click="AdicionarItem" Style="margin-top: 1rem" />
+        </RadzenFieldset>
+
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-3">
+            <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="@Cancelar" />
+            <RadzenButton Text="Salvar" ButtonType="ButtonType.Submit" Icon="save" Style="min-width: 120px;" />
+        </RadzenStack>
+    </RadzenTemplateForm>
+</RadzenCard>
+
+@code {
+    private OrcamentoDto orcamento = new();
+    private List<ObraDto> obras = new();
+    private List<InsumoDto> insumos = new();
+    private List<ServicoDto> servicos = new();
+    private List<FornecedorInsumoDto> fornecedoresInsumo = new();
+    private List<FornecedorServicoDto> fornecedoresServico = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        obras = await ObraApiService.GetAllAsync();
+        insumos = await InsumoApiService.GetAllAsync();
+        servicos = await ServicoApiService.GetAllAsync();
+        fornecedoresInsumo = await FornecedorInsumoApiService.GetAllAsync();
+        fornecedoresServico = await FornecedorServicoApiService.GetAllAsync();
+
+        var usuario = await UsuarioLogadoService.ObterUsuarioAtualAsync();
+        orcamento.Responsavel = usuario?.Nome ?? "";
+    }
+
+    private void AdicionarItem()
+    {
+        orcamento.Itens.Add(new OrcamentoItemDto());
+    }
+
+    private void RemoverItem(OrcamentoItemDto item)
+    {
+        orcamento.Itens.Remove(item);
+    }
+
+    private void AtualizarPrecoFornecedor(OrcamentoItemDto item)
+    {
+        if (item.InsumoId.HasValue)
+        {
+            var fornecedor = fornecedoresInsumo
+                .Where(f => f.InsumoId == item.InsumoId)
+                .OrderBy(f => f.PrecoUnitario)
+                .FirstOrDefault();
+
+            if (fornecedor != null)
+            {
+                item.PrecoUnitario = fornecedor.PrecoUnitario;
+                item.FornecedorId = fornecedor.FornecedorId;
+                item.FornecedorNome = fornecedor.FornecedorNome;
+            }
+        }
+
+        if (item.ServicoId.HasValue)
+        {
+            var fornecedor = fornecedoresServico
+                .Where(f => f.ServicoId == item.ServicoId)
+                .OrderBy(f => f.PrecoUnitario)
+                .FirstOrDefault();
+
+            if (fornecedor != null)
+            {
+                item.PrecoUnitario = fornecedor.PrecoUnitario;
+                item.FornecedorId = fornecedor.FornecedorId;
+                item.FornecedorNome = fornecedor.FornecedorNome;
+            }
+        }
+    }
+
+    private async Task Salvar(OrcamentoDto model)
+    {
+        if (model.Itens == null || !model.Itens.Any())
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Atenção", Detail = "Adicione ao menos um item ao orçamento.", Duration = 4000 });
+            return;
+        }
+
+        try
+        {
+            model.Total = model.Itens.Sum(i => i.Total);
+            await OrcamentoApiService.CreateAsync(model);
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Orçamento criado com sucesso!", Duration = 4000 });
+            Navigation.NavigateTo("/orcamentos");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao salvar orçamento: {ex.Message}", Duration = 5000 });
+        }
+    }
+
+    private void ExibirErros()
+    {
+        NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Atenção", Detail = "Existem erros de validação no formulário.", Duration = 4000 });
+    }
+
+    private void Cancelar()
+    {
+        Navigation.NavigateTo("/orcamentos");
+    }
+}

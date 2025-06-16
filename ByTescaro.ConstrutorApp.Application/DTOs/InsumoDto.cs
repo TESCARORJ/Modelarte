@@ -8,8 +8,8 @@ public class InsumoDto
     public bool Ativo { get; set; }
     public string Nome { get; set; } = string.Empty;
     public string? Descricao { get; set; }
-    public UnidadeMedida? UnidadeMedida { get; set; }
+    public UnidadeMedida UnidadeMedida { get; set; }
     public string UsuarioCadastro { get; set; } = string.Empty;
-    public DateTime DataHoraCadastro { get; set; }
+    public DateTime DataHoraCadastro { get; set; } = default!;
 
 }

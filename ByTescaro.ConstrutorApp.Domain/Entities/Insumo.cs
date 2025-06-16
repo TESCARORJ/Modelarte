@@ -11,7 +11,7 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public string? Descricao { get; set; }
         public UnidadeMedida UnidadeMedida { get; set; }
         public string UsuarioCadastro { get; set; } = string.Empty;
-        public DateTime DataHoraCadastro { get; set; }
+        public DateTime DataHoraCadastro { get; set; } = default!;
     }
 }
 

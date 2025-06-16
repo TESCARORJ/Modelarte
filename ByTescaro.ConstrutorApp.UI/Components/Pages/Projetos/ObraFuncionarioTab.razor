@@ -112,7 +112,7 @@
                         .Where(f => f.FuncionarioId != funcionario.FuncionarioId)
                         .ToList();
 
-            NotificationService.Notify(NotificationSeverity.Warning, "Removido", "FUnconário removido da lista.");
+            NotificationService.Notify(NotificationSeverity.Warning, "Removido", "Funcionário removido da lista.");
 
             StateHasChanged();
 
@@ -124,7 +124,7 @@
     {
         if (!FuncionariosDisponiveis.Any())
         {
-            FuncionariosDisponiveis = (await ObraFuncionarioApiService.GetFuncionariosDisponiveisAsync(Obra.Id)).ToList();
+            FuncionariosDisponiveis = await ObraFuncionarioApiService.GetFuncionariosTotalDisponiveisAsync();
         }
 
         // Clona os funcionários atuais para controle de remoções

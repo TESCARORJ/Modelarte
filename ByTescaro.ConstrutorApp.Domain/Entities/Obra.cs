@@ -30,6 +30,7 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
 
         public ICollection<ObraEtapa> Etapas { get; set; } = new List<ObraEtapa>();
         public ICollection<ObraFuncionario> Funcionarios { get; set; } = new List<ObraFuncionario>();
+        public ICollection<ObraFornecedor> Fornecedores { get; set; } = new List<ObraFornecedor>();
         public ICollection<ObraInsumo> Insumos { get; set; } = new List<ObraInsumo>();
         public ICollection<ObraInsumoLista> ListasInsumo { get; set; } = new List<ObraInsumoLista>();
 
@@ -38,6 +39,8 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public ICollection<ObraPendencia> Pendencias { get; set; } = new List<ObraPendencia>();
         public ICollection<ObraDocumento> Documentos { get; set; } = new List<ObraDocumento>();
         public ICollection<ObraImagem> Imagens { get; set; } = new List<ObraImagem>();
+        public ICollection<ObraServico> Servicos { get; set; } = new List<ObraServico>();
+        public ICollection<ObraServicoLista> ListasServico { get; set; } = new List<ObraServicoLista>();
 
     }
 

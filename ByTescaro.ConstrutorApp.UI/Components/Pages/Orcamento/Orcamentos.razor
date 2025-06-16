@@ -1,0 +1,102 @@
+﻿@page "/orcamentos"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject OrcamentoApiService OrcamentoApiService
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+
+<RadzenCard Style="max-width: 1300px; margin: auto;">
+    <RadzenHeading Size="H4" Text="Orçamentos" />
+
+    <RadzenButton Text="Novo Orçamento"
+                  Icon="add"
+                  ButtonStyle="ButtonStyle.Primary"
+                  Click="@(() => Navigation.NavigateTo("/orcamento/novo"))"
+                  Style="margin-bottom: 1rem;" />
+
+    <RadzenDataGrid TItem="OrcamentoDto" Data="@orcamentos" Style="margin-top:1rem;">
+        <Columns>
+            <RadzenDataGridColumn TItem="OrcamentoDto" Property="ObraNome" Title="Obra" />
+            <RadzenDataGridColumn TItem="OrcamentoDto" Property="Responsavel" Title="Responsável" />
+            <RadzenDataGridColumn TItem="OrcamentoDto" Property="DataReferencia" Title="Referência" FormatString="{0:MM/yyyy}" />
+            <RadzenDataGridColumn TItem="OrcamentoDto" Property="Total" Title="Total (R$)" FormatString="{0:C}" />
+
+            <RadzenDataGridColumn TItem="OrcamentoDto" Title="Ações">
+                <Template Context="orc">
+                    <RadzenButton Icon="visibility"
+                                  Tooltip="Detalhes"
+                                  Size="ButtonSize.Small"
+                                  Style="margin-right: 0.5rem"
+                                  Click="@(() => Navigation.NavigateTo($"/orcamento/detalhes/{orc.ObraId}"))" />
+
+                    <RadzenButton Icon="edit"
+                                  Tooltip="Editar"
+                                  Size="ButtonSize.Small"
+                                  Style="margin-right: 0.5rem"
+                                  Click="@(() => Navigation.NavigateTo($"/orcamento/editar/{orc.Id}"))" />
+
+                    <RadzenButton Icon="delete"
+                                  Tooltip="Excluir"
+                                  ButtonStyle="ButtonStyle.Danger"
+                                  Size="ButtonSize.Small"
+                                  Click="@(() => ConfirmarExclusao(orc))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<OrcamentoDto> orcamentos = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarOrcamentos();
+    }
+
+    private async Task CarregarOrcamentos()
+    {
+        orcamentos = await OrcamentoApiService.GetAllAsync();
+    }
+
+    private async Task ConfirmarExclusao(OrcamentoDto orc)
+    {
+        bool? confirmado = await DialogService.Confirm(
+            $"Deseja excluir este orçamento?",
+            "Confirmação",
+            new ConfirmOptions { OkButtonText = "Sim", CancelButtonText = "Não" });
+
+        if (confirmado == true)
+        {
+            await ExcluirOrcamento(orc.Id);
+        }
+    }
+
+    private async Task ExcluirOrcamento(long id)
+    {
+        try
+        {
+            await OrcamentoApiService.DeleteAsync(id);
+            await CarregarOrcamentos();
+
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Sucesso",
+                    Detail = "Orçamento excluído com sucesso",
+                    Duration = 4000
+                });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Erro",
+                    Detail = $"Erro ao excluir: {ex.Message}",
+                    Duration = 5000
+                });
+        }
+    }
+}

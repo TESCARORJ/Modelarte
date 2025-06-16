@@ -1,0 +1,147 @@
+﻿@page "/servicos/importar"
+@inject HttpClient Http
+@inject ServicoImportacaoApiService ImportacaoService
+@inject NotificationService NotificationService
+@inject NavigationManager NavigationManager
+
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Components.Forms
+@using Radzen
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+
+<RadzenCard Style="max-width: 1300px; margin: auto; padding: 2rem;">
+    <RadzenHeading Size="H4" Text="Importador de Serviços" />
+
+    <!-- Upload Excel -->
+    <div class="rz-mb-4" style="display: flex; gap: 1rem; align-items: center;">
+        <label class="rz-button rz-button-md rz-button-outlined" style="margin: 0;">
+            <span class="material-icons">upload</span>&nbsp;Selecionar Excel
+            <InputFile OnChange="OnFileSelected" accept=".xlsx,.xls" style="display:none" />
+        </label>       
+
+        <RadzenButton Text="Modelo de Importação"
+                      Icon="file_download"
+                      ButtonStyle="ButtonStyle.Secondary"
+                      Click="@DownloadModeloImportacao" />
+    </div>
+
+
+    <!-- Preview Editável -->
+    @if (servicosPreview?.Any() == true)
+    {
+        <RadzenDataGrid TItem="ServicoDto" Data="@servicosPreview" @ref="grid" Editable="true" EditMode="DataGridEditMode.Single">
+            <Columns>
+                <RadzenDataGridColumn TItem="ServicoDto" Property="Nome" Title="Nome" />
+                <RadzenDataGridColumn TItem="ServicoDto" Property="Descricao" Title="Descrição" />
+               
+                <RadzenDataGridColumn TItem="ServicoDto">
+                    <Template Context="item">
+                        <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="() => grid.EditRow(item)" />
+                    </Template>
+                    <EditTemplate Context="item">
+                        <RadzenButton Icon="check" Size="ButtonSize.Small" Click="() => grid.UpdateRow(item)" Text="Salvar" />
+                        <RadzenButton Icon="close" Size="ButtonSize.Small" Click="() => grid.CancelEditRow(item)" Text="Cancelar" />
+
+
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+
+        <RadzenButton Text="Importar"
+                      Style="margin-top: 1.5rem"
+                      Icon="upload"
+                      ButtonStyle="ButtonStyle.Primary"
+                      Click="@Importar" />
+    }
+
+    <!-- Lista de Erros -->
+    @if (errosImportacao?.Any() == true)
+    {
+        <RadzenPanel Text="Erros encontrados durante a importação" Style="margin-top:2rem;">
+            <ul>
+                @foreach (var erro in errosImportacao)
+                {
+                    <li><b>@erro.Referencia:</b> @erro.Mensagem</li>
+                }
+            </ul>
+        </RadzenPanel>
+    }
+</RadzenCard>
+
+@code {
+    private List<ServicoDto> servicosPreview = new();
+    private List<ErroImportacaoDto> errosImportacao = new();
+    private RadzenDataGrid<ServicoDto>? grid;
+
+    
+
+    private async Task OnFileSelected(InputFileChangeEventArgs args)
+    {
+        try
+        {
+            var file = args.File;
+            if (file == null)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "Nenhum arquivo selecionado.");
+                return;
+            }
+
+            using var stream = file.OpenReadStream();
+            servicosPreview = await ImportacaoService.PreviewExcelServicosAsync(stream, file.Name);
+
+            NotificationService.Notify(NotificationSeverity.Success, "Pré-visualização pronta", "Dados carregados com sucesso.");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", ex.Message);
+        }
+    }
+
+    private async Task Importar()
+    {
+        try
+        {
+            errosImportacao = await ImportacaoService.ImportarServicosAsync(servicosPreview);
+
+            if (errosImportacao.Count == 0)
+            {
+                servicosPreview.Clear();
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Sucesso",
+                        Detail = "Todos os serviços foram importados!",
+                        Duration = 4000
+                    });
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Importação parcial", "Alguns serviços não foram importados.");
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro ao importar", ex.Message);
+        }
+    }
+
+    private void DownloadModeloUnidades()
+    {
+        NavigationManager.NavigateTo("/modelos/Modelo_UnidadesMedida.xlsx", true);
+    }
+
+    private void DownloadModeloImportacao()
+    {
+        NavigationManager.NavigateTo("/modelos/Modelo_Importacao_Servicos.xlsx", true);
+    }
+
+
+    
+
+
+}

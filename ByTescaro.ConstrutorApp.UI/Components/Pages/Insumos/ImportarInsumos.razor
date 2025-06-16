@@ -1,0 +1,176 @@
+﻿@page "/insumos/importar"
+@inject HttpClient Http
+@inject InsumoImportacaoApiService ImportacaoService
+@inject NotificationService NotificationService
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Components.Forms
+@using Radzen
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+
+<RadzenCard Style="max-width: 1300px; margin: auto; padding: 2rem;">
+    <RadzenHeading Size="H4" Text="Importador de Insumos" />
+
+    <!-- Upload Excel -->
+    <div class="rz-mb-4" style="display: flex; gap: 1rem; align-items: center;">
+        <label class="rz-button rz-button-md rz-button-outlined" style="margin: 0;">
+            <span class="material-icons">upload</span>&nbsp;Selecionar Excel
+            <InputFile OnChange="OnFileSelected" accept=".xlsx,.xls" style="display:none" />
+        </label>
+
+        <RadzenButton Text="Modelo de Unidades"
+                      Icon="file_download"
+                      ButtonStyle="ButtonStyle.Light"
+                      Click="@DownloadModeloUnidades" />
+
+        <RadzenButton Text="Modelo de Importação"
+                      Icon="file_download"
+                      ButtonStyle="ButtonStyle.Secondary"
+                      Click="@DownloadModeloImportacao" />
+    </div>
+
+
+    <!-- Preview Editável -->
+    @if (insumosPreview?.Any() == true)
+    {
+        <RadzenDataGrid TItem="InsumoDto" Data="@insumosPreview" @ref="grid" Editable="true" EditMode="DataGridEditMode.Single">
+            <Columns>
+                <RadzenDataGridColumn TItem="InsumoDto" Property="Nome" Title="Nome" />
+                <RadzenDataGridColumn TItem="InsumoDto" Property="Descricao" Title="Descrição" />
+                <RadzenDataGridColumn TItem="InsumoDto" Property="UnidadeMedida" Title="Unidade de Medida">
+                    <EditTemplate Context="item">
+                        <RadzenDropDown TValue="UnidadeMedida"
+                                        @bind-Value="item.UnidadeMedida"
+                                        Data="@Unidades"
+                                        TextProperty="Label"
+                                        ValueProperty="Value"
+                                        Style="width:100%" />
+                    </EditTemplate>
+                    <Template Context="item">
+                        @Unidades.FirstOrDefault(u => u.Value == item.UnidadeMedida)?.Label
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="InsumoDto">
+                    <Template Context="item">
+                        <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="() => grid.EditRow(item)" />
+                    </Template>
+                    <EditTemplate Context="item">
+                        <RadzenButton Icon="check" Size="ButtonSize.Small" Click="() => grid.UpdateRow(item)" Text="Salvar" />
+                        <RadzenButton Icon="close" Size="ButtonSize.Small" Click="() => grid.CancelEditRow(item)" Text="Cancelar" />
+
+
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+
+        <RadzenButton Text="Importar"
+                      Style="margin-top: 1.5rem"
+                      Icon="upload"
+                      ButtonStyle="ButtonStyle.Primary"
+                      Click="@Importar" />
+    }
+
+    <!-- Lista de Erros -->
+    @if (errosImportacao?.Any() == true)
+    {
+        <RadzenPanel Text="Erros encontrados durante a importação" Style="margin-top:2rem;">
+            <ul>
+                @foreach (var erro in errosImportacao)
+                {
+                    <li><b>@erro.Referencia:</b> @erro.Mensagem</li>
+                }
+            </ul>
+        </RadzenPanel>
+    }
+</RadzenCard>
+
+@code {
+    private List<InsumoDto> insumosPreview = new();
+    private List<ErroImportacaoDto> errosImportacao = new();
+    private RadzenDataGrid<InsumoDto>? grid;
+
+    private List<UnidadeMedidaOption> Unidades => Enum.GetValues(typeof(UnidadeMedida))
+        .Cast<UnidadeMedida>()
+        .Select(e => new UnidadeMedidaOption
+            {
+                Value = e,
+                Label = e.GetType().GetMember(e.ToString())
+                             .FirstOrDefault()?
+                             .GetCustomAttribute<DisplayAttribute>()?.Name ?? e.ToString()
+            }).ToList();
+
+    private async Task OnFileSelected(InputFileChangeEventArgs args)
+    {
+        try
+        {
+            var file = args.File;
+            if (file == null)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "Nenhum arquivo selecionado.");
+                return;
+            }
+
+            using var stream = file.OpenReadStream();
+            insumosPreview = await ImportacaoService.PreviewExcelInsumosAsync(stream, file.Name);
+
+            NotificationService.Notify(NotificationSeverity.Success, "Pré-visualização pronta", "Dados carregados com sucesso.");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", ex.Message);
+        }
+    }
+
+    private async Task Importar()
+    {
+        try
+        {
+            errosImportacao = await ImportacaoService.ImportarInsumosAsync(insumosPreview);
+
+            if (errosImportacao.Count == 0)
+            {
+                insumosPreview.Clear();
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Sucesso",
+                        Detail = "Todos os insumos foram importados!",
+                        Duration = 4000
+                    });
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Importação parcial", "Alguns insumos não foram importados.");
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro ao importar", ex.Message);
+        }
+    }
+
+    private void DownloadModeloUnidades()
+    {
+        NavigationManager.NavigateTo("/modelos/Modelo_UnidadesMedida.xlsx", true);
+    }
+
+    private void DownloadModeloImportacao()
+    {
+        NavigationManager.NavigateTo("/modelos/Modelo_Importacao_Insumos.xlsx", true);
+    }
+
+
+    [Inject] NavigationManager NavigationManager { get; set; } = default!;
+
+    private class UnidadeMedidaOption
+    {
+        public UnidadeMedida Value { get; set; }
+        public string Label { get; set; } = string.Empty;
+    }
+
+
+}

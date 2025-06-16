@@ -1,0 +1,112 @@
+﻿@page "/fornecedores/importar"
+@inject FornecedorImportacaoApiService ImportacaoService
+@inject NotificationService NotificationService
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Components.Forms
+@using Radzen
+
+<RadzenCard Style="max-width: 1300px; margin: auto; padding: 2rem;">
+    <RadzenHeading Size="H4" Text="Importador de Fornecedores" />
+
+    <!-- Upload Excel -->
+    <div class="rz-mb-4">
+        <label class="rz-button rz-button-md rz-button-outlined">
+            <span class="material-icons">upload</span>&nbsp;Selecionar Excel
+            <InputFile OnChange="OnFileSelected" accept=".xlsx,.xls" style="display:none" />
+        </label>
+    </div>
+
+    <!-- Preview Editável -->
+    @if (fornecedoresPreview?.Any() == true)
+    {
+        <RadzenDataGrid TItem="FornecedorDto" Data="@fornecedoresPreview" @ref="grid" Editable="true" EditMode="DataGridEditMode.Single">
+            <Columns>
+                <RadzenDataGridColumn TItem="FornecedorDto" Property="Nome" Title="Nome" />
+                <RadzenDataGridColumn TItem="FornecedorDto" Property="Tipo" Title="Tipo" />
+                <RadzenDataGridColumn TItem="FornecedorDto" Property="CpfCnpj" Title="CNPJ/CPF" />
+                <RadzenDataGridColumn TItem="FornecedorDto" Property="Telefone" Title="Telefone" />
+                <RadzenDataGridColumn TItem="FornecedorDto" Property="Email" Title="Email" />
+                <RadzenDataGridColumn TItem="FornecedorDto">
+                    <Template Context="fornecedor">
+                        <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="() => grid.EditRow(fornecedor)" Text="Editar" />
+                    </Template>
+                    <EditTemplate Context="fornecedor">
+                        <RadzenButton Icon="check" Size="ButtonSize.Small" Click="() => grid.UpdateRow(fornecedor)" Text="Salvar" />
+                        <RadzenButton Icon="close" Size="ButtonSize.Small" Click="() => grid.CancelEditRow(fornecedor)" Text="Cancelar" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+
+        <RadzenButton Text="Importar"
+                      Style="margin-top: 1.5rem"
+                      Icon="upload"
+                      ButtonStyle="ButtonStyle.Primary"
+                      Click="@Importar" />
+    }
+
+    <!-- Lista de Erros -->
+    @if (errosImportacao?.Any() == true)
+    {
+        <RadzenPanel Text="Erros encontrados durante a importação" Style="margin-top:2rem;">
+            <ul>
+                @foreach (var erro in errosImportacao)
+                {
+                    <li><b>@erro.Referencia:</b> @erro.Mensagem</li>
+                }
+            </ul>
+        </RadzenPanel>
+    }
+</RadzenCard>
+
+@code {
+    private List<FornecedorDto> fornecedoresPreview = new();
+    private List<ErroImportacaoDto> errosImportacao = new();
+    private RadzenDataGrid<FornecedorDto>? grid;
+
+    async Task OnFileSelected(InputFileChangeEventArgs args)
+    {
+        try
+        {
+            var file = args.File;
+            if (file == null)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "Nenhum arquivo selecionado.");
+                return;
+            }
+
+            using var stream = file.OpenReadStream();
+            fornecedoresPreview = await ImportacaoService.PreviewExcelFornecedoresAsync(stream, file.Name);
+
+            NotificationService.Notify(NotificationSeverity.Success, "Pré-visualização pronta", "Dados carregados com sucesso.");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", ex.Message);
+        }
+    }
+
+    async Task Importar()
+    {
+        try
+        {
+            errosImportacao = await ImportacaoService.ImportarFornecedoresAsync(fornecedoresPreview);
+
+            if (errosImportacao.Count == 0)
+            {
+                fornecedoresPreview.Clear();
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Todos os fornecedores foram importados!", Duration = 4000 });
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Importação parcial", "Alguns fornecedores não foram importados.");
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro ao importar", ex.Message);
+        }
+    }
+}

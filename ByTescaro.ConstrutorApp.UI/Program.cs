@@ -97,7 +97,6 @@ builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<ILogAuditoriaService, LogAuditoriaService>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<IProjetoService, ProjetoService>();
-builder.Services.AddScoped<IInsumoService, InsumoService>();
 builder.Services.AddScoped<IEquipamentoService, EquipamentoService>();
 builder.Services.AddScoped<IFuncionarioService, FuncionarioService>();
 builder.Services.AddScoped<IObraService, ObraService>();
@@ -107,14 +106,27 @@ builder.Services.AddScoped<IObraEtapaService, ObraEtapaService>();
 builder.Services.AddScoped<IObraItemEtapaService, ObraItemEtapaService>(); 
 builder.Services.AddScoped<IObraEquipamentoService, ObraEquipamentoService>();
 builder.Services.AddScoped<IObraFuncionarioService, ObraFuncionarioService>();
-builder.Services.AddScoped<IObraInsumoService, ObraInsumoService>();
-builder.Services.AddScoped<IObraInsumoListaService, ObraInsumoListaService>();
+builder.Services.AddScoped<IObraFornecedorService, ObraFornecedorService>();
 builder.Services.AddScoped<IFuncaoService, FuncaoService>();
 builder.Services.AddScoped<IClienteImportacaoService, ClienteImportacaoService>();
 builder.Services.AddScoped<IObraChecklistService, ObraChecklistService>();
 builder.Services.AddScoped<IObraRetrabalhoService, ObraRetrabalhoService>();
 builder.Services.AddScoped<IObraPendenciaService, ObraPendenciaService>();
-
+builder.Services.AddScoped<IFornecedorService, FornecedorService>();
+builder.Services.AddScoped<IFornecedorImportacaoService, FornecedorImportacaoService>();
+builder.Services.AddScoped<IFornecedorInsumoService, FornecedorInsumoService>();
+builder.Services.AddScoped<IInsumoImportacaoService, InsumoImportacaoService>();
+builder.Services.AddScoped<IInsumoService, InsumoService>();
+builder.Services.AddScoped<IObraInsumoService, ObraInsumoService>();
+builder.Services.AddScoped<IObraInsumoListaService, ObraInsumoListaService>();
+builder.Services.AddScoped<IFornecedorServicoService, FornecedorServicoService>();
+builder.Services.AddScoped<IServicoImportacaoService, ServicoImportacaoService>();
+builder.Services.AddScoped<IServicoService, ServicoService>();
+builder.Services.AddScoped<IObraServicoService, ObraServicoService>();
+builder.Services.AddScoped<IObraServicoListaService, ObraServicoListaService>();
+builder.Services.AddScoped<IOrcamentoService, OrcamentoService>();
+builder.Services.AddScoped<IOrcamentoItemService, OrcamentoItemService>();
+builder.Services.AddScoped<IOrcamentoObraService, OrcamentoObraService>();
 
 
 builder.Services.AddAutoMapper(typeof(ApplicationProfile));
@@ -147,6 +159,7 @@ builder.Services.AddScoped<ClienteApiService>(sp =>
 });
 
 
+
 builder.Services.AddScoped<ProjetoApiService>(sp =>
 {
     var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
@@ -172,6 +185,13 @@ builder.Services.AddScoped<InsumoApiService>(sp =>
     var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
     return new InsumoApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
 });
+
+builder.Services.AddScoped<ServicoApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new ServicoApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
+
 
 builder.Services.AddScoped<ObraApiService>(sp =>
 {
@@ -201,6 +221,12 @@ builder.Services.AddScoped<ObraFuncionarioApiService>(sp =>
     return new ObraFuncionarioApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
 });
 
+builder.Services.AddScoped<ObraFornecedorApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new ObraFornecedorApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
+
 builder.Services.AddScoped<ObraEquipamentoApiService>(sp =>
 {
     var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
@@ -218,6 +244,19 @@ builder.Services.AddScoped<ObraInsumoListaApiService>(sp =>
 {
     var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
     return new ObraInsumoListaApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
+
+builder.Services.AddScoped<ObraServicoApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new ObraServicoApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
+
+
+builder.Services.AddScoped<ObraServicoListaApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new ObraServicoListaApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
 });
 
 builder.Services.AddScoped<FuncaoApiService>(sp =>
@@ -254,6 +293,55 @@ builder.Services.AddScoped<ObraPendenciaApiService>(sp =>
 });
 
 
+builder.Services.AddScoped<FornecedorApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new FornecedorApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
+
+builder.Services.AddScoped<FornecedorImportacaoApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new FornecedorImportacaoApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
+
+builder.Services.AddScoped<FornecedorInsumoApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new FornecedorInsumoApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
+
+builder.Services.AddScoped<InsumoImportacaoApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new InsumoImportacaoApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
+
+builder.Services.AddScoped<FornecedorServicoApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new FornecedorServicoApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
+
+builder.Services.AddScoped<ServicoImportacaoApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new ServicoImportacaoApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
+
+builder.Services.AddScoped<OrcamentoApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new OrcamentoApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
+
+builder.Services.AddScoped<OrcamentoItemApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new OrcamentoItemApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
+
+
 
 #endregion
 
@@ -264,7 +352,6 @@ builder.Services.AddScoped<IProjetoRepository, ProjetoRepository>();
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IFuncionarioRepository, FuncionarioRepository>();
 builder.Services.AddScoped<IEquipamentoRepository, EquipamentoRepository>();
-builder.Services.AddScoped<IInsumoRepository, InsumoRepository>();
 builder.Services.AddScoped<ILogAuditoriaRepository, LogAuditoriaRepository>();
 builder.Services.AddScoped<IPerfilUsuarioRepository, PerfilUsuarioRepository>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
@@ -275,14 +362,24 @@ builder.Services.AddScoped<IObraItemEtapaPadraoRepository, ObraItemEtapaPadraoRe
 builder.Services.AddScoped<IObraEtapaRepository, ObraEtapaRepository>();
 builder.Services.AddScoped<IObraItemEtapaRepository, ObraItemEtapaRepository>();
 builder.Services.AddScoped<IObraFuncionarioRepository, ObraFuncionarioRepository>();
+builder.Services.AddScoped<IObraFornecedorRepository, ObraFornecedorRepository>();
 builder.Services.AddScoped<IObraEquipamentoRepository, ObraEquipamentoRepository>();
-builder.Services.AddScoped<IObraInsumoRepository, ObraInsumoRepository>();
-builder.Services.AddScoped<IObraInsumoListaRepository, ObraInsumoListaRepository>();
 builder.Services.AddScoped<IObraRetrabalhoRepository, ObraRetrabalhoRepository>();
 builder.Services.AddScoped<IObraPendenciaRepository, ObraPendenciaRepository>();
 builder.Services.AddScoped<IObraDocumentoRepository, ObraDocumentoRepository>();
 builder.Services.AddScoped<IObraImagemRepository, ObraImagemRepository>();
-
+builder.Services.AddScoped<IFornecedorRepository, FornecedorRepository>();
+builder.Services.AddScoped<IInsumoRepository, InsumoRepository>();
+builder.Services.AddScoped<IObraInsumoRepository, ObraInsumoRepository>();
+builder.Services.AddScoped<IObraInsumoListaRepository, ObraInsumoListaRepository>();
+builder.Services.AddScoped<IFornecedorInsumoRepository, FornecedorInsumoRepository>();
+builder.Services.AddScoped<IServicoRepository, ServicoRepository>();
+builder.Services.AddScoped<IObraServicoRepository, ObraServicoRepository>();
+builder.Services.AddScoped<IObraServicoListaRepository, ObraServicoListaRepository>();
+builder.Services.AddScoped<IFornecedorServicoRepository, FornecedorServicoRepository>();
+builder.Services.AddScoped<IOrcamentoRepository, OrcamentoRepository>();
+builder.Services.AddScoped<IOrcamentoItemRepository, OrcamentoItemRepository>();
+builder.Services.AddScoped<IOrcamentoObraRepository, OrcamentoObraRepository>();
 
 #endregion
 

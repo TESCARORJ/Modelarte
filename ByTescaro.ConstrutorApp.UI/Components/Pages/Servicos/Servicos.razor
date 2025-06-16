@@ -1,0 +1,144 @@
+﻿@page "/servicos"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Utils
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+@inject ServicoApiService ServicoApiService
+@inject NavigationManager Navigation
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+@attribute [Authorize]
+
+<PageTitle>Servicos</PageTitle>
+
+<RadzenCard Style="margin: 1rem;">
+    <RadzenHeading Size="H4" Text="Servicos" />
+
+    <div class="row mt-4 mb-2">
+        <div class="col-md-9">
+            <RadzenTextBox @bind-Value="Filtro"
+                           Placeholder="Pesquisar por nome"
+                           Icon="search"
+                           Style="width: 100%;" />
+        </div>
+        <div class="col-md-3 d-flex justify-content-end">
+            <RadzenButton Text="Novo Servico" Icon="add_circle" Click="@NovoServico" Style="width: 100%;" />
+        </div>
+    </div>
+
+    <RadzenDataGrid TItem="ServicoDto"
+                    Data="@_servicosFiltrados"
+                    AllowPaging="true"
+                    PageSize="10"
+                    AllowSorting="true"
+                    FilterMode="FilterMode.Simple"
+                    Responsive="true"
+                    ShowPagingSummary="true">
+
+        <Columns>
+            <RadzenDataGridColumn TItem="ServicoDto" Property="Nome" Title="Nome" />
+           
+
+            
+            <RadzenDataGridColumn TItem="ServicoDto" Title="Ações" Filterable="false" Sortable="false">
+                <Template Context="i">
+                    <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
+                                  Click="@(() => VerDetalhes(i.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                  Click="@(() => EditarServico(i.Id))" Style="margin-right: 0.25rem;" />
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                  Click="@(() => ConfirmarExclusao(i.Id, i.Nome))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<ServicoDto> _servicos = new();
+    private string _filtro = string.Empty;
+
+    private string Filtro
+    {
+        get => _filtro;
+        set
+        {
+            _filtro = value;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<ServicoDto> _servicosFiltrados =>
+        string.IsNullOrWhiteSpace(_filtro)
+            ? _servicos
+            : _servicos.Where(i =>
+                i.Nome.Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _servicos = (await ServicoApiService.GetAllAsync()).ToList();
+    }
+
+    private void NovoServico() =>
+        Navigation.NavigateTo("/servico/novo");
+
+    private void EditarServico(long id) =>
+        Navigation.NavigateTo($"/servico/editar/{id}");
+
+    private void VerDetalhes(long id) =>
+        Navigation.NavigateTo($"/servico/detalhes/{id}");
+
+    private async Task ConfirmarExclusao(long id, string nome)
+    {
+        var confirm = await DialogService.Confirm($"Deseja realmente excluir o servico \"{nome}\"?",
+                                                  "Confirme a exclusão",
+                                                  new ConfirmOptions { OkButtonText = "Sim", CancelButtonText = "Cancelar" });
+
+        if (confirm == true)
+        {
+            await ExcluirConfirmado(id);
+        }
+    }
+
+    private async Task ExcluirConfirmado(long id)
+    {
+        try
+        {
+            await ServicoApiService.DeleteAsync(id);
+            _servicos = (await ServicoApiService.GetAllAsync()).ToList();
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Sucesso",
+                    Detail = "Servico excluído com sucesso!",
+                    Duration = 4000
+                });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Erro",
+                    Detail = $"Erro ao excluir servico: {ex.Message}",
+                    Duration = 5000
+                });
+        }
+    }
+
+    // private static string ObterNomeUnidade(UnidadeMedida? unidade)
+    // {
+    //     if (unidade == null)
+    //         return string.Empty;
+
+    //     var member = unidade.Value.GetType().GetMember(unidade.ToString() ?? "")
+    //         .FirstOrDefault();
+
+    //     var display = member?.GetCustomAttribute<DisplayAttribute>();
+    //     return display?.Name ?? unidade.ToString();
+    // }
+
+}

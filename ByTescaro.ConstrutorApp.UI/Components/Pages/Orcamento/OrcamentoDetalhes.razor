@@ -1,0 +1,158 @@
+﻿@page "/orcamento/detalhes/{ObraId:long}"
+@inject OrcamentoApiService OrcamentoApiService
+@inject OrcamentoItemApiService OrcamentoItemApiService
+@inject InsumoApiService InsumoApiService
+@inject ServicoApiService ServicoApiService
+@inject FornecedorApiService FornecedorApiService
+@inject NotificationService NotificationService
+@inject NavigationManager Navigation
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Radzen
+
+<PageTitle>Orçamento da Obra</PageTitle>
+
+<RadzenCard Style="max-width:1300px; margin:auto; padding:2rem;">
+    <RadzenHeading Size="H4" Text="Orçamento da Obra" />
+
+    @if (orcamento is null)
+    {
+        <RadzenAlert Severity="Severity.Warning" Style="margin-top:1rem;">
+            Nenhum orçamento encontrado para esta obra.
+        </RadzenAlert>
+    }
+    else
+    {
+        <RadzenDataGrid TItem="OrcamentoItemDto" Data="@orcamento.Itens" @ref="grid"
+                        EditMode="DataGridEditMode.Single"
+                        Editable="true"
+                        RowUpdate="@SalvarItem"
+                        RowCreate="@SalvarItem"
+                        Style="margin-top:2rem;">
+
+            <Columns>
+                <RadzenDataGridColumn TItem="OrcamentoItemDto" Property="InsumoId" Title="Insumo">
+                    <Template Context="item">@(item.InsumoNome ?? "-")</Template>
+                    <EditTemplate Context="item">
+                        <RadzenDropDown @bind-Value="item.InsumoId" Data="@insumos"
+                                        TextProperty="Nome" ValueProperty="Id" Style="width:100%;" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="OrcamentoItemDto" Property="ServicoId" Title="Serviço">
+                    <Template Context="item">@(item.ServicoNome ?? "-")</Template>
+                    <EditTemplate Context="item">
+                        <RadzenDropDown @bind-Value="item.ServicoId" Data="@servicos"
+                                        TextProperty="Nome" ValueProperty="Id" Style="width:100%;" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="OrcamentoItemDto" Property="FornecedorId" Title="Fornecedor">
+                    <Template Context="item">@(item.FornecedorNome ?? "-")</Template>
+                    <EditTemplate Context="item">
+                        <RadzenDropDown @bind-Value="item.FornecedorId" Data="@fornecedores"
+                                        TextProperty="Nome" ValueProperty="Id" Style="width:100%;" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="OrcamentoItemDto" Property="Quantidade" Title="Qtd">
+                    <EditTemplate Context="item">
+                        <RadzenNumeric TValue="decimal" @bind-Value="item.Quantidade" Style="width:100%;" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="OrcamentoItemDto" Property="PrecoUnitario" Title="Preço Unit.">
+                    <EditTemplate Context="item">
+                        <RadzenNumeric TValue="decimal" @bind-Value="item.PrecoUnitario" Style="width:100%;" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="OrcamentoItemDto" Title="Total">
+                    <Template Context="item">@item.Total.ToString("C")</Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="OrcamentoItemDto" Title="Ações">
+                    <Template Context="item">
+                        <RadzenButton Icon="edit" Click="() => grid.EditRow(item)" Size="ButtonSize.Small" />
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                      Click="@(() => RemoverItem(item))" />
+                    </Template>
+                    <EditTemplate Context="item">
+                        <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small" Type="submit" />
+                        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                      Click="() => grid.CancelEditRow(item)" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+
+        <RadzenButton Icon="add" Text="Adicionar Item" Style="margin-top:1rem;"
+                      ButtonStyle="ButtonStyle.Primary"
+                      Click="@(() => grid.InsertRow(new OrcamentoItemDto { OrcamentoObraId = ObraId }))" />
+
+        <RadzenDivider Style="margin:2rem 0;" />
+
+        <RadzenLabel Text="@($"Total Geral: {orcamento.Itens?.Sum(i => i.Total):C}")" Style="font-weight: bold;" />
+    }
+
+    <RadzenButton Text="Voltar" ButtonStyle="ButtonStyle.Light" Style="margin-top:2rem;"
+                  Click="@(() => Navigation.NavigateTo($"/obra/detalhes/{ObraId}"))" />
+</RadzenCard>
+
+@code {
+    [Parameter] public long ObraId { get; set; }
+
+    private OrcamentoDto? orcamento;
+    private List<InsumoDto> insumos = new();
+    private List<ServicoDto> servicos = new();
+    private List<FornecedorDto> fornecedores = new();
+    private RadzenDataGrid<OrcamentoItemDto>? grid;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarDadosAsync();
+    }
+
+    private async Task CarregarDadosAsync()
+    {
+        orcamento = await OrcamentoApiService.GetByObraAsync(ObraId) ?? new OrcamentoDto { ObraId = ObraId };
+        insumos = await InsumoApiService.GetAllAsync();
+        servicos = await ServicoApiService.GetAllAsync();
+        fornecedores = await FornecedorApiService.GetAllAsync();
+
+        orcamento.Itens ??= new();
+    }
+
+    private async Task SalvarItem(OrcamentoItemDto item)
+    {
+        try
+        {
+            if (item.Id == 0)
+                await OrcamentoItemApiService.CreateAsync(item);
+            else
+                await OrcamentoItemApiService.UpdateAsync(item);
+
+            await CarregarDadosAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Erro",
+                Detail = $"Erro ao salvar item: {ex.Message}"
+            });
+        }
+    }
+
+    private async Task RemoverItem(OrcamentoItemDto item)
+    {
+        if (item.Id > 0)
+            await OrcamentoItemApiService.DeleteAsync(item.Id);
+
+        orcamento?.Itens?.Remove(item);
+        StateHasChanged();
+    }
+}

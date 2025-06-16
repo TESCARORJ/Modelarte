@@ -1,0 +1,168 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject FornecedorInsumoApiService FornecedorInsumoApiService
+@inject InsumoApiService InsumoApiService
+@inject NotificationService NotificationService
+
+@if (FornecedorId == 0)
+{
+    <RadzenAlert Severity="Severity.Warning" Style="margin-top: 1rem;">
+        Fornecedor não identificado.
+    </RadzenAlert>
+}
+else
+{
+    <RadzenCard Style="margin-top: 1rem;">
+        <RadzenHeading Size="H5" Text="Insumos do Fornecedor" />
+
+        <RadzenDataGrid TItem="FornecedorInsumoDto" Data="@insumosFornecedor" @ref="grid"
+                        Editable="true" EditMode="DataGridEditMode.Single"
+                        RowUpdate="@SalvarEdicao" RowCreate="@CriarNovo" RowRemove="@Excluir"
+                        Style="margin-bottom: 1rem">
+
+            <Columns>
+                <RadzenDataGridColumn TItem="FornecedorInsumoDto" Property="InsumoNome" Title="Insumo">
+                    <EditTemplate Context="item">
+                        <RadzenDropDown @bind-Value="item.InsumoId"
+                                        Data="@insumosDisponiveis"
+                                        TextProperty="Nome"
+                                        ValueProperty="Id"
+                                        Style="width:100%" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="FornecedorInsumoDto" Property="PrecoUnitario" Title="Preço Unitário (R$)">
+                    <EditTemplate Context="item">
+                        <RadzenNumeric TValue="decimal" @bind-Value="item.PrecoUnitario" Style="width:100%" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="FornecedorInsumoDto" Property="PrazoEntregaDias" Title="Prazo (dias)">
+                    <EditTemplate Context="item">
+                        <RadzenNumeric TValue="int" @bind-Value="item.PrazoEntregaDias" Style="width:100%" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="FornecedorInsumoDto" Property="Observacao" Title="Observação">
+                    <EditTemplate Context="item">
+                        <RadzenTextBox @bind-Value="item.Observacao" Style="width:100%" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="FornecedorInsumoDto" Context="item">
+                    <Template Context="item">
+                        <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="() => grid.EditRow(item)" />
+                        <RadzenButton Icon="delete" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger" Click="@(async () => await Excluir(item))" />
+                    </Template>
+                    <EditTemplate Context="item">
+                        <RadzenButton Icon="check" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Success" Click="() => grid.UpdateRow(item)" />
+                        <RadzenButton Icon="close" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light" Click="() => grid.CancelEditRow(item)" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+
+        <RadzenButton Text="Adicionar Novo Insumo"
+                      Icon="add"
+                      ButtonStyle="ButtonStyle.Primary"
+                      Click="@AdicionarNovo"
+                      Style="margin-top: 1rem;" />
+    </RadzenCard>
+}
+
+@code {
+    [Parameter] public long FornecedorId { get; set; }
+
+    private List<FornecedorInsumoDto> insumosFornecedor = new();
+    private List<InsumoDto> insumosDisponiveis = new();
+    private RadzenDataGrid<FornecedorInsumoDto>? grid;
+    [Parameter] public EventCallback<List<FornecedorInsumoDto>> OnInsumosCarregados { get; set; }
+    public List<FornecedorInsumoDto> Insumos => insumosFornecedor;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (FornecedorId > 0)
+        {
+            insumosFornecedor = await FornecedorInsumoApiService.GetByFornecedorAsync(FornecedorId);
+            insumosDisponiveis = await InsumoApiService.GetAllAsync();
+            await OnInsumosCarregados.InvokeAsync(insumosFornecedor); 
+
+        }
+    }
+
+    private async Task SalvarEdicao(FornecedorInsumoDto item)
+    {
+        try
+        {
+            if (item.InsumoId == 0)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "Selecione um insumo.");
+                return;
+            }
+
+            if (item.PrecoUnitario <= 0)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "Informe um preço válido.");
+                return;
+            }
+
+            if (item.PrazoEntregaDias <= 0)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "Informe o prazo de entrega.");
+                return;
+            }
+
+            if (item.Id == 0)
+            {
+                item.FornecedorId = FornecedorId;
+                await FornecedorInsumoApiService.CreateAsync(item);
+                NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Insumo vinculado.");
+            }
+            else
+            {
+                await FornecedorInsumoApiService.UpdateAsync(item);
+                NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Registro atualizado.");
+            }
+
+            await Recarregar();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", ex.Message);
+        }
+    }
+
+
+    private async Task CriarNovo(FornecedorInsumoDto item)
+    {
+        item.FornecedorId = FornecedorId;
+        await FornecedorInsumoApiService.CreateAsync(item);
+        await Recarregar();
+    }
+
+    private async Task Excluir(FornecedorInsumoDto item)
+    {
+        await FornecedorInsumoApiService.DeleteAsync(item.Id);
+        await Recarregar();
+    }
+
+    private async Task Recarregar()
+    {
+        insumosFornecedor = await FornecedorInsumoApiService.GetByFornecedorAsync(FornecedorId);
+        StateHasChanged();
+    }
+
+    private void AdicionarNovo()
+    {
+        var novo = new FornecedorInsumoDto
+            {
+                FornecedorId = FornecedorId,
+                PrecoUnitario = 0,
+                PrazoEntregaDias = 1,
+                Ativo = true,
+                DataHoraCadastro = DateTime.Now
+            };
+
+        grid?.InsertRow(novo);
+    }
+}

@@ -1,0 +1,61 @@
+﻿@page "/servico/detalhes/{Id:long}"
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@using System.Globalization
+@using Microsoft.AspNetCore.Authorization
+@inject ServicoApiService ServicoApiService
+@inject NavigationManager Navigation
+@attribute [Authorize]
+
+<PageTitle>Detalhes do Serviço</PageTitle>
+
+<RadzenCard Style="max-width: 900px; margin: 2rem auto;">
+    <RadzenHeading Size="H5" Style="padding: 1rem;">Detalhes do Serviço</RadzenHeading>
+
+    @if (servico == null)
+    {
+        <RadzenText Text="Servico não encontrado." Style="color: red; padding: 1rem;" />
+    }
+    else
+    {
+        <RadzenRow Class="rz-p-4" Style="row-gap: 1rem;">
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenLabel Text="Nome" />
+                <RadzenTextBox Value="@servico.Nome" ReadOnly Style="width: 100%" />
+            </RadzenColumn>
+
+                      
+
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenLabel Text="Cadastro em" />
+                <RadzenTextBox Value="@servico.DataHoraCadastro.ToString("dd/MM/yyyy HH:mm")" ReadOnly Style="width: 100%" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenDivider Style="margin: 2rem 0;" />
+
+        <RadzenRow Class="rz-px-4 rz-mb-2" JustifyContent="JustifyContent.End" Style="gap: 1rem;">
+            <RadzenButton Text="Voltar"
+                          ButtonStyle="ButtonStyle.Light"
+                          Click="@(() => Navigation.NavigateTo("/servicos"))" />
+
+            <RadzenButton Text="Editar"
+                          Icon="edit"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Click="@(() => Navigation.NavigateTo($"/servicos/editar/{servico.Id}"))" />
+        </RadzenRow>
+    }
+</RadzenCard>
+
+@code {
+    [Parameter] public long Id { get; set; }
+
+    private ServicoDto? servico;
+    private readonly CultureInfo _br = CultureInfo.GetCultureInfo("pt-BR");
+
+    protected override async Task OnInitializedAsync()
+    {
+        servico = await ServicoApiService.GetByIdAsync(Id);
+    }
+}

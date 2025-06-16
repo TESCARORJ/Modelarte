@@ -79,41 +79,12 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             return _mapper.Map<List<FuncionarioDto>>(disponiveis);
         }
 
-        //public async Task<List<FuncionarioDto>> ObterFuncionariosTotalDisponiveisAsync()
-        //{
-        //    var todosFuncionarios = await _funcionarioRepository.GetAllAsync();
-        //    var funcionariosAlocados = await _repo.GetAllAsync(); // Todos alocados em qualquer obra
-
-        //    var idsAlocadosEmOutrasObras = funcionariosAlocados
-        //        .Where(f => f.ObraId > 0)
-        //        .Select(f => f.FuncionarioId)
-
-        //        .ToHashSet();
-
-        //    var disponiveis = todosFuncionarios
-        //        .Where(f => !idsAlocadosEmOutrasObras.Contains(f.Id))
-        //        .ToList();
-
-        //    return _mapper.Map<List<FuncionarioDto>>(disponiveis);
-        //}
-
         public async Task<List<FuncionarioDto>> ObterFuncionariosTotalDisponiveisAsync()
         {
             var todosFuncionarios = await _funcionarioRepository
-                .GetAllIncludingAsync(f => f.Funcao); 
+                .GetAllIncludingAsync(f => f.Funcao);
 
-            var funcionariosAlocados = await _repo.GetAllAsync(); // Todos alocados
-
-            var idsAlocadosEmOutrasObras = funcionariosAlocados
-                .Where(f => f.ObraId > 0)
-                .Select(f => f.FuncionarioId)
-                .ToHashSet();
-
-            var disponiveis = todosFuncionarios
-                .Where(f => !idsAlocadosEmOutrasObras.Contains(f.Id))
-                .ToList();
-
-            return _mapper.Map<List<FuncionarioDto>>(disponiveis);
+            return _mapper.Map<List<FuncionarioDto>>(todosFuncionarios);
         }
 
 
