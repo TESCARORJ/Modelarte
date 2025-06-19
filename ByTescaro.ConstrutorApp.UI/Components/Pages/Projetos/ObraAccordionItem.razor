@@ -22,17 +22,32 @@
                 display: block;
                 padding: 0.75rem 1rem;
                 font-weight: 500;
+                border-radius: 8px;
+                transition: background-color 0.2s;
             }
+
+                ul[role="tablist"] li a:hover {
+                    background-color: #f0f0f0;
+                }
+
+    .form-field {
+        margin-bottom: 1rem;
+    }
+
+    .obra-form-row {
+        align-items: end;
+        margin-bottom: 1rem;
+    }
 </style>
 
 <RadzenAccordionItem Text="@TituloObra" @key="Obra">
-    <RadzenRow>
-        <RadzenColumn Size="12" SizeMD="4">
+    <RadzenRow class="obra-form-row">
+        <RadzenColumn Size="12" SizeMD="4" Style="padding-right: 1rem;">
             <RadzenLabel Text="Nome da Obra" />
             <RadzenTextBox @bind-Value="Obra.Nome" Style="width: 100%;" />
         </RadzenColumn>
 
-        <RadzenColumn Size="12" SizeMD="4">
+        <RadzenColumn Size="12" SizeMD="4" Style="padding-right: 1rem;">
             <RadzenLabel Text="Responsável Materiais" />
             <RadzenDropDown @bind-Value="Obra.ResponsavelMaterial"
                             TValue="ResponsavelMaterialEnum?"
@@ -53,25 +68,24 @@
 
     <RadzenTabs Class="rz-mt-4" Change="@OnTabChanged">
         <Tabs>
-
             <RadzenTabsItem Text="Checklist">
                 <ChecklistObraTab Obra="@Obra" />
             </RadzenTabsItem>
             <RadzenTabsItem Text="Fornecedores">
                 <ObraFornecedorTab Obra="@Obra" />
-            </RadzenTabsItem> 
+            </RadzenTabsItem>
             <RadzenTabsItem Text="Funcionários">
                 <ObraFuncionarioTab Obra="@Obra" />
             </RadzenTabsItem>
             <RadzenTabsItem Text="Equipamentos">
                 <ObraEquipamentoTab Obra="@Obra" />
-            </RadzenTabsItem> 
+            </RadzenTabsItem>
             <RadzenTabsItem Text="Insumos">
                 <ObraInsumoTab Obra="@Obra" />
-           </RadzenTabsItem>      
-           <RadzenTabsItem Text="Serviços">
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Serviços">
                 <ObraServicoTab Obra="@Obra" />
-           </RadzenTabsItem>
+            </RadzenTabsItem>
             <RadzenTabsItem Text="Documentos">
                 <DocumentosObraTab Obra="@Obra" />
             </RadzenTabsItem>
@@ -87,11 +101,15 @@
         </Tabs>
     </RadzenTabs>
 
-    <RadzenButton Text="Remover Obra"
-                  Icon="delete"
-                  ButtonStyle="ButtonStyle.Danger"
-                  Style="margin-top: 1rem;"
-                  Click="@(() => OnRemover.InvokeAsync(Obra))" />
+    <RadzenRow>
+        <RadzenColumn Size="12" Style="text-align: right;">
+            <RadzenButton Text="Remover Obra"
+                          Icon="delete"
+                          ButtonStyle="ButtonStyle.Danger"
+                          Style="margin-top: 1.5rem;"
+                          Click="@(() => OnRemover.InvokeAsync(Obra))" />
+        </RadzenColumn>
+    </RadzenRow>
 </RadzenAccordionItem>
 
 @code {
@@ -101,12 +119,8 @@
     [Parameter] public List<object> ResponsavelOptions { get; set; } = new();
     [Parameter] public List<object> StatusOptions { get; set; } = new();
 
-  
-
-
     private async Task OnTabChanged(int index)
     {
         await JS.InvokeVoidAsync("document.activeElement.blur");
     }
-
 }

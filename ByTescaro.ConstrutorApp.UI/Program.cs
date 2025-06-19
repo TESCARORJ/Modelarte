@@ -19,7 +19,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Adiciona suporte ao Radzen ThemeService
 builder.Services.AddScoped<Radzen.ThemeService>();
-builder.Services.AddScoped<Radzen.ThemeService>();
 builder.Services.AddScoped<Radzen.DialogService>();
 builder.Services.AddScoped<Radzen.NotificationService>();
 builder.Services.AddScoped<Radzen.TooltipService>();
@@ -112,6 +111,7 @@ builder.Services.AddScoped<IClienteImportacaoService, ClienteImportacaoService>(
 builder.Services.AddScoped<IObraChecklistService, ObraChecklistService>();
 builder.Services.AddScoped<IObraRetrabalhoService, ObraRetrabalhoService>();
 builder.Services.AddScoped<IObraPendenciaService, ObraPendenciaService>();
+builder.Services.AddScoped<IObraItemEtapaPadraoInsumoService, ObraItemEtapaPadraoInsumoService>();
 builder.Services.AddScoped<IFornecedorService, FornecedorService>();
 builder.Services.AddScoped<IFornecedorImportacaoService, FornecedorImportacaoService>();
 builder.Services.AddScoped<IFornecedorInsumoService, FornecedorInsumoService>();
@@ -292,6 +292,11 @@ builder.Services.AddScoped<ObraPendenciaApiService>(sp =>
     return new ObraPendenciaApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
 });
 
+builder.Services.AddScoped<ObraItemEtapaPadraoInsumoApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new ObraItemEtapaPadraoInsumoApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
 
 builder.Services.AddScoped<FornecedorApiService>(sp =>
 {
@@ -368,6 +373,7 @@ builder.Services.AddScoped<IObraRetrabalhoRepository, ObraRetrabalhoRepository>(
 builder.Services.AddScoped<IObraPendenciaRepository, ObraPendenciaRepository>();
 builder.Services.AddScoped<IObraDocumentoRepository, ObraDocumentoRepository>();
 builder.Services.AddScoped<IObraImagemRepository, ObraImagemRepository>();
+builder.Services.AddScoped<IObraItemEtapaPadraoInsumoRepository, ObraItemEtapaPadraoInsumoRepository>();
 builder.Services.AddScoped<IFornecedorRepository, FornecedorRepository>();
 builder.Services.AddScoped<IInsumoRepository, InsumoRepository>();
 builder.Services.AddScoped<IObraInsumoRepository, ObraInsumoRepository>();

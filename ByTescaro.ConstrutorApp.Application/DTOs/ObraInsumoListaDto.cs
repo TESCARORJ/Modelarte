@@ -6,7 +6,7 @@
         public long ObraId { get; set; }
         public long ResponsavelId { get; set; }
         public string NomeResponsavel { get; set; } = string.Empty;
-        public DateOnly Data { get; set; } = default!;
+        public DateOnly Data { get; set; }
         public List<ObraInsumoDto> Itens { get; set; } = new();
 
         public DateTime DataHoraCadastro { get; set; }

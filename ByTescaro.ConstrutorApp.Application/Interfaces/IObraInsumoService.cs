@@ -9,5 +9,6 @@ namespace ByTescaro.ConstrutorApp.Application.Interfaces
         Task AtualizarAsync(ObraInsumoDto dto);
         Task RemoverAsync(long id);
         Task<List<InsumoDto>> ObterInsumosDisponiveisAsync(long obraId);
+        Task<List<InsumoDto>> ObterInsumosPorPadraoObraAsync(long obraId);
     }
 }

@@ -17,11 +17,26 @@ namespace ByTescaro.ConstrutorApp.UI.Services
         public async Task<List<ObraItemEtapaPadraoDto>> GetByEtapaPadraoIdAsync(long etapaPadraoId) =>
             await _http.GetFromJsonAsync<List<ObraItemEtapaPadraoDto>>($"api/obraitemetapapadrao/por-etapa/{etapaPadraoId}") ?? new();
 
-        public async Task CreateAsync(ObraItemEtapaPadraoDto dto) =>
-            await _http.PostAsJsonAsync("api/obraitemetapapadrao", dto);
+        // No seu ObraItemEtapaPadraoApiService (no frontend)
+        public async Task<ObraItemEtapaPadraoDto> CreateAsync(ObraItemEtapaPadraoDto dto)
+        {
+            var response = await _http.PostAsJsonAsync("api/obraitemetapapadrao", dto);
 
-        public async Task UpdateAsync(ObraItemEtapaPadraoDto dto) =>
-            await _http.PutAsJsonAsync($"api/obraitemetapapadrao/{dto.Id}", dto);
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Erro ao criar ObraItemEtapaPadrao: {response.StatusCode} - {errorMessage}");
+            }
+            
+            var createdDto = await response.Content.ReadFromJsonAsync<ObraItemEtapaPadraoDto>();
+            return createdDto;
+        }
+
+        public async Task UpdateAsync(ObraItemEtapaPadraoDto dto){
+            var response = await _http.PutAsJsonAsync($"api/obraitemetapapadrao/{dto.Id}", dto);
+            if (!response.IsSuccessStatusCode)
+                throw new Exception($"Erro: {response.StatusCode}");
+        }
 
         public async Task DeleteAsync(long id) =>
             await _http.DeleteAsync($"api/obraitemetapapadrao/{id}");

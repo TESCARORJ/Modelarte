@@ -18,6 +18,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         {
             return await _context.ObraItemEtapaPadrao
                 .Include(x => x.ObraEtapaPadrao)
+                .Include(x => x.Insumos)
+                    .ThenInclude(i => i.Insumo)
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
 

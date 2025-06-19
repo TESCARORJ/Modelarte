@@ -124,7 +124,7 @@
     {
         if (!FuncionariosDisponiveis.Any())
         {
-            FuncionariosDisponiveis = await ObraFuncionarioApiService.GetFuncionariosTotalDisponiveisAsync();
+            FuncionariosDisponiveis = (await ObraFuncionarioApiService.GetFuncionariosDisponiveisAsync(Obra.Id)).ToList();
         }
 
         // Clona os funcionários atuais para controle de remoções

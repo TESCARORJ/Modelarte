@@ -42,7 +42,7 @@
                 <RadzenDataGridColumn TItem="InsumoDto" Property="Descricao" Title="Descrição" />
                 <RadzenDataGridColumn TItem="InsumoDto" Property="UnidadeMedida" Title="Unidade de Medida">
                     <EditTemplate Context="item">
-                        <RadzenDropDown TValue="UnidadeMedida"
+                        <RadzenDropDown TValue="UnidadeMedida?"
                                         @bind-Value="item.UnidadeMedida"
                                         Data="@Unidades"
                                         TextProperty="Label"

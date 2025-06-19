@@ -23,5 +23,11 @@ namespace ByTescaro.ConstrutorApp.UI.Services
 
         public async Task DeleteAsync(long id) =>
             await _http.DeleteAsync($"api/obrainsumo/{id}");
+
+        public async Task<List<InsumoDto>> GetInsumosPadraoRelacionadosAsync(long obraId)
+        {
+            return await _http.GetFromJsonAsync<List<InsumoDto>>($"api/obrainsumo/padrao-relacionados/{obraId}") ?? new();
+        }
+
     }
 }

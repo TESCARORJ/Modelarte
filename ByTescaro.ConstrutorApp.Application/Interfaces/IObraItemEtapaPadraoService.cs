@@ -8,7 +8,7 @@ namespace ByTescaro.ConstrutorApp.Application.Interfaces
         Task<List<ObraItemEtapaPadraoDto>> ObterTodasAsync();
         Task<List<ObraItemEtapaPadraoDto>> ObterPorEtapaIdAsync(long etapaId);
         Task AtualizarConclusaoAsync(long itemId, bool concluido);
-        Task CriarAsync(ObraItemEtapaPadraoDto dto);
+        Task<ObraItemEtapaPadraoDto> CriarAsync(ObraItemEtapaPadraoDto dto);
         Task AtualizarAsync(ObraItemEtapaPadraoDto dto);
         Task RemoverAsync(long id);
     }

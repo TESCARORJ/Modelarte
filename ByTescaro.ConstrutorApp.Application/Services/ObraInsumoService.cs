@@ -51,5 +51,11 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             return _mapper.Map<List<InsumoDto>>(entidades);
         }
 
+        public async Task<List<InsumoDto>> ObterInsumosPorPadraoObraAsync(long obraId)
+        {
+            var entidades = await _repo.GetInsumosPorPadraoObraAsync(obraId);
+            return _mapper.Map<List<InsumoDto>>(entidades);
+        }
+
     }
 }

@@ -72,7 +72,7 @@ public class ApplicationProfile : Profile
         .ForMember(dest => dest.Imagens, opt => opt.Ignore());
 
 
-    
+
         // ==== ObraFuncionario ====
         CreateMap<ObraFuncionario, ObraFuncionarioDto>()
             .ReverseMap()
@@ -99,7 +99,7 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.Data, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.Data)))
             .ReverseMap()
             .ForMember(dest => dest.Data, opt => opt.MapFrom(src => src.Data.ToDateTime(TimeOnly.MinValue)))
-            .ForMember(dest => dest.Itens, opt => opt.MapFrom(src => src.Itens))                
+            .ForMember(dest => dest.Itens, opt => opt.MapFrom(src => src.Itens))
             .ForMember(dest => dest.Responsavel, opt => opt.Ignore())
             .ForMember(dest => dest.Obra, opt => opt.Ignore());
 
@@ -171,6 +171,22 @@ public class ApplicationProfile : Profile
             .ForMember(d => d.Obra, opt => opt.Ignore())
             .ReverseMap();
 
+
+        // ==== ObraItemEtapaPadraoInsumo ====
+        CreateMap<ObraItemEtapaPadraoInsumo, ObraItemEtapaPadraoInsumoDto>()
+            .ForMember(dest => dest.InsumoNome, opt => opt.MapFrom(src => src.Insumo.Nome))
+            .ReverseMap()
+            .ForMember(dest => dest.Insumo, opt => opt.Ignore())
+            .ForMember(dest => dest.ObraItemEtapaPadrao, opt => opt.Ignore());
+
+
+        CreateMap<ObraItemEtapaPadrao, ObraItemEtapaPadraoDto>()
+            .ForMember(dest => dest.ObraEtapaId, opt => opt.MapFrom(src => src.ObraEtapaPadrao != null ? src.ObraEtapaPadrao.Id : src.ObraEtapaPadraoId))
+            .ForMember(dest => dest.ObraEtapaNome, opt => opt.MapFrom(src => src.ObraEtapaPadrao != null ? src.ObraEtapaPadrao.Nome : ""))
+            .ForMember(dest => dest.Insumos, opt => opt.MapFrom(src => src.Insumos)) 
+            .ReverseMap()
+            .ForMember(dest => dest.ObraEtapaPadrao, opt => opt.Ignore())
+            .ForMember(dest => dest.Insumos, opt => opt.Ignore()); 
         // ==== Orçamento ====
         CreateMap<Orcamento, OrcamentoDto>().ReverseMap();
         CreateMap<OrcamentoItem, OrcamentoItemDto>()

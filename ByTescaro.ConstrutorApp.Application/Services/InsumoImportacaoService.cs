@@ -36,7 +36,7 @@ public class InsumoImportacaoService : IInsumoImportacaoService
             var descricao = row.Cell(2).GetString();
             var unidadeTexto = row.Cell(3).GetString();
 
-            UnidadeMedida unidade = new UnidadeMedida();
+            UnidadeMedida? unidade = null;
             if (!string.IsNullOrWhiteSpace(unidadeTexto))
             {
                 // Tenta primeiro pelo nome

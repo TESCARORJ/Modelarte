@@ -50,4 +50,12 @@ public class ObraInsumoController : ControllerBase
         var disponiveis = await _service.ObterInsumosDisponiveisAsync(obraId);
         return Ok(disponiveis);
     }
+
+    [HttpGet("padrao-relacionados/{obraId}")]
+    public async Task<IActionResult> GetInsumosPadraoRelacionados(long obraId)
+    {
+        var insumos = await _service.ObterInsumosPorPadraoObraAsync(obraId);
+        return Ok(insumos);
+    }
+
 }

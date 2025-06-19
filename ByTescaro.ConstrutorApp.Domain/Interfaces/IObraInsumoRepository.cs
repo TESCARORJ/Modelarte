@@ -6,5 +6,6 @@ namespace ByTescaro.ConstrutorApp.Domain.Interfaces
     {
         Task<List<ObraInsumo>> GetByListaIdAsync(long listaId);
         Task<List<Insumo>> GetInsumosDisponiveisAsync(long obraId);
+        Task<List<Insumo>> GetInsumosPorPadraoObraAsync(long obraId);
     }
 }

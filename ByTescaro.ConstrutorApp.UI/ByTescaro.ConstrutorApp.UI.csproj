@@ -18,14 +18,14 @@
 
 
 	<ItemGroup>
-		<ProjectReference Include="..\ByTescaro.ConstrutorApp.Application\ByTescaro.ConstrutorApp.Application.csproj" />
-		<ProjectReference Include="..\ByTescaro.ConstrutorApp.Domain\ByTescaro.ConstrutorApp.Domain.csproj" />
-		<ProjectReference Include="..\ByTescaro.ConstrutorApp.Infrastructure\ByTescaro.ConstrutorApp.Infrastructure.csproj" />
+	  <Folder Include="wwwroot\Uploads\Projetos\17\16\Imagens\" />
 	</ItemGroup>
 
 
 	<ItemGroup>
-	  <Folder Include="wwwroot\Uploads\Projetos\17\16\Imagens\" />
+	  <ProjectReference Include="..\ByTescaro.ConstrutorApp.Application\ByTescaro.ConstrutorApp.Application.csproj" />
+	  <ProjectReference Include="..\ByTescaro.ConstrutorApp.Domain\ByTescaro.ConstrutorApp.Domain.csproj" />
+	  <ProjectReference Include="..\ByTescaro.ConstrutorApp.Infrastructure\ByTescaro.ConstrutorApp.Infrastructure.csproj" />
 	</ItemGroup>
 
 </Project>

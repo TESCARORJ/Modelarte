@@ -13,6 +13,8 @@
 
         public DateTime DataHoraCadastro { get; set; }
         public string UsuarioCadastro { get; set; } = string.Empty;
+        public ICollection<ObraItemEtapaPadraoInsumo> Insumos { get; set; } = new List<ObraItemEtapaPadraoInsumo>();
+
     }
 
 }

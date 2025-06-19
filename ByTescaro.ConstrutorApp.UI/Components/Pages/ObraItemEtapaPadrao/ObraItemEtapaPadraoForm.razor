@@ -5,9 +5,14 @@
 @using ByTescaro.ConstrutorApp.UI.Services
 @using Microsoft.AspNetCore.Authorization
 @inject ObraItemEtapaPadraoApiService ObraItemEtapaPadraoApiService
+@inject ObraItemEtapaPadraoInsumoApiService ObraItemEtapaPadraoInsumoApiService
 @inject ObraEtapaPadraoApiService ObraEtapaPadraoApiService
+@inject InsumoApiService InsumoApiService
 @inject NavigationManager Navigation
 @inject NotificationService NotificationService
+@inject DialogService DialogService
+
+
 @attribute [Authorize]
 
 <PageTitle>Item da Etapa</PageTitle>
@@ -31,8 +36,8 @@
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="2" Class="rz-align-items-end rz-display-flex">
-                    <RadzenCheckBox @bind-Value="model.IsDataPrazo" Name="IsDataPrazo" />
-                    <RadzenLabel Text="Controle de Prazo?" Style="margin-left: 0.5rem;" />
+                    <RadzenCheckBox @bind-Value="model.IsDataPrazo" Name="IsDataPrazo" Style="margin-right: 0.5rem;" />
+                    <RadzenLabel Text="Controle de Prazo?" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12">
@@ -57,6 +62,52 @@
             </RadzenRow>
         </RadzenFieldset>
 
+        <RadzenFieldset Text="Insumos Relacionados">
+            <RadzenLabel Text="Selecionar Insumos" />
+            <RadzenDropDown TValue="List<long>"
+                            Data="@insumosDisponiveis"
+                            TextProperty="Nome"
+                            ValueProperty="Id"
+                            Multiple="true"
+                            SelectAllText="Selecionar Todos"
+                            Placeholder="-- Selecione os Insumos --"
+                            Style="width: 100%;"
+                            @bind-Value="_insumosSelecionados" />
+
+            <RadzenButton Text="Adicionar Selecionados"
+                          Style="margin-top: 1rem;"
+                          Disabled="@(!_insumosSelecionados.Any())"
+                          Click="AdicionarInsumos" />
+
+            <br />
+            <br />
+
+            @if (model.Insumos?.Any() == true)
+            {
+                <div style="overflow-x: auto; justify-content:inherit" class="rz-justify-between">
+
+                    <RadzenDataGrid @ref="insumoGrid" Data="@model.Insumos" TItem="ObraItemEtapaPadraoInsumoDto" ShowPagingSummary="false" AllowPaging="false" AllowColumnResize="true" AllowSorting="true" ColumnWidth="300px">
+
+
+                        <Columns>
+                            <RadzenDataGridColumn TextAlign="TextAlign.Left" TItem="ObraItemEtapaPadraoInsumoDto" Property="InsumoNome" Title="Insumo" />
+
+                            <RadzenDataGridColumn TextAlign="TextAlign.Right" TItem="ObraItemEtapaPadraoInsumoDto" CssClass="rz-justify-end">
+                                <Template Context="item">
+                                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                                  Click="@(() => ConfirmarRemocao(item))" />
+                                </Template>
+                            </RadzenDataGridColumn>
+                        </Columns>
+                    </RadzenDataGrid>
+                </div>
+            }
+            else
+            {
+                <RadzenText Text="Nenhum insumo relacionado ainda." />
+            }
+        </RadzenFieldset>
+
         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-3">
             <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="@Cancelar" />
             <RadzenButton Text="Salvar" ButtonType="ButtonType.Submit" Icon="save" Style="min-width: 120px;" />
@@ -67,59 +118,171 @@
 @code {
     [Parameter] public long Id { get; set; }
 
-    private ObraItemEtapaPadraoDto model = new();
+    private ObraItemEtapaPadraoDto model = new() { Insumos = new() };
     private List<ObraEtapaPadraoDto> etapas = new();
+    private List<InsumoDto> insumosDisponiveis = new();
+    private List<long> _insumosSelecionados = new();
+    private RadzenDataGrid<ObraItemEtapaPadraoInsumoDto> insumoGrid;
+    private List<ObraItemEtapaPadraoInsumoDto> _insumosOriginais = new();
+
+
 
     protected override async Task OnInitializedAsync()
     {
         etapas = (await ObraEtapaPadraoApiService.GetAllAsync()).ToList();
+        insumosDisponiveis = await InsumoApiService.GetAllAsync();
 
-        if (Id != 0)
+        if (Id > 0)
         {
             var existente = await ObraItemEtapaPadraoApiService.GetByIdAsync(Id);
-            if (existente is not null)
+            if (existente != null)
+            {
                 model = existente;
+                model.Insumos = await ObraItemEtapaPadraoInsumoApiService.GetByItemIdAsync(Id);
+
+                _insumosOriginais = model.Insumos?
+                .Select(e => new ObraItemEtapaPadraoInsumoDto { Id = e.Id, InsumoId = e.InsumoId })
+                .ToList() ?? new();
+            }
         }
         else
         {
-            model.Ordem = 1;
-            model.ObraEtapaId = 0L;
+            model = new ObraItemEtapaPadraoDto { Ordem = 1, ObraEtapaId = 0, Insumos = new() };
         }
     }
+
+    private void AdicionarInsumos()
+    {
+        var novos = _insumosSelecionados
+            .Where(id => !model.Insumos.Any(i => i.InsumoId == id))
+            .Select(id =>
+            {
+                var insumo = insumosDisponiveis.First(i => i.Id == id);
+                return new ObraItemEtapaPadraoInsumoDto
+                    {
+                        InsumoId = insumo.Id,
+                        InsumoNome = insumo.Nome
+                    };
+            }).ToList();
+
+        if (novos.Any())
+        {
+            model.Insumos = model.Insumos.Concat(novos).ToList();
+            StateHasChanged();
+        }
+        _insumosSelecionados.Clear();
+    }
+
+
+    private async Task ConfirmarRemocao(ObraItemEtapaPadraoInsumoDto insumo)
+    {
+        bool? confirm = await DialogService.Confirm(
+            $"Deseja realmente remover o insumo '{insumo.InsumoNome}'?",
+            "Remover Insumo");
+
+        if (confirm == true)
+        {
+            model.Insumos = model.Insumos
+                                .Where(f => f.Id != insumo.Id)
+                                .ToList();
+
+            NotificationService.Notify(NotificationSeverity.Warning, "Removido", "Insumo removido da lista.");
+            StateHasChanged();
+        }
+    }
+
 
     private async Task Salvar(ObraItemEtapaPadraoDto model)
     {
         try
         {
-            if (model.Id == 0)
+            bool isNewRecord = model.Id == 0;
+            IEnumerable<ObraItemEtapaPadraoInsumoDto> insumosLista = new List<ObraItemEtapaPadraoInsumoDto>();
+            insumosLista = model.Insumos;
+
+            if (isNewRecord)
             {
-                await ObraItemEtapaPadraoApiService.CreateAsync(model);
-                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Item cadastrado com sucesso!", Duration = 4000 });
+                // Tenta criar a etapa padrão. O serviço API deve retornar o model com o Id gerado.
+                model = await ObraItemEtapaPadraoApiService.CreateAsync(model);
+                // Após a criação, o model.Id deve estar populado com o ID recém-criado.
+                // É crucial que o método CreateAsync na API retorne o DTO com o ID gerado.
             }
             else
             {
-                await ObraItemEtapaPadraoApiService.UpdateAsync(model);
-                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Item atualizado com sucesso!", Duration = 4000 });
+                // Busca o modelo antigo para comparação e atualização da etapa padrão.
+                var oldModel = await ObraItemEtapaPadraoApiService.GetByIdAsync(model.Id);
+
+                // Verifica se os campos principais da etapa padrão foram alterados.
+                bool precisaAtualizarEtapa = oldModel.Nome != model.Nome ||
+                                             oldModel.Ordem != model.Ordem ||
+                                             oldModel.IsDataPrazo != model.IsDataPrazo ||
+                                             oldModel.DiasPrazo != model.DiasPrazo;
+
+                if (precisaAtualizarEtapa)
+                {
+                    await ObraItemEtapaPadraoApiService.UpdateAsync(model);
+                }
             }
 
-            Navigation.NavigateTo("/obraitensetapapadrao");
+            // Independentemente de ser criação ou edição da etapa principal,
+            // sempre processamos os insumos.
+
+            var id = model.Id;
+
+
+            await ProcessarInsumos(id, insumosLista); // Passamos o Id da etapa e a lista de insumos
+
+            // Atualiza a lista de insumos originais para o próximo ciclo de edição.
+            // É importante que o Id da etapa seja repassado para os insumos recém-criados.
+            _insumosOriginais = model.Insumos
+                .Select(e => new ObraItemEtapaPadraoInsumoDto
+                    {
+                        Id = e.Id,
+                        InsumoId = e.InsumoId,
+                        InsumoNome = e.InsumoNome,
+                        ObraItemEtapaPadraoId = model.Id // Garante que o ID da etapa está associado
+                    })
+                .ToList();
+
+            NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Etapa e insumos salvos com sucesso.");
         }
         catch (Exception ex)
         {
-            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao salvar item: {ex.Message}", Duration = 5000 });
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Falha ao salvar a etapa ou os insumos: {ex.Message}");
         }
     }
 
-    private void ExibirErros()
+    // Método auxiliar para processar os insumos
+    private async Task ProcessarInsumos(long obraItemEtapaPadraoId, IEnumerable<ObraItemEtapaPadraoInsumoDto> insumosAtuais)
     {
-        NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Warning,
-                Summary = "Atenção",
-                Detail = "Existem erros de validação no formulário.",
-                Duration = 4000
-            });
+        // Adiciona o ID da etapa padrão aos novos insumos antes de criá-los
+        foreach (var insumo in insumosAtuais.Where(i => i.Id == 0))
+        {
+            insumo.ObraItemEtapaPadraoId = obraItemEtapaPadraoId;
+            await ObraItemEtapaPadraoInsumoApiService.CreateAsync(insumo);
+        }
+
+        // Atualiza insumos existentes
+        foreach (var insumo in insumosAtuais.Where(i => i.Id > 0))
+        {
+            await ObraItemEtapaPadraoInsumoApiService.UpdateAsync(insumo);
+        }
+
+        // Remove insumos que não estão mais na lista atual
+        var idsAtuais = insumosAtuais.Select(e => e.Id).ToHashSet();
+        var removidos = _insumosOriginais
+            .Where(e => !idsAtuais.Contains(e.Id) && e.Id > 0)
+            .ToList();
+
+        foreach (var rem in removidos)
+        {
+            await ObraItemEtapaPadraoInsumoApiService.DeleteAsync(rem.Id);
+        }
     }
 
+    private void ExibirErros() => NotificationService.Notify(NotificationSeverity.Warning, "Validação", "Existem erros no formulário.");
+
     private void Cancelar() => Navigation.NavigateTo("/obraitensetapapadrao");
+
+
 }

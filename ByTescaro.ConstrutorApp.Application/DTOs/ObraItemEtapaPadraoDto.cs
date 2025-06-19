@@ -23,6 +23,9 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
 
         public DateTime DataHoraCadastro { get; set; }
         public string UsuarioCadastro { get; set; } = string.Empty;
+
+        public List<ObraItemEtapaPadraoInsumoDto> Insumos { get; set; } = new();
+
     }
 
 }

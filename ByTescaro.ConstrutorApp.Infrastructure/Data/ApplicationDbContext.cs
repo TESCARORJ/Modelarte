@@ -50,10 +50,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     // === Auditoria ===
     public DbSet<LogAuditoria> LogAuditoria => Set<LogAuditoria>();
 
+
+    // === ObraItemEtapaPadraoInsumo ====
+    public DbSet<ObraItemEtapaPadraoInsumo> ObraItemEtapaPadraoInsumos => Set<ObraItemEtapaPadraoInsumo>();
+
     // === Orçamento ===
     public DbSet<Orcamento> Orcamento => Set<Orcamento>();
     public DbSet<OrcamentoItem> OrcamentoItem => Set<OrcamentoItem>();
     public DbSet<OrcamentoObra> OrcamentoObra => Set<OrcamentoObra>();
+
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -77,6 +82,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         ConfigurePendencia(modelBuilder);
         ConfigureObraDocumento(modelBuilder);
         ConfigureObraImagem(modelBuilder);
+        ConfigureObraItemEtapaPadraoInsumo(modelBuilder);
+
+
         ConfigureCliente(modelBuilder);
         ConfigureFornecedor(modelBuilder);
         ConfigureInsumo(modelBuilder);
@@ -87,6 +95,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         ConfigureObraServico(modelBuilder);
         ConfigureObraServicoLista(modelBuilder);
         ConfigureFornecedorServico(modelBuilder);
+
 
 
     }
@@ -485,6 +494,24 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         });
     }
 
+
+    private static void ConfigureObraItemEtapaPadraoInsumo(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ObraItemEtapaPadraoInsumo>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.QuantidadeSugerida).HasPrecision(18, 2);
+            entity.Property(e => e.DataHoraCadastro).IsRequired();
+            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+
+            entity.HasOne(e => e.ObraItemEtapaPadrao)
+                  .WithMany(p => p.Insumos)
+                  .HasForeignKey(e => e.ObraItemEtapaPadraoId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+
     private static void ConfigureCliente(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Cliente>(entity =>
@@ -525,12 +552,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                   .HasForeignKey(e => e.FornecedorId)
                   .OnDelete(DeleteBehavior.Restrict);
 
+
             entity.HasOne(e => e.Insumo)
                   .WithMany()
                   .HasForeignKey(e => e.InsumoId)
                   .OnDelete(DeleteBehavior.Restrict);
         });
     }
+
 
     private static void ConfigureFornecedorServico(ModelBuilder modelBuilder)
     {
@@ -552,6 +581,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                   .OnDelete(DeleteBehavior.Restrict);
         });
     }
+
 
 
     #endregion

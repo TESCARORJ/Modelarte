@@ -58,7 +58,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             // Caso queira manter, você deve adicionar esse campo na entidade
         }
 
-        public async Task CriarAsync(ObraItemEtapaPadraoDto dto)
+        public async Task<ObraItemEtapaPadraoDto> CriarAsync(ObraItemEtapaPadraoDto dto)
         {
             var entity = _mapper.Map<ObraItemEtapaPadrao>(dto);
 
@@ -66,7 +66,11 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entity.DataHoraCadastro = DateTime.Now;
             entity.UsuarioCadastro = UsuarioLogado;
 
-            await _repo.AddAsync(entity);
+            await _repo.AddAsync(entity); // O 'entity' agora terá o ID gerado após o SaveChanges interno do AddAsync
+
+            // Mapeia a entidade atualizada de volta para um DTO e o retorna
+            var createdDto = _mapper.Map<ObraItemEtapaPadraoDto>(entity);
+            return createdDto;
         }
 
         public async Task AtualizarAsync(ObraItemEtapaPadraoDto dto)

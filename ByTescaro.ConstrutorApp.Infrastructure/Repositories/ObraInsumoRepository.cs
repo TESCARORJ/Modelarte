@@ -77,6 +77,28 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<List<Insumo>> GetInsumosPorPadraoObraAsync(long obraId)
+        {
+            // Obter nomes dos itens da obra
+            var nomesItensExecutados = await _context.ObraItemEtapa
+                .Where(i => i.ObraEtapa.ObraId == obraId)
+                .Select(i => i.Nome.Trim().ToLower())
+                .Distinct()
+                .ToListAsync();
+
+            // Relacionar com os insumos dos padrões
+            var insumos = await _context.ObraItemEtapaPadraoInsumos
+                .Include(i => i.Insumo)
+                .Include(i => i.ObraItemEtapaPadrao)
+                .Where(i => nomesItensExecutados.Contains(i.ObraItemEtapaPadrao.Nome.Trim().ToLower()))
+                .Select(i => i.Insumo)
+                .Distinct()
+                .ToListAsync();
+
+            return insumos;
+        }
+
+
     }
 
 }

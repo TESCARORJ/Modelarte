@@ -38,11 +38,14 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
             return item == null ? NotFound() : Ok(item);
         }
 
+        // No seu controller de API (ex: ObraItemEtapaPadraoController)
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] ObraItemEtapaPadraoDto dto)
         {
-            await _service.CriarAsync(dto);
-            return Ok();
+            
+            var createdDto = await _service.CriarAsync(dto);
+            var dtonew = CreatedAtAction(nameof(GetById), new { id = createdDto.Id }, createdDto);
+            return dtonew;
         }
 
         [HttpPut("{id}")]
