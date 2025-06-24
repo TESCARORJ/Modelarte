@@ -14,6 +14,8 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
+using ByTescaro.ConstrutorApp.Infrastructure.Services;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -88,6 +90,7 @@ builder.Services.AddAuthorization();
 #region [ Application Services ]
 
 
+
 builder.Services.AddHttpClient<CepService>();
 builder.Services.AddScoped<IUsuarioLogadoService, UsuarioLogadoService>();
 builder.Services.AddScoped<IPerfilUsuarioService, PerfilUsuarioService>();
@@ -127,6 +130,26 @@ builder.Services.AddScoped<IObraServicoListaService, ObraServicoListaService>();
 builder.Services.AddScoped<IOrcamentoService, OrcamentoService>();
 builder.Services.AddScoped<IOrcamentoItemService, OrcamentoItemService>();
 builder.Services.AddScoped<IOrcamentoObraService, OrcamentoObraService>();
+
+// Configuração do Z-API para notificações via WhatsApp
+builder.Services.AddHttpClient();
+// 1. Lê a seção "ZApiSettings" do appsettings.json e a registra.
+builder.Services.Configure<ZApiSettings>(builder.Configuration.GetSection("ZApiSettings"));
+
+// 2. Adiciona e configura um HttpClient nomeado especificamente para a Z-API.
+builder.Services.AddHttpClient("ZApiClient", (serviceProvider, client) =>
+{
+    var settings = serviceProvider.GetRequiredService<IOptions<ZApiSettings>>().Value;
+
+    client.BaseAddress = new Uri(settings.BaseUrl);
+
+    // AGORA USANDO O TOKEN CORRETO PARA O HEADER:
+    client.DefaultRequestHeaders.Add("Client-Token", settings.ClientToken);
+});
+
+// 3. Registra o serviço de notificação para injeção de dependência.
+builder.Services.AddScoped<INotificationService, ZApiNotificationService>();
+
 
 
 builder.Services.AddAutoMapper(typeof(ApplicationProfile));

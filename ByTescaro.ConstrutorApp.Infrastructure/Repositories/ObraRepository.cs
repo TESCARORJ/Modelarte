@@ -16,7 +16,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 
         public async Task<Obra?> GetByIdAsync(long id)
         {
-            return await _context.Obra.FindAsync(id);
+            return await _context.Obra.Include(x => x.Projeto).ThenInclude(y => y.Cliente).FirstOrDefaultAsync(o => o.Id == id);
         }
 
         public async Task<Obra?> GetByIdWithRelacionamentosAsync(long id)
