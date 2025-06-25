@@ -25,6 +25,13 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
             var projetos = await _service.ObterTodosAsync();
             return Ok(projetos);
         }
+        
+        [HttpGet("list")]
+        public async Task<IActionResult> GetList()
+        {
+            var projetos = await _service.ObterTodosListAsync();
+            return Ok(projetos);
+        }
 
         [HttpGet("status/{status}")]
         public async Task<IActionResult> GetPorStatus(StatusProjeto status)

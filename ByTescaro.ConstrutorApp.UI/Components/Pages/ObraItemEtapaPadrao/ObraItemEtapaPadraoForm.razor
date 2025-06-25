@@ -248,7 +248,7 @@
         }
         catch (Exception ex)
         {
-            NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Falha ao salvar a etapa ou os insumos: {ex.Message}");
+            NotificationService.Notify(NotificationSeverity.Warning, "Atenção", ex.Message);
         }
     }
 

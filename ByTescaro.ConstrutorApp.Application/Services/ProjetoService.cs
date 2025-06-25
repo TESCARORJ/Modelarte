@@ -6,6 +6,7 @@ using ByTescaro.ConstrutorApp.Domain.Enums;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Interfaces.ByTescaro.ConstrutorApp.Domain.Interfaces;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
 namespace ByTescaro.ConstrutorApp.Application.Services;
 
@@ -75,23 +76,43 @@ public class ProjetoService : IProjetoService
 
         return dtos;
     }
+
+    public async Task<IEnumerable<ProjetoListDto>> ObterTodosListAsync()
+    {
+        var dtos = await _repo.GetQueryable()
+            .OrderBy(p => p.Nome)
+            .Select(projeto => new ProjetoListDto // A variável 'projeto' é do tipo Projeto (entidade)
+            {
+                Id = projeto.Id,
+                Nome = projeto.Nome,
+                Status = projeto.Status,
+                DataInicio = projeto.DataInicio != null ? DateOnly.FromDateTime(projeto.DataInicio) : null,
+                DataFim = projeto.DataFim.HasValue ? DateOnly.FromDateTime(projeto.DataFim.Value) : null,
+
+                // Lógica de cálculo de progresso corrigida e otimizada para SQL
+                ProgressoProjeto = projeto.Obras.Any()
+                    ? (int)projeto.Obras.Average(obra => // Para cada obra, calcula seu progresso individual
+
+                        // Verifica se a obra tem algum item para evitar divisão por zero
+                        obra.Etapas.SelectMany(etapa => etapa.Itens).Any()
+                            ?
+                            // Calcula a porcentagem de itens concluídos para esta obra
+                            ((double)obra.Etapas.SelectMany(etapa => etapa.Itens).Count(item => item.Concluido) /
+                                      obra.Etapas.SelectMany(etapa => etapa.Itens).Count()) * 100
+                            : 0 // Se a obra não tem itens, seu progresso é 0
+                    )
+                    : 0 // Se o projeto não tem obras, seu progresso é 0
+            })
+            .ToListAsync();
+
+        return dtos;
+    }
+    // Em ProjetoService.cs
     public async Task<ProjetoDto?> ObterPorIdAsync(long id)
     {
         var projeto = await _repo.GetByIdAsync(id);
-        if (projeto == null) return null;
-
-        var dto = _mapper.Map<ProjetoDto>(projeto);
-        var obras = await _obraRepo.GetByProjetoIdAsync(id);
-
-        // Garantir que Documentos estão incluídos
-        foreach (var obra in obras)
-        {
-            var documentos = await _obraDocumentoRepo.GetByObraIdAsync(obra.Id);
-            obra.Documentos = documentos;
-        }
-
-        dto.Obras = _mapper.Map<List<ObraDto>>(obras);
-        return dto;
+        if (projeto == null) return null;      
+        return _mapper.Map<ProjetoDto>(projeto);
     }
     public async Task<ProjetoDto> CriarAsync(ProjetoDto dto)
     {

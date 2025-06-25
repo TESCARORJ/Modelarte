@@ -1,5 +1,10 @@
 ﻿@using ByTescaro.ConstrutorApp.Application.DTOs
 @using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject ObraFuncionarioApiService ObraFuncionarioApiService
+@inject FuncionarioApiService FuncionarioApiService
+@inject ObraApiService ObraApiService
+@inject NotificationService NotificationService
 @inject IJSRuntime JS
 
 <style>
@@ -40,74 +45,77 @@
     }
 </style>
 
-<RadzenAccordionItem Text="@TituloObra" @key="Obra">
+
+<RadzenAccordionItem Text="@TituloObra" @key="Obra.Id > 0 ? Obra.Id : Obra.GetHashCode()">
     <RadzenRow class="obra-form-row">
-        <RadzenColumn Size="12" SizeMD="4" Style="padding-right: 1rem;">
-            <RadzenLabel Text="Nome da Obra" />
-            <RadzenTextBox @bind-Value="Obra.Nome" Style="width: 100%;" />
+        <RadzenColumn Size="12" SizeMD="3" Style="padding-right: 1rem;">
+            <RadzenLabel Text="Nome da Obra *" />
+            @* CORREÇÃO: Usando um método para gerar o nome do componente de forma compatível com o Razor *@
+            <RadzenTextBox @bind-Value="Obra.Nome" Name="@GetUniqueName("NomeObra")" Style="width: 100%;" />
         </RadzenColumn>
 
-        <RadzenColumn Size="12" SizeMD="4" Style="padding-right: 1rem;">
-            <RadzenLabel Text="Responsável Materiais" />
+        <RadzenColumn Size="12" SizeMD="3" Style="padding-right: 1rem;">
+            <RadzenLabel Text="Responsável Obra *" />
+            <RadzenDropDown Data="@todosFuncionariosComWhatsApp"
+                            TextProperty="Nome"
+                            ValueProperty="Id"
+                            @bind-Value="Obra.ResponsavelObraId"
+                            Name="@GetUniqueName("ResponsavelObra")"
+                            AllowFiltering="true"
+                            AllowClear="true"
+                            Placeholder="Selecionar Responsável"
+                            Style="width: 100%;" />
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="3" Style="padding-right: 1rem;">
+            <RadzenLabel Text="Responsável Materiais *" />
             <RadzenDropDown @bind-Value="Obra.ResponsavelMaterial"
                             TValue="ResponsavelMaterialEnum?"
+                            Name="@GetUniqueName("ResponsavelMaterial")"
                             Data="@ResponsavelOptions"
                             TextProperty="Label" ValueProperty="Value"
                             Style="width: 100%;" />
         </RadzenColumn>
 
-        <RadzenColumn Size="12" SizeMD="4">
-            <RadzenLabel Text="Status da Obra" />
+        <RadzenColumn Size="12" SizeMD="3">
+            <RadzenLabel Text="Status da Obra *" />
             <RadzenDropDown @bind-Value="Obra.Status"
                             TValue="StatusObra?"
+                            Name="@GetUniqueName("StatusObra")"
                             Data="@StatusOptions"
                             TextProperty="Label" ValueProperty="Value"
                             Style="width: 100%;" />
         </RadzenColumn>
     </RadzenRow>
 
-    <RadzenTabs Class="rz-mt-4" Change="@OnTabChanged">
+    <RadzenTabs Class="rz-mt-4">
         <Tabs>
-            <RadzenTabsItem Text="Checklist">
-                <ChecklistObraTab Obra="@Obra" />
-            </RadzenTabsItem>
-            <RadzenTabsItem Text="Fornecedores">
-                <ObraFornecedorTab Obra="@Obra" />
-            </RadzenTabsItem>
-            <RadzenTabsItem Text="Funcionários">
-                <ObraFuncionarioTab Obra="@Obra" />
-            </RadzenTabsItem>
-            <RadzenTabsItem Text="Equipamentos">
-                <ObraEquipamentoTab Obra="@Obra" />
-            </RadzenTabsItem>
-            <RadzenTabsItem Text="Insumos">
-                <ObraInsumoTab Obra="@Obra" />
-            </RadzenTabsItem>
-            <RadzenTabsItem Text="Serviços">
-                <ObraServicoTab Obra="@Obra" />
-            </RadzenTabsItem>
-            <RadzenTabsItem Text="Documentos">
-                <DocumentosObraTab Obra="@Obra" />
-            </RadzenTabsItem>
-            <RadzenTabsItem Text="Imagens">
-                <ImagensObraTab Obra="@Obra" />
-            </RadzenTabsItem>
-            <RadzenTabsItem Text="Retrabalhos">
-                <RetrabalhoObraTab Obra="@Obra" />
-            </RadzenTabsItem>
-            <RadzenTabsItem Text="Pendências">
-                <PendenciaObraTab Obra="@Obra" />
-            </RadzenTabsItem>
+            <RadzenTabsItem Text="Checklist"><ChecklistObraTab Obra="@Obra" /></RadzenTabsItem>
+            <RadzenTabsItem Text="Funcionários"><ObraFuncionarioTab Obra="@Obra" /></RadzenTabsItem>
+            <RadzenTabsItem Text="Equipamentos"><ObraEquipamentoTab Obra="@Obra" /></RadzenTabsItem>
+            <RadzenTabsItem Text="Insumos"><ObraInsumoTab Obra="@Obra" /></RadzenTabsItem>
+            <RadzenTabsItem Text="Serviços"><ObraServicoTab Obra="@Obra" /></RadzenTabsItem>
+            <RadzenTabsItem Text="Documentos"><DocumentosObraTab Obra="@Obra" /></RadzenTabsItem>
+            <RadzenTabsItem Text="Imagens"><ImagensObraTab Obra="@Obra" /></RadzenTabsItem>
+            <RadzenTabsItem Text="Retrabalhos"><RetrabalhoObraTab Obra="@Obra" /></RadzenTabsItem>
+            <RadzenTabsItem Text="Pendências"><PendenciaObraTab Obra="@Obra" /></RadzenTabsItem>
         </Tabs>
     </RadzenTabs>
 
     <RadzenRow>
-        <RadzenColumn Size="12" Style="text-align: right;">
+        <RadzenColumn Size="12" class="d-flex justify-content-end" Style="margin-top: 1.5rem;">
+            <RadzenButton Text="Salvar Alterações na Obra"
+                          Icon="save"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Click="SalvarObraAsync"
+                          IsBusy="@isSaving"
+                          Style="margin-right: 1rem;" />
+
             <RadzenButton Text="Remover Obra"
                           Icon="delete"
                           ButtonStyle="ButtonStyle.Danger"
-                          Style="margin-top: 1.5rem;"
-                          Click="@(() => OnRemover.InvokeAsync(Obra))" />
+                          Click="@(() => OnRemover.InvokeAsync(Obra))" 
+                          Disabled="@(isSaving|| Obra.Id == 0)" />
         </RadzenColumn>
     </RadzenRow>
 </RadzenAccordionItem>
@@ -119,8 +127,83 @@
     [Parameter] public List<object> ResponsavelOptions { get; set; } = new();
     [Parameter] public List<object> StatusOptions { get; set; } = new();
 
-    private async Task OnTabChanged(int index)
+    private List<FuncionarioDto> todosFuncionariosComWhatsApp = new();
+
+    private bool isSaving = false;
+    private readonly string _componentId = Guid.NewGuid().ToString("N");
+
+    private string GetUniqueName(string baseName) => $"{baseName}_{_componentId}";
+
+    protected override async Task OnInitializedAsync()
     {
-        await JS.InvokeVoidAsync("document.activeElement.blur");
+        var todosFuncionarios = await FuncionarioApiService.GetAllAsync();
+
+        todosFuncionariosComWhatsApp = todosFuncionarios
+            .Where(f => !string.IsNullOrEmpty(f.TelefoneWhatsApp))
+            .ToList();
+    }
+
+    private bool ValidarObra()
+    {
+        Obra.Nome = Obra.Nome.Trim();
+
+        if (string.IsNullOrWhiteSpace(Obra.Nome))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "O campo 'Nome da Obra' é obrigatório.");
+            return false;
+        }
+        if (Obra.ResponsavelObraId <= 0)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "O campo 'Responsável Obra' é obrigatório.");
+            return false;
+        }
+        if (Obra.ResponsavelMaterial == null)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "O campo 'Responsável Materiais' é obrigatório.");
+            return false;
+        }
+        if (Obra.Status == null)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "O campo 'Status da Obra' é obrigatório.");
+            return false;
+        }
+        return true;
+    }
+
+    private async Task SalvarObraAsync()
+    {
+        if (!ValidarObra()) return;
+
+        isSaving = true;
+
+        try
+        {
+            if (Obra.Id == 0)
+            {
+                // CORRIGIDO: Adicionado 'await' e tratamento do objeto retornado.
+                var obraCriada = await ObraApiService.CreateAsync(Obra);
+
+                if (obraCriada != null)
+                {
+                    // Atualiza o ID do objeto na UI para que futuras edições funcionem como 'update'.
+                    Obra.Id = obraCriada.Id;
+                }
+                NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Nova obra adicionada com sucesso!");
+            }
+            else
+            {
+                await ObraApiService.UpdateAsync(Obra);
+                NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Alterações na obra salvas com sucesso!");
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Falha ao salvar a obra: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+            StateHasChanged();
+        }
     }
 }

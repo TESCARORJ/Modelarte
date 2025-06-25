@@ -33,7 +33,7 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.Fornecedor, opt => opt.Ignore())
             .ForMember(dest => dest.Insumo, opt => opt.Ignore());
 
-         CreateMap<Servico, ServicoDto>().ReverseMap();
+        CreateMap<Servico, ServicoDto>().ReverseMap();
         CreateMap<FornecedorServico, FornecedorServicoDto>()
             .ForMember(dest => dest.FornecedorNome, opt => opt.MapFrom(src => src.Fornecedor.Nome))
             .ForMember(dest => dest.ServicoNome, opt => opt.MapFrom(src => src.Servico.Nome))
@@ -44,6 +44,13 @@ public class ApplicationProfile : Profile
 
         // ==== Projeto ====
         CreateMap<Projeto, ProjetoDto>()
+            .ForMember(dest => dest.DataInicio, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.DataInicio)))
+            .ForMember(dest => dest.DataFim, opt => opt.MapFrom(src => src.DataFim.HasValue ? DateOnly.FromDateTime(src.DataFim.Value) : (DateOnly?)null))
+            .ReverseMap()
+            .ForMember(dest => dest.DataInicio, opt => opt.MapFrom(src => src.DataInicio.HasValue ? src.DataInicio.Value.ToDateTime(TimeOnly.MinValue) : default))
+            .ForMember(dest => dest.DataFim, opt => opt.MapFrom(src => src.DataFim.HasValue ? src.DataFim.Value.ToDateTime(TimeOnly.MinValue) : (DateTime?)null));
+
+        CreateMap<Projeto, ProjetoListDto>()
             .ForMember(dest => dest.DataInicio, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.DataInicio)))
             .ForMember(dest => dest.DataFim, opt => opt.MapFrom(src => src.DataFim.HasValue ? DateOnly.FromDateTime(src.DataFim.Value) : (DateOnly?)null))
             .ForMember(dest => dest.Obras, opt => opt.Ignore())
@@ -78,7 +85,7 @@ public class ApplicationProfile : Profile
             .ReverseMap()
             .ForMember(dest => dest.Funcionario, opt => opt.Ignore())
             .ForMember(dest => dest.Obra, opt => opt.Ignore());
-       
+
         // ==== ObraFornecedor ====
         CreateMap<ObraFornecedor, ObraFornecedorDto>()
             .ReverseMap()
@@ -103,7 +110,7 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.Responsavel, opt => opt.Ignore())
             .ForMember(dest => dest.Obra, opt => opt.Ignore());
 
-         // ==== ObraServico ====
+        // ==== ObraServico ====
         CreateMap<ObraServico, ObraServicoDto>()
             .ForMember(dest => dest.ServicoNome, opt => opt.MapFrom(src => src.Servico.Nome))
             .ReverseMap()
@@ -116,7 +123,7 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.Data, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.Data)))
             .ReverseMap()
             .ForMember(dest => dest.Data, opt => opt.MapFrom(src => src.Data.ToDateTime(TimeOnly.MinValue)))
-            .ForMember(dest => dest.Itens, opt => opt.MapFrom(src => src.Itens))                
+            .ForMember(dest => dest.Itens, opt => opt.MapFrom(src => src.Itens))
             .ForMember(dest => dest.Responsavel, opt => opt.Ignore())
             .ForMember(dest => dest.Obra, opt => opt.Ignore());
 
@@ -183,10 +190,10 @@ public class ApplicationProfile : Profile
         CreateMap<ObraItemEtapaPadrao, ObraItemEtapaPadraoDto>()
             .ForMember(dest => dest.ObraEtapaId, opt => opt.MapFrom(src => src.ObraEtapaPadrao != null ? src.ObraEtapaPadrao.Id : src.ObraEtapaPadraoId))
             .ForMember(dest => dest.ObraEtapaNome, opt => opt.MapFrom(src => src.ObraEtapaPadrao != null ? src.ObraEtapaPadrao.Nome : ""))
-            .ForMember(dest => dest.Insumos, opt => opt.MapFrom(src => src.Insumos)) 
+            .ForMember(dest => dest.Insumos, opt => opt.MapFrom(src => src.Insumos))
             .ReverseMap()
             .ForMember(dest => dest.ObraEtapaPadrao, opt => opt.Ignore())
-            .ForMember(dest => dest.Insumos, opt => opt.Ignore()); 
+            .ForMember(dest => dest.Insumos, opt => opt.Ignore());
         // ==== Orçamento ====
         CreateMap<Orcamento, OrcamentoDto>().ReverseMap();
         CreateMap<OrcamentoItem, OrcamentoItemDto>()

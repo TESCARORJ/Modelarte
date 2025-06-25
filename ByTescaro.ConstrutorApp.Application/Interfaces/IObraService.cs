@@ -8,7 +8,7 @@ namespace ByTescaro.ConstrutorApp.Application.Interfaces
         Task<List<ObraDto>> ObterTodosAsync(); 
         Task<List<ObraDto>> ObterPorProjetoAsync(long projetoId);
         Task<ObraDto?> ObterPorIdAsync(long id);
-        Task CriarAsync(ObraDto dto);
+        Task<ObraDto> CriarAsync(ObraDto dto);
         Task AtualizarAsync(ObraDto dto);
         Task RemoverAsync(long id);
 

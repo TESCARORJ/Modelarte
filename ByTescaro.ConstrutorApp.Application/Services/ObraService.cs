@@ -3,6 +3,7 @@ using ByTescaro.ConstrutorApp.Application.DTOs;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
+using Microsoft.AspNetCore.Http;
 
 namespace ByTescaro.ConstrutorApp.Application.Services
 {
@@ -10,12 +11,18 @@ namespace ByTescaro.ConstrutorApp.Application.Services
     {
         private readonly IObraRepository _repo;
         private readonly IMapper _mapper;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ObraService(IObraRepository repo, IMapper mapper)
+
+        public ObraService(IObraRepository repo, IMapper mapper, IHttpContextAccessor httpContextAccessor)
         {
             _repo = repo;
             _mapper = mapper;
+            _httpContextAccessor = httpContextAccessor;
         }
+
+        private string UsuarioLogado => _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
+
 
         public async Task<List<ObraDto>> ObterPorProjetoAsync(long projetoId)
         {
@@ -29,10 +36,16 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             return _mapper.Map<ObraDto>(obra);
         }
 
-        public async Task CriarAsync(ObraDto dto)
+        public async Task<ObraDto> CriarAsync(ObraDto dto)
         {
+
             var entity = _mapper.Map<Obra>(dto);
-            await _repo.AddAsync(entity);
+            entity.DataHoraCadastro = DateTime.Now;
+            entity.UsuarioCadastro = UsuarioLogado;
+
+            await _repo.AddAsync(entity); 
+
+            return _mapper.Map<ObraDto>(entity);
         }
 
         public async Task AtualizarAsync(ObraDto dto)

@@ -19,9 +19,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly INotificationService _notificationService;
         private readonly ILogger<ObraChecklistService> _logger;
+        private readonly IFuncionarioRepository funcionarioRepository;
 
 
-        public ObraChecklistService(IObraEtapaRepository etapaRepo, IObraItemEtapaRepository itemRepo, IMapper mapper, IHttpContextAccessor httpContextAccessor, INotificationService notificationService, IObraRepository obraRepository, ILogger<ObraChecklistService> logger)
+        public ObraChecklistService(IObraEtapaRepository etapaRepo, IObraItemEtapaRepository itemRepo, IMapper mapper, IHttpContextAccessor httpContextAccessor, INotificationService notificationService, IObraRepository obraRepository, ILogger<ObraChecklistService> logger, IFuncionarioRepository funcionarioRepository)
         {
             _etapaRepo = etapaRepo;
             _itemRepo = itemRepo;
@@ -30,6 +31,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             _notificationService = notificationService;
             _obraRepository = obraRepository;
             _logger = logger;
+            this.funcionarioRepository = funcionarioRepository;
         }
 
         private string UsuarioLogado => _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
@@ -241,8 +243,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 _logger.LogWarning("Não foi possível encontrar o cliente para a obra {ObraId} para enviar a notificação.", obra.Id);
                 return;
             }
-
-            var telefone = cliente.TelefoneWhatsApp;
+            var responsavelObra = funcionarioRepository.GetByIdAsync(obra.ResponsavelObraId).Result;
+            var telefone = responsavelObra.TelefoneWhatsApp;
 
             if (string.IsNullOrWhiteSpace(telefone)) return;
 

@@ -22,15 +22,19 @@ namespace ByTescaro.ConstrutorApp.UI.Services
         {
             var response = await _http.PostAsJsonAsync("api/obraitemetapapadrao", dto);
 
-            if (!response.IsSuccessStatusCode)
+            // Se o status for de conflito (409), leia a mensagem e lance uma exceção para a UI tratar
+            if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
             {
-                var errorMessage = await response.Content.ReadAsStringAsync();
-                throw new Exception($"Erro ao criar ObraItemEtapaPadrao: {response.StatusCode} - {errorMessage}");
+                var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                throw new Exception(error?.message ?? "Registro duplicado.");
             }
-            
-            var createdDto = await response.Content.ReadFromJsonAsync<ObraItemEtapaPadraoDto>();
-            return createdDto;
+
+            // Garante que outros erros ainda sejam lançados
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync<ObraItemEtapaPadraoDto>();
         }
+
 
         public async Task UpdateAsync(ObraItemEtapaPadraoDto dto){
             var response = await _http.PutAsJsonAsync($"api/obraitemetapapadrao/{dto.Id}", dto);

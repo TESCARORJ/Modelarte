@@ -95,12 +95,25 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         ConfigureObraServico(modelBuilder);
         ConfigureObraServicoLista(modelBuilder);
         ConfigureFornecedorServico(modelBuilder);
+        ConfigureObra(modelBuilder);
 
 
 
     }
 
     #region Configurações de Entidades
+
+    private static void ConfigureObra(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Obra>(entity =>
+        {           
+            entity.HasOne(d => d.ResponsavelObra)
+                  .WithMany()
+                  .HasForeignKey(d => d.ResponsavelObraId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
 
     private static void ConfigureEquipamento(ModelBuilder modelBuilder)
     {

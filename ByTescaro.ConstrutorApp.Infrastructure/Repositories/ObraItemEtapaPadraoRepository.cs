@@ -61,6 +61,16 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
                 .AsNoTracking()
                 .ToListAsync();
         }
+
+        public async Task<bool> JaExisteAsync(string nome, long obraEtapaPadraoId, long idExcluido = 0)
+        {
+            // Verifica se existe algum item com o mesmo nome na mesma etapa,
+            // ignorando o próprio ID do item que está sendo editado (se for o caso).
+            return await _context.ObraItemEtapaPadrao
+                .AnyAsync(x => x.Nome == nome &&
+                               x.ObraEtapaPadraoId == obraEtapaPadraoId &&
+                               x.Id != idExcluido);
+        }
     }
 
 }

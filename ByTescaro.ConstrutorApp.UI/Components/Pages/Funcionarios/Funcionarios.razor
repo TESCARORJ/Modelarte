@@ -12,7 +12,7 @@
 
 <PageTitle>Funcionários</PageTitle>
 
-<RadzenCard Style="margin: 1rem;">
+<RadzenCard Style="margin: 1rem;" >
     <RadzenHeading Size="H4" Text="Funcionários" />
 
     <div class="row mt-4 mb-2">
@@ -39,19 +39,32 @@
         <Columns>
             <RadzenDataGridColumn TItem="FuncionarioDto" Property="Nome" Title="Nome" />
             <RadzenDataGridColumn TItem="FuncionarioDto" Property="FuncaoNome" Title="Função" />
-            <RadzenDataGridColumn TItem="FuncionarioDto" Property="CpfCnpj" Title="CPF/CNPJ" />
-            <RadzenDataGridColumn TItem="FuncionarioDto" Title="Tipo">
-                <Template Context="e">
-                    @EnumHelper.ObterDescricaoEnum(e.TipoPessoa)
+            <RadzenDataGridColumn TItem="FuncionarioDto" Property="TelefonePrincipal" Title="Telefone Principal" />
+
+            <RadzenDataGridColumn TItem="FuncionarioDto" Title="Telefone WhatsApp" Width="170px" TextAlign="TextAlign.Center">
+                <Template Context="funcionario">
+                    @if (!string.IsNullOrWhiteSpace(funcionario.TelefoneWhatsApp))
+                    {
+                        <a href="@($"https://wa.me/55{LimparNumeroTelefone(funcionario.TelefoneWhatsApp)}")" target="_blank" title="Abrir no WhatsApp">
+                            <i class="fa-brands fa-whatsapp" style="color: #25D366; font-size: 1.2em;"></i> @* Ícone opcional *@
+                            @funcionario.TelefoneWhatsApp
+                        </a>
+                    }
                 </Template>
             </RadzenDataGridColumn>
 
-            <RadzenDataGridColumn TItem="FuncionarioDto" Title="Salário">
-                <Template Context="f">
-                    @f.Salario?.ToString("C")
+            <RadzenDataGridColumn TItem="FuncionarioDto" Title="E-mail" Width="250px">
+                <Template Context="funcionario">
+                    @if (!string.IsNullOrWhiteSpace(funcionario.Email))
+                    {
+                        <a href="@($"mailto:{funcionario.Email}")" title="Enviar e-mail">
+                            @funcionario.Email
+                        </a>
+                    }
                 </Template>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="FuncionarioDto" Title="Ações" Filterable="false" Sortable="false">
+          
+            <RadzenDataGridColumn TItem="FuncionarioDto" Title="Ações" Filterable="false" Sortable="false"  Width="150px">
                 <Template Context="f">
                     <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
                                   Click="@(() => VerDetalhes(f.Id))" Style="margin-right: 0.25rem;" />
@@ -132,5 +145,13 @@
                     Duration = 5000
                 });
         }
+    }
+
+    private string LimparNumeroTelefone(string numero)
+    {
+        // Remove todos os caracteres que não são dígitos.
+        // Se seus números não tiverem o código do país (como 55 para o Brasil),
+        // você pode adicioná-lo aqui. Ex: return "55" + ...
+        return new string(numero.Where(char.IsDigit).ToArray());
     }
 }
