@@ -60,9 +60,19 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task<ObraItemEtapaPadraoDto> CriarAsync(ObraItemEtapaPadraoDto dto)
         {
+
+            dto.Nome = dto.Nome.Trim();
+
+
+            // VERIFICAÇÃO DE DUPLICIDADE
+            if (await _repo.JaExisteAsync(dto.Nome, dto.ObraEtapaId))
+            {
+                throw new DuplicateRecordException($"O item '{dto.Nome}' já existe para esta etapa padrão.");
+
+            }
+
             var entity = _mapper.Map<ObraItemEtapaPadrao>(dto);
 
-            entity.ObraEtapaPadrao = dto.ObraEtapaId > 0 ? await _obraEtapaPadraoRepository.GetByIdAsync(dto.ObraEtapaId) : null;
             entity.DataHoraCadastro = DateTime.Now;
             entity.UsuarioCadastro = UsuarioLogado;
 
@@ -75,8 +85,16 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task AtualizarAsync(ObraItemEtapaPadraoDto dto)
         {
+            dto.Nome = dto.Nome.Trim();
+
             var entity = await _repo.GetByIdAsync(dto.Id);
             if (entity == null) return;
+
+            // VERIFICAÇÃO DE DUPLICIDADE (ignorando o próprio ID)
+            if (await _repo.JaExisteAsync(dto.Nome, dto.ObraEtapaId, dto.Id))
+            {
+                throw new DuplicateRecordException($"O item '{dto.Nome}' já existe para esta etapa padrão.");
+            }
 
             _mapper.Map(dto, entity);
             await _repo.UpdateAsync(entity);
@@ -88,5 +106,6 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             if (entity != null)
                 await _repo.RemoveAsync(entity);
         }
+
     }
 }

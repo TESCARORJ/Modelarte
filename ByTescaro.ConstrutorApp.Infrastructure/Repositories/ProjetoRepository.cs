@@ -15,13 +15,36 @@ public class ProjetoRepository : IProjetoRepository
         _context = context;
     }
 
+    // Em ProjetoRepository.cs
     public async Task<Projeto?> GetByIdAsync(long id)
     {
         return await _context.Projeto
-            .Include(p => p.Cliente)
-            .Include(p => p.Obras).ThenInclude(o => o.Etapas).ThenInclude(x => x.Itens)
             .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Id == id);
+            .Where(p => p.Id == id)
+            .Include(p => p.Cliente)
+            .Include(p => p.Obras)
+                .ThenInclude(o => o.Etapas)
+                    .ThenInclude(e => e.Itens)
+            .Include(p => p.Obras)
+                .ThenInclude(o => o.Documentos)
+            .Include(p => p.Obras)
+                .ThenInclude(o => o.Imagens)
+            .Include(p => p.Obras)
+                .ThenInclude(o => o.Funcionarios)
+            .Include(p => p.Obras)
+                .ThenInclude(o => o.Equipamentos)
+            .Include(p => p.Obras)
+                .ThenInclude(o => o.Pendencias)
+            .Include(p => p.Obras)
+                .ThenInclude(o => o.Retrabalhos)
+            .Include(p => p.Obras)
+                .ThenInclude(o => o.Insumos)
+           .Include(p => p.Obras)
+                .ThenInclude(o => o.Servicos)
+           .Include(p => p.Obras)
+                .ThenInclude(o => o.Fornecedores)
+            .AsSplitQuery() // <-- ESSA É A OTIMIZAÇÃO CRÍTICA!
+            .FirstOrDefaultAsync();
     }
 
     public async Task<List<Projeto>> GetAllAsync()
@@ -37,6 +60,31 @@ public class ProjetoRepository : IProjetoRepository
             .Include(p => p.Obras)
                 .ThenInclude(o => o.Etapas)
                     .ThenInclude(e => e.Itens)
+            .AsNoTracking()
+            .OrderBy(p => p.Nome)
+            .ToListAsync();
+    }
+
+    public async Task<List<T>> GetAllProjectedAsync<T>(Expression<Func<Projeto, T>> projection)
+    {
+        return await _context.Projeto
+            .AsNoTracking()
+            .OrderBy(p => p.Nome)
+            .Select(projection)
+            .ToListAsync();
+    }
+
+
+    public IQueryable<Projeto> GetQueryable()
+    {
+        return _context.Projeto.AsNoTracking();
+    }
+
+
+    public async Task<List<Projeto>> GetAllListAsync()
+    {
+        return await _context.Projeto
+            .Include(p => p.Obras)
             .AsNoTracking()
             .OrderBy(p => p.Nome)
             .ToListAsync();

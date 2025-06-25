@@ -38,8 +38,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 
         public async Task RemoveAsync(ObraItemEtapa entity)
         {
-            _context.ObraItemEtapa.Remove(entity);
-            await _context.SaveChangesAsync();
+            var entityToRemove = await _context.ObraItemEtapa.FindAsync(entity.Id);
+
+            if (entityToRemove != null)
+            {
+                _context.ObraItemEtapa.Remove(entityToRemove);
+                await _context.SaveChangesAsync();
+            }
         }
 
         public async Task<bool> ExistsAsync(long id)

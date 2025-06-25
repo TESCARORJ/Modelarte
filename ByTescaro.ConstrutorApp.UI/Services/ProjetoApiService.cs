@@ -12,6 +12,8 @@ public class ProjetoApiService
         _http = http;
     }
 
+    public async Task<List<ProjetoListDto>> GetAllListAsync() =>
+        await _http.GetFromJsonAsync<List<ProjetoListDto>>("api/projeto/list") ?? new();  
     public async Task<List<ProjetoDto>> GetAllAsync() =>
         await _http.GetFromJsonAsync<List<ProjetoDto>>("api/projeto") ?? new();
 

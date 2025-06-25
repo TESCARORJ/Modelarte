@@ -34,8 +34,22 @@ namespace ByTescaro.ConstrutorApp.UI.Services
         public async Task<ObraDto?> GetByIdAsync(long id) =>
             await _http.GetFromJsonAsync<ObraDto>($"api/obra/{id}");
 
-        public async Task CreateAsync(ObraDto dto) =>
-            await _http.PostAsJsonAsync("api/obra", dto);
+        public async Task<ObraDto?> CreateAsync(ObraDto dto)
+        {
+            var response = await _http.PostAsJsonAsync("api/obra", dto);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Lê o DTO do corpo da resposta e o retorna
+                return await response.Content.ReadFromJsonAsync<ObraDto>();
+            }
+            else
+            {
+                // Lança uma exceção ou retorna nulo para indicar o erro
+                // (aqui estamos retornando nulo, mas lançar exceção pode ser melhor)
+                return null;
+            }
+        }
 
         public async Task UpdateAsync(ObraDto dto) =>
             await _http.PutAsJsonAsync($"api/obra/{dto.Id}", dto);

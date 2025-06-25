@@ -41,8 +41,15 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] ObraDto dto)
         {
-            await _service.CriarAsync(dto);
-            return Ok();
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var dtoCriado = await _service.CriarAsync(dto);
+
+            // Retorna um status 201 Created com o DTO no corpo e um link para o novo recurso no cabeçalho Location
+            return CreatedAtAction(nameof(Get), new { id = dtoCriado.Id }, dtoCriado);
         }
 
         [HttpPut("{id}")]

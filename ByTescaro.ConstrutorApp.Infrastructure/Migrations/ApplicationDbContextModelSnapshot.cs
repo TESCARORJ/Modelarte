@@ -15,6 +15,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
+#pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "9.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
@@ -614,6 +615,9 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.Property<int>("ResponsavelMaterial")
                         .HasColumnType("int");
 
+                    b.Property<long>("ResponsavelObraId")
+                        .HasColumnType("bigint");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -627,6 +631,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ProjetoId");
+
+                    b.HasIndex("ResponsavelObraId");
 
                     b.ToTable("Obra");
                 });
@@ -1591,7 +1597,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Funcionario", "ResponsavelObra")
+                        .WithMany()
+                        .HasForeignKey("ResponsavelObraId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Projeto");
+
+                    b.Navigation("ResponsavelObra");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraDocumento", b =>
@@ -1753,7 +1767,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Insumo", "Insumo")
                         .WithMany()
                         .HasForeignKey("InsumoId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.ObraItemEtapaPadrao", "ObraItemEtapaPadrao")
@@ -1976,8 +1990,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraItemEtapaPadrao", b =>
                 {
                     b.Navigation("Insumos");
-
                 });
+
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraServicoLista", b =>
                 {
                     b.Navigation("Itens");
@@ -1991,14 +2005,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.OrcamentoObra", b =>
                 {
                     b.Navigation("Itens");
-
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Projeto", b =>
                 {
                     b.Navigation("Obras");
                 });
-
+#pragma warning restore 612, 618
         }
     }
 }

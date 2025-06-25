@@ -110,7 +110,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var projetos = await ProjetoService.GetAllAsync();
+        var projetos = await ProjetoService.GetAllListAsync();
         Projetos = projetos.Count().ToString();
         ProjetosAgendados = projetos.Count(p => p.Status == StatusProjeto.Agendado).ToString();
         ProjetosEmPlanejamento = projetos.Count(p => p.Status == StatusProjeto.EmPlanejamento).ToString();

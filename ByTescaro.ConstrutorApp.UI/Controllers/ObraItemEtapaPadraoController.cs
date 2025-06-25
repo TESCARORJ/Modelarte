@@ -38,15 +38,28 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
             return item == null ? NotFound() : Ok(item);
         }
 
-        // No seu controller de API (ex: ObraItemEtapaPadraoController)
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] ObraItemEtapaPadraoDto dto)
         {
-            
-            var createdDto = await _service.CriarAsync(dto);
-            var dtonew = CreatedAtAction(nameof(GetById), new { id = createdDto.Id }, createdDto);
-            return dtonew;
+            try
+            {
+                if (!ModelState.IsValid) return BadRequest(ModelState);
+
+                var createdDto = await _service.CriarAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = createdDto.Id }, createdDto);
+            }
+            catch (DuplicateRecordException ex)
+            {
+                // Retorna um status 409 Conflict com a mensagem amigável no corpo
+                return Conflict(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                // Para qualquer outro erro inesperado, retorna um 500
+                return StatusCode(500, new { message = "Ocorreu um erro interno no servidor.", details = ex.Message });
+            }
         }
+
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(long id, [FromBody] ObraItemEtapaPadraoDto dto)

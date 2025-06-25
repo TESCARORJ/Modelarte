@@ -26,7 +26,7 @@
         </div>
     </div>
 
-    <RadzenDataGrid TItem="ProjetoDto"
+    <RadzenDataGrid TItem="ProjetoListDto"
                     Data="@_projetosFiltrados"
                     AllowPaging="true"
                     AllowSorting="true"
@@ -36,8 +36,8 @@
                     FilterMode="FilterMode.Simple">
 
         <Columns>
-            <RadzenDataGridColumn TItem="ProjetoDto" Property="Nome" Title="Nome" />
-            <RadzenDataGridColumn TItem="ProjetoDto" Title="Status">
+            <RadzenDataGridColumn TItem="ProjetoListDto" Property="Nome" Title="Nome" />
+            <RadzenDataGridColumn TItem="ProjetoListDto" Title="Status">
                 <Template Context="p">
                     @switch (p.Status)
                     {
@@ -56,22 +56,22 @@
                     }
                 </Template>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="ProjetoDto" Title="Data Início">
+            <RadzenDataGridColumn TItem="ProjetoListDto" Title="Data Início">
                 <Template Context="p">@(p.DataInicio?.ToString("dd/MM/yyyy"))</Template>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="ProjetoDto" Title="Data Término">
+            <RadzenDataGridColumn TItem="ProjetoListDto" Title="Data Término">
                 <Template Context="p">@(p.DataFim?.ToString("dd/MM/yyyy"))</Template>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="ProjetoDto" Title="Custo Estimado">
+            <RadzenDataGridColumn TItem="ProjetoListDto" Title="Custo Estimado">
                 <Template Context="p">R$ @p.CustoEstimado.ToString("N2")</Template>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="ProjetoDto" Title="Custo Real">
+            <RadzenDataGridColumn TItem="ProjetoListDto" Title="Custo Real">
                 <Template Context="p">R$ @p.CustoReal.ToString("N2")</Template>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="ProjetoDto" Title="Andamento (%)">
+            <RadzenDataGridColumn TItem="ProjetoListDto" Title="Andamento (%)">
                 <Template Context="p">@p.ProgressoProjeto %</Template>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="ProjetoDto" Title="Ações" Filterable="false" Sortable="false">
+            <RadzenDataGridColumn TItem="ProjetoListDto" Title="Ações" Filterable="false" Sortable="false">
                 <Template Context="p">
                     <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
                                   Click="@(() => VerDetalhes(p.Id))" Style="margin-right: 0.25rem;" />
@@ -86,7 +86,7 @@
 </RadzenCard>
 
 @code {
-    private List<ProjetoDto> _projetos = new();
+    private List<ProjetoListDto> _projetos = new();
     private string _filtro = string.Empty;
 
     private string Filtro
@@ -99,7 +99,7 @@
         }
     }
 
-    private IEnumerable<ProjetoDto> _projetosFiltrados =>
+    private IEnumerable<ProjetoListDto> _projetosFiltrados =>
         string.IsNullOrWhiteSpace(_filtro)
             ? _projetos
             : _projetos.Where(p =>
@@ -107,7 +107,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _projetos = (await ProjetoApiService.GetAllAsync()).ToList();
+        _projetos = (await ProjetoApiService.GetAllListAsync()).ToList();
     }
 
     private void NovoProjeto() =>
@@ -135,7 +135,7 @@
         try
         {
             await ProjetoApiService.DeleteAsync(id);
-            _projetos = (await ProjetoApiService.GetAllAsync()).ToList();
+            _projetos = (await ProjetoApiService.GetAllListAsync()).ToList();
             NotificationService.Notify(new NotificationMessage
             {
                 Severity = NotificationSeverity.Success,

@@ -5,6 +5,7 @@ namespace ByTescaro.ConstrutorApp.Application.Interfaces
     public interface IProjetoService
     {
         Task<IEnumerable<ProjetoDto>> ObterTodosAsync();
+        Task<IEnumerable<ProjetoListDto>> ObterTodosListAsync();
         Task<ProjetoDto?> ObterPorIdAsync(long id);
         Task<ProjetoDto> CriarAsync(ProjetoDto dto);
         Task AtualizarAsync(ProjetoDto dto);
