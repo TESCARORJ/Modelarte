@@ -27,7 +27,7 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public string UsuarioCadastro { get; set; } = string.Empty;
 
         public ResponsavelMaterialEnum ResponsavelMaterial { get; set; }
-        public long ResponsavelObraId { get; set; }
+        public long? ResponsavelObraId { get; set; }
         public Funcionario? ResponsavelObra { get; set; } = default;
 
         public ICollection<ObraEtapa> Etapas { get; set; } = new List<ObraEtapa>();

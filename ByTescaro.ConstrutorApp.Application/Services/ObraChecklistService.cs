@@ -243,7 +243,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 _logger.LogWarning("Não foi possível encontrar o cliente para a obra {ObraId} para enviar a notificação.", obra.Id);
                 return;
             }
-            var responsavelObra = funcionarioRepository.GetByIdAsync(obra.ResponsavelObraId).Result;
+            var responsavelObra = funcionarioRepository.GetByIdAsync(obra.ResponsavelObraId ?? 0).Result;
             var telefone = responsavelObra.TelefoneWhatsApp;
 
             if (string.IsNullOrWhiteSpace(telefone)) return;

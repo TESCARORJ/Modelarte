@@ -110,7 +110,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasOne(d => d.ResponsavelObra)
                   .WithMany()
                   .HasForeignKey(d => d.ResponsavelObraId)
-                  .OnDelete(DeleteBehavior.Restrict);
+                  .OnDelete(DeleteBehavior.NoAction);
         });
     }
 

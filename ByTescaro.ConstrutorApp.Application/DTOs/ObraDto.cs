@@ -22,7 +22,7 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
         public string? Complemento { get; set; }
 
         public ResponsavelMaterialEnum? ResponsavelMaterial { get; set; }
-        public long ResponsavelObraId { get; set; }
+        public long? ResponsavelObraId { get; set; }
         public FuncionarioDto? ResponsavelObra { get; set; } = default;
         public string UsuarioCadastro { get; set; } = string.Empty;
         public DateTime DataHoraCadastro { get; set; }
