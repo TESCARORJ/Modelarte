@@ -10,6 +10,7 @@
 @using System.Reflection
 @inject ProjetoApiService ProjetoApiService
 @inject ClienteApiService ClienteApiService
+@inject ObraApiService ObraApiService
 @inject CepService CepService
 @inject NavigationManager Navigation
 @inject NotificationService NotificationService
@@ -204,13 +205,22 @@ else
         isLoading = false;
     }
 
-    void AdicionarNovaObra()
+    async Task AdicionarNovaObra()
     {
         // Se for a primeira obra, nomeia como "Obra Principal". Senão, numera as novas.
         string nomeObra = !projeto.Obras.Any() ? "Obra Principal" : $"Nova Obra {projeto.Obras.Count + 1}";
         long projetoId = projeto.Id;
+        var obra = new ObraDto { Nome = nomeObra, Status = StatusObra.NaoIniciada, ProjetoId = projetoId };
+        var obraCriada = await ObraApiService.CreateAsync(obra);
+        if (obraCriada != null)
+        {
+            projeto.Obras.Add(obraCriada);
+        }
+        else
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro ao criar a obra. ObraCriada retornou nulo.");
+        }
 
-        projeto.Obras.Add(new ObraDto { Nome = nomeObra, Status = StatusObra.NaoIniciada, ProjetoId = projetoId });
         StateHasChanged(); // Garante que a UI seja atualizada para mostrar o novo item do Accordion
     }
 

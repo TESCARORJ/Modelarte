@@ -1,6 +1,7 @@
 ﻿@using ByTescaro.ConstrutorApp.Application.DTOs
 @using ByTescaro.ConstrutorApp.UI.Services
 @inject NotificationService NotificationService
+@inject ObraApiService ObraApiService // Adicionar injeção do serviço da Obra
 
 <RadzenMediaQuery Query="(max-width: 768px)" Change="OnMediaChanged" />
 
@@ -32,9 +33,10 @@
                 foreach (var lista in Obra.ListasInsumo)
                 {
                     <RadzenAccordionItem Text="@($"{lista.NomeResponsavel} - Id: {lista.Id}")" Icon="list_alt">
+                        @* Adicionar um EventCallback para recarregar a Obra quando uma lista for salva/excluída *@
                         <ObraInsumoListaEditor Lista="lista"
                                                Obra="Obra"
-                                               OnChanged="StateHasChanged" />
+                                               OnListChanged="LoadObraData" /> @* Renomeado para clareza e ação específica *@
                     </RadzenAccordionItem>
                 }
             }
@@ -56,10 +58,31 @@
     private List<ObraFuncionarioDto> ResponsaveisDisponiveis = new();
     private long? ResponsavelSelecionadoId;
 
-    protected override Task OnInitializedAsync()
+    // Adicione um parâmetro para o Id da Obra para poder recarregá-la
+    [Parameter] public long ObraId { get; set; }
+
+    protected override async Task OnInitializedAsync()
     {
-        ResponsaveisDisponiveis = Obra.Funcionarios ?? new();
-        return Task.CompletedTask;
+        // Ao inicializar, recarregue os dados completos da obra
+        await LoadObraData();
+    }
+
+    private async Task LoadObraData()
+    {
+        if (Obra.Id > 0)
+        {
+            var obraCarregada = await ObraApiService.GetByIdAsync(Obra.Id);
+            if (obraCarregada != null)
+            {
+                Obra = obraCarregada; // Atualiza a instância da Obra com os dados mais recentes do servidor
+                ResponsaveisDisponiveis = Obra.Funcionarios ?? new();
+                StateHasChanged(); // Força a renderização do componente
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Erro", "Não foi possível carregar os dados da obra.");
+            }
+        }
     }
 
     private Task NovaLista()

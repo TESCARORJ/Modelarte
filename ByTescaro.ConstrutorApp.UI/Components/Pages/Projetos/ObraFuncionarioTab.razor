@@ -8,19 +8,19 @@
     <RadzenHeading Size="H6" Text="Funcionários Alocados na Obra" class="mb-3" />
 
     <RadzenDropDown TValue="List<long>"
-                    Data="@FuncionariosDisponiveis"
-                    TextProperty="Nome"
-                    ValueProperty="Id"
-                    Placeholder="Selecionar Funcionários"
-                    Multiple="true"
-                    SelectAllText="Selecionar Todos"
-                    Style="width: 100%;"
-                    @bind-Value="_funcionariosSelecionados" />
+    Data="@FuncionariosDisponiveis"
+    TextProperty="Nome"
+    ValueProperty="Id"
+    Placeholder="Selecionar Funcionários"
+    Multiple="true"
+    SelectAllText="Selecionar Todos"
+    Style="width: 100%;"
+    @bind-Value="_funcionariosSelecionados" />
 
     <RadzenButton Text="Adicionar Selecionados"
-                  Style="margin-top: 1rem; margin-bottom: 1rem;"
-                  Disabled="@(!_funcionariosSelecionados.Any())"
-                  Click="AdicionarFuncionarios" />
+    Style="margin-top: 1rem; margin-bottom: 1rem;"
+    Disabled="@(!_funcionariosSelecionados.Any())"
+    Click="AdicionarFuncionarios" />
 
     <RadzenDivider Style="margin: 1rem 0;" />
 
@@ -47,11 +47,11 @@
         <RadzenText Text="Nenhum funcionário adicionado à obra." />
     }
     <RadzenButton Text="Salvar Funcionários"
-              Icon="save"
-              ButtonStyle="ButtonStyle.Primary"
-              Style="margin-top: 1rem;"
-              Click="SalvarFuncionariosAsync"
-                  Disabled="@IsBotaoSalvarDesabilitado" />
+    Icon="save"
+    ButtonStyle="ButtonStyle.Primary"
+    Style="margin-top: 1rem;"
+    Click="SalvarFuncionariosAsync"
+    Disabled="@IsBotaoSalvarDesabilitado" />
 
 
 </RadzenCard>
@@ -119,7 +119,7 @@
         }
     }
 
- 
+
     protected override async Task OnInitializedAsync()
     {
         if (!FuncionariosDisponiveis.Any())
@@ -168,6 +168,8 @@
             // 🔁 Atualizar e adicionar
             foreach (var funcionario in Obra.Funcionarios)
             {
+                funcionario.ObraId = Obra.Id;               
+
                 if (funcionario.Id == 0)
                     await ObraFuncionarioApiService.CreateAsync(funcionario);
                 else

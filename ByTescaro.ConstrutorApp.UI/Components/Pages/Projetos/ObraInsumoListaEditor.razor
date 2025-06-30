@@ -114,12 +114,11 @@
 </RadzenCard>
 
 @code {
-    // SEU CÓDIGO C# PERMANECE EXATAMENTE O MESMO.
-    // NENHUMA ALTERAÇÃO É NECESSÁRIA AQUI.
-
     [Parameter] public ObraInsumoListaDto? Lista { get; set; }
     [Parameter] public ObraDto Obra { get; set; } = new();
-    [Parameter] public EventCallback OnChanged { get; set; }
+
+    // Renomeado para melhor clareza. Indica que uma mudança na lista ocorreu.
+    [Parameter] public EventCallback OnListChanged { get; set; }
 
     private List<InsumoDto> InsumosDisponiveis = new();
     private List<InsumoDto> InsumosRelacionadosEtapa = new();
@@ -134,25 +133,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        InsumosDisponiveis = await InsumoService.GetInsumosDisponiveisAsync(Obra.Id);
-
-        var relacionadosEtapa = await InsumoService.GetInsumosPadraoRelacionadosAsync(Obra.Id);
-
-        InsumosRelacionadosEtapa = relacionadosEtapa
-          .Select(p => new InsumoDto
-              {
-                  Id = p.Id,
-                  Nome = p.Nome,
-                  UnidadeMedida = p.UnidadeMedida
-              })
-          .ToList();
-
+        // Se Lista for nula, inicialize-a para evitar NullReferenceException
         Lista ??= new ObraInsumoListaDto
             {
                 ObraId = Obra.Id,
                 Data = DateOnly.FromDateTime(DateTime.Today),
                 Itens = new List<ObraInsumoDto>()
             };
+
+        await LoadInsumosData();
 
         if (Lista.Itens != null)
         {
@@ -166,6 +155,22 @@
                     Quantidade = i.Quantidade
                 }).ToList();
         }
+    }
+
+    private async Task LoadInsumosData()
+    {
+        InsumosDisponiveis = await InsumoService.GetInsumosDisponiveisAsync(Obra.Id);
+
+        var relacionadosEtapa = await InsumoService.GetInsumosPadraoRelacionadosAsync(Obra.Id);
+
+        InsumosRelacionadosEtapa = relacionadosEtapa
+          .Select(p => new InsumoDto
+              {
+                  Id = p.Id,
+                  Nome = p.Nome,
+                  UnidadeMedida = p.UnidadeMedida
+              })
+          .ToList();
     }
 
     private async Task SalvarLista()
@@ -183,21 +188,26 @@
                 var novaLista = await ListaService.CreateAsync(Lista);
                 if (novaLista is not null)
                 {
-                    var index = Obra.ListasInsumo.FindIndex(l => l == Lista);
-                    if (index >= 0)
-                        Obra.ListasInsumo[index] = novaLista;
-
-                    Lista = novaLista;
+                    // A substituição da lista no Obra.ListasInsumo deve ser feita no componente pai
+                    // ou o pai deve recarregar a Obra completa.
+                    Lista = novaLista; // Atualiza a instância local do Lista
+                    NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Nova lista de insumos criada com sucesso.");
+                }
+                else
+                {
+                    NotificationService.Notify(NotificationSeverity.Error, "Erro", "Falha ao criar nova lista.");
+                    return;
                 }
             }
             else
             {
                 await ListaService.UpdateAsync(Lista);
+                NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Lista de insumos atualizada com sucesso.");
             }
 
-            NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Lista de insumos salva com sucesso.");
-            await OnChanged.InvokeAsync();
-            StateHasChanged();
+            // Notificar o componente pai que uma mudança na lista ocorreu, para que ele recarregue a Obra.
+            await OnListChanged.InvokeAsync();
+            StateHasChanged(); // Renderiza este componente para refletir o ID, se aplicável
         }
         catch (Exception ex)
         {
@@ -222,10 +232,18 @@
         if (confirm == true)
         {
             if (Lista.Id > 0)
+            {
                 await ListaService.DeleteAsync(Lista.Id);
+                NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Lista de insumos excluída com sucesso.");
+            }
+            else
+            {
+                // Se a lista ainda não foi salva (Id == 0), apenas remova-a localmente
+                // (a ação de remover do Obra.ListasInsumo será feita no pai ao recarregar a Obra)
+            }
 
-            Obra.ListasInsumo?.Remove(Lista);
-            await OnChanged.InvokeAsync();
+            // Notificar o componente pai para recarregar a Obra após a exclusão da lista.
+            await OnListChanged.InvokeAsync();
         }
     }
 
@@ -238,8 +256,8 @@
           .Distinct()
           .ToList();
 
-        var baseAtualizada = _insumosOriginais
-          .Where(i => !_insumosRemovidos.Contains(i.InsumoId))
+        var baseAtualizada = Lista.Itens
+          .Where(i => !_insumosRemovidos.Contains(i.InsumoId)) // Considera itens já removidos
           .ToList();
 
         foreach (var id in todosSelecionados)
@@ -265,21 +283,29 @@
 
         Lista.Itens = baseAtualizada;
 
-        try
-        {
-            if (Lista.Id > 0)
-                await ListaService.UpdateAsync(Lista);
-
-            NotificationService.Notify(NotificationSeverity.Success, "Atualizado", "Itens adicionados e salvos com sucesso.");
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Erro ao atualizar lista: {ex.Message}");
-        }
-
+        // Limpa as seleções após adicionar
         _insumosSelecionados.Clear();
         _insumosRelacionadosSelecionados.Clear();
         QuantidadeSelecionada = 1;
+
+        // Se a lista já tem um ID, salva as alterações dos itens imediatamente
+        // Caso contrário, eles serão salvos quando a lista principal for salva
+        if (Lista.Id > 0)
+        {
+            try
+            {
+                await ListaService.UpdateAsync(Lista); // Salva as alterações dos itens
+                NotificationService.Notify(NotificationSeverity.Success, "Atualizado", "Itens adicionados e salvos com sucesso.");
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Erro ao atualizar itens da lista: {ex.Message}");
+            }
+        }
+        else
+        {
+            NotificationService.Notify(NotificationSeverity.Info, "Itens Adicionados", "Itens adicionados à nova lista. Salve a lista para persistir.");
+        }
 
         StateHasChanged();
     }
