@@ -14,7 +14,7 @@ public class ObraItemEtapaPadraoDtoValidator : AbstractValidator<ObraItemEtapaPa
         RuleFor(x => x.Ordem)
             .GreaterThan(0).WithMessage("A ordem deve ser maior que zero");
 
-        RuleFor(x => x.ObraEtapaId)
+        RuleFor(x => x.ObraEtapaPadraoId)
             .GreaterThan(0).WithMessage("Selecione uma etapa da obra");
 
         When(x => x.IsDataPrazo, () =>

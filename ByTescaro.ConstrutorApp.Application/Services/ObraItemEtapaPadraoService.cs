@@ -65,13 +65,14 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
 
             // VERIFICAÇÃO DE DUPLICIDADE
-            if (await _repo.JaExisteAsync(dto.Nome, dto.ObraEtapaId))
+            if (await _repo.JaExisteAsync(dto.Nome, dto.ObraEtapaPadraoId))
             {
                 throw new DuplicateRecordException($"O item '{dto.Nome}' já existe para esta etapa padrão.");
 
             }
 
             var entity = _mapper.Map<ObraItemEtapaPadrao>(dto);
+            
 
             entity.DataHoraCadastro = DateTime.Now;
             entity.UsuarioCadastro = UsuarioLogado;
@@ -91,7 +92,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             if (entity == null) return;
 
             // VERIFICAÇÃO DE DUPLICIDADE (ignorando o próprio ID)
-            if (await _repo.JaExisteAsync(dto.Nome, dto.ObraEtapaId, dto.Id))
+            if (await _repo.JaExisteAsync(dto.Nome, dto.ObraEtapaPadraoId, dto.Id))
             {
                 throw new DuplicateRecordException($"O item '{dto.Nome}' já existe para esta etapa padrão.");
             }

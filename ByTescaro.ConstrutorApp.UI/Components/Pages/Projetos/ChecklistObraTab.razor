@@ -152,7 +152,7 @@
         }
 
         var itens = todosItensPadrao // Usar a lista completa de itens padrão
-            .Where(i => i.ObraEtapaId == modelo.Id)
+            .Where(i => i.ObraEtapaPadraoId == modelo.Id)
             .Select(i => new ObraItemEtapaDto
                 {
                     Nome = i.Nome,
@@ -223,7 +223,7 @@
     {
         var nomesUsados = etapa.Itens.Select(i => i.Nome).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var etapaPadraoId = ObterIdEtapaPadraoPorNome(etapa.Nome);
-        return todosItensPadrao.Where(i => i.ObraEtapaId == etapaPadraoId && !nomesUsados.Contains(i.Nome));
+        return todosItensPadrao.Where(i => i.ObraEtapaPadraoId == etapaPadraoId && !nomesUsados.Contains(i.Nome));
     }
 
     private long ObterIdEtapaPadraoPorNome(string nomeEtapa)

@@ -10,8 +10,8 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
     {
         public long Id { get; set; }
         public string Nome { get; set; } = string.Empty;
-        public long ObraEtapaId { get; set; }
-        public string ObraEtapaNome { get; set; } = string.Empty;
+        public long ObraEtapaPadraoId { get; set; }
+        public string ObraEtapaPadraoNome{ get; set; } = string.Empty;
 
         public int Ordem { get; set; }
 
