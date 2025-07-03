@@ -49,7 +49,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entity.DataHoraCadastro = DateTime.Now;
             entity.UsuarioCadastro = UsuarioLogado;
 
-            await _repo.AddAsync(entity);
+            _repo.Add(entity);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
@@ -70,7 +70,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entityNovo.UsuarioCadastro = entityAntigo.UsuarioCadastro;
             entityNovo.DataHoraCadastro = entityAntigo.DataHoraCadastro;
 
-            await _repo.UpdateAsync(entityNovo);
+            _repo.Update(entityNovo);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
@@ -88,7 +88,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var entity = await _repo.GetByIdAsync(id);
             if (entity == null) return;
 
-            await _repo.RemoveAsync(entity);
+            _repo.Remove(entity);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {

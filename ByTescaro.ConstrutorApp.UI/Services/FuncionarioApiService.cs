@@ -58,11 +58,11 @@ public class FuncionarioApiService
             throw new Exception($"Erro ao excluir funcionario: {response.StatusCode}");
     }
 
-    public async Task<(int Alocados, int NaoAlocados)> ObterResumoAlocacaoAsync()
-    {
-        var response = await _http.GetFromJsonAsync<ResumoAlocacaoDto>("api/funcionario/ObterResumoAlocacaoAsync");
-        return (response?.Alocados ?? 0, response?.NaoAlocados ?? 0);
-    }
+    //public async Task<(int Alocados, int NaoAlocados)> ObterResumoAlocacaoAsync()
+    //{
+    //    var response = await _http.GetFromJsonAsync<ResumoAlocacaoDto>("api/funcionario/ObterResumoAlocacaoAsync");
+    //    return (response?.Alocados ?? 0, response?.NaoAlocados ?? 0);
+    //}
 
 
 }

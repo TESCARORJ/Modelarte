@@ -58,11 +58,11 @@ public class EquipamentoApiService
             throw new Exception($"Erro ao excluir equipamento: {response.StatusCode}");
     }
 
-    public async Task<(int Alocados, int NaoAlocados)> ObterResumoAlocacaoAsync()
-    {
-        var response = await _http.GetFromJsonAsync<ResumoAlocacaoDto>("api/equipamento/ObterResumoAlocacaoAsync");
-        return (response?.Alocados ?? 0, response?.NaoAlocados ?? 0);
-    }
+    //public async Task<(int Alocados, int NaoAlocados)> ObterResumoAlocacaoAsync()
+    //{
+    //    var response = await _http.GetFromJsonAsync<ResumoAlocacaoDto>("api/equipamento/ObterResumoAlocacaoAsync");
+    //    return (response?.Alocados ?? 0, response?.NaoAlocados ?? 0);
+    //}
 
 }
 

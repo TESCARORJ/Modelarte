@@ -9,7 +9,7 @@
 @inject IUsuarioLogadoService UsuarioLogadoService
 @inject NotificationService NotificationService
 @inject DialogService DialogService
-@inject IObraDocumentoRepository ObraDocumentoRepository
+@inject IUnitOfWork UnitOfWork 
 @inject IAuditoriaService AuditoriaService
 
 
@@ -113,7 +113,7 @@
                         UsuarioCadastro = documento.UsuarioCadastro
                     };
 
-                await ObraDocumentoRepository.AddAsync(entity);
+                UnitOfWork.ObraDocumentoRepository.Add(entity);
                 await AuditoriaService.RegistrarCriacaoAsync(documento, nomeUsuarioLogado);
 
                 documento.Id = entity.Id;
@@ -157,10 +157,10 @@
                 NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Atenção", Detail = $"Erro ao excluir o arquivo físico: {ex.Message}" });
             }
 
-            var entity = await ObraDocumentoRepository.GetByIdAsync(doc.Id);
+            var entity = UnitOfWork.ObraDocumentoRepository.GetByIdAsync(doc.Id).Result;
             if (entity is not null)
             {
-                await ObraDocumentoRepository.RemoveAsync(entity);
+                UnitOfWork.ObraDocumentoRepository.Remove(entity);
                 await AuditoriaService.RegistrarExclusaoAsync(doc, nomeUsuarioLogado);
             }
 

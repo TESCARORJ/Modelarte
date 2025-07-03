@@ -9,6 +9,6 @@ public interface IEquipamentoService
     Task CriarAsync(EquipamentoDto dto);
     Task AtualizarAsync(EquipamentoDto dto);
     Task RemoverAsync(long id);
-    Task<(int Alocados, int NaoAlocados)> ObterResumoAlocacaoAsync();
+    //Task<(int Alocados, int NaoAlocados)> ObterResumoAlocacaoAsync();
 
 }

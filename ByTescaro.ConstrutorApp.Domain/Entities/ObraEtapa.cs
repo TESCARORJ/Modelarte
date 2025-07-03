@@ -1,10 +1,10 @@
-﻿using ByTescaro.ConstrutorApp.Domain.Enums;
+﻿using ByTescaro.ConstrutorApp.Domain.Common;
+using ByTescaro.ConstrutorApp.Domain.Enums;
 
 namespace ByTescaro.ConstrutorApp.Domain.Entities
 {
-    public class ObraEtapa
+    public class ObraEtapa : EntidadeBase
     {
-        public long Id { get; set; }
         public long ObraId { get; set; }
         public Obra Obra { get; set; } = default!;
         public string Nome { get; set; } = string.Empty;
@@ -13,8 +13,6 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
 
         public DateTime? DataInicio { get; set; }
         public DateTime? DataConclusao { get; set; }
-        public string UsuarioCadastro { get; set; } = string.Empty;
-        public DateTime DataHoraCadastro { get; set; }
 
         public ICollection<ObraItemEtapa> Itens { get; set; } = new List<ObraItemEtapa>();
     }

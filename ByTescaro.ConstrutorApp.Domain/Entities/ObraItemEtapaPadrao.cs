@@ -1,8 +1,9 @@
-﻿namespace ByTescaro.ConstrutorApp.Domain.Entities
+﻿using ByTescaro.ConstrutorApp.Domain.Common;
+
+namespace ByTescaro.ConstrutorApp.Domain.Entities
 {
-    public class ObraItemEtapaPadrao
+    public class ObraItemEtapaPadrao : EntidadeBase
     {
-        public long Id { get; set; }
         public long ObraEtapaPadraoId { get; set; }
         public ObraEtapaPadrao ObraEtapaPadrao { get; set; } = default!;
 
@@ -10,9 +11,6 @@
         public int Ordem { get; set; }
         public bool IsDataPrazo { get; set; }
         public int? DiasPrazo { get; set; }
-
-        public DateTime DataHoraCadastro { get; set; }
-        public string UsuarioCadastro { get; set; } = string.Empty;
         public ICollection<ObraItemEtapaPadraoInsumo> Insumos { get; set; } = new List<ObraItemEtapaPadraoInsumo>();
 
     }

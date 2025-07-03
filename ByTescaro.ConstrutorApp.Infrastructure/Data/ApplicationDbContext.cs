@@ -1,36 +1,44 @@
 ﻿using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Entities.Admin;
+using ByTescaro.ConstrutorApp.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ByTescaro.ConstrutorApp.Infrastructure.Data;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
     : DbContext(options)
 {
-    // === Administração ===
-    public DbSet<Usuario> Usuario => Set<Usuario>();
-    public DbSet<PerfilUsuario> PerfilUsuario => Set<PerfilUsuario>();
+    #region === DbSets ===
 
-    // === Cadastros ===
-    public DbSet<Cliente> Cliente => Set<Cliente>();
-    public DbSet<Funcionario> Funcionario => Set<Funcionario>();
+    // --- Entidades Principais com Herança ---
+    public DbSet<Pessoa> Pessoas => Set<Pessoa>();
+    public DbSet<Endereco> Enderecos => Set<Endereco>();
+
+    // --- Tipos específicos (Opcionais, mas úteis para queries diretas) ---
+    public DbSet<Cliente> Clientes => Set<Cliente>();
+    public DbSet<Funcionario> Funcionarios => Set<Funcionario>();
+    public DbSet<Fornecedor> Fornecedores => Set<Fornecedor>();
+    public DbSet<Usuario> Usuarios => Set<Usuario>();
+
+    // --- Administração ---
+    public DbSet<PerfilUsuario> PerfilUsuario => Set<PerfilUsuario>();
     public DbSet<Funcao> Funcao => Set<Funcao>();
+
+    // --- Cadastros ---
     public DbSet<Equipamento> Equipamento => Set<Equipamento>();
-    public DbSet<Fornecedor> Fornecedor => Set<Fornecedor>();
     public DbSet<Insumo> Insumo => Set<Insumo>();
     public DbSet<FornecedorInsumo> FornecedorInsumo => Set<FornecedorInsumo>();
-
-     public DbSet<Servico> Servico => Set<Servico>();
+    public DbSet<Servico> Servico => Set<Servico>();
     public DbSet<FornecedorServico> FornecedorServico => Set<FornecedorServico>();
 
-
-    // === Projetos e Obras ===
+    // --- Projetos e Obras ---
     public DbSet<Projeto> Projeto => Set<Projeto>();
     public DbSet<Obra> Obra => Set<Obra>();
     public DbSet<ObraFuncionario> ObraFuncionario => Set<ObraFuncionario>();
     public DbSet<ObraFornecedor> ObraFornecedor => Set<ObraFornecedor>();
     public DbSet<ObraInsumo> ObraInsumo => Set<ObraInsumo>();
-    public DbSet<ObraInsumoLista> ObraInsumoLista => Set<ObraInsumoLista>(); 
+    public DbSet<ObraInsumoLista> ObraInsumoLista => Set<ObraInsumoLista>();
     public DbSet<ObraServico> ObraServico => Set<ObraServico>();
     public DbSet<ObraServicoLista> ObraServicoLista => Set<ObraServicoLista>();
     public DbSet<ObraEquipamento> ObraEquipamento => Set<ObraEquipamento>();
@@ -39,560 +47,484 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ObraDocumento> ObraDocumento => Set<ObraDocumento>();
     public DbSet<ObraImagem> ObraImagem => Set<ObraImagem>();
 
-
-
-    // === Execução ===
+    // --- Execução ---
     public DbSet<ObraEtapaPadrao> ObraEtapaPadrao => Set<ObraEtapaPadrao>();
     public DbSet<ObraItemEtapaPadrao> ObraItemEtapaPadrao => Set<ObraItemEtapaPadrao>();
     public DbSet<ObraEtapa> ObraEtapa => Set<ObraEtapa>();
     public DbSet<ObraItemEtapa> ObraItemEtapa => Set<ObraItemEtapa>();
 
-    // === Auditoria ===
+    // --- Auditoria ---
     public DbSet<LogAuditoria> LogAuditoria => Set<LogAuditoria>();
 
-
-    // === ObraItemEtapaPadraoInsumo ====
+    // --- Relacionamentos N-N ---
     public DbSet<ObraItemEtapaPadraoInsumo> ObraItemEtapaPadraoInsumos => Set<ObraItemEtapaPadraoInsumo>();
 
-    // === Orçamento ===
+    // --- Orçamento ---
     public DbSet<Orcamento> Orcamento => Set<Orcamento>();
     public DbSet<OrcamentoItem> OrcamentoItem => Set<OrcamentoItem>();
     public DbSet<OrcamentoObra> OrcamentoObra => Set<OrcamentoObra>();
 
-
+    #endregion
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        ConfigureUsuario(modelBuilder);
-        ConfigurePerfilUsuario(modelBuilder);
-        ConfigureRelacionamentosObra(modelBuilder);
-        ConfigureObraEtapa(modelBuilder);
-        ConfigureObraEtapaPadrao(modelBuilder);
-        ConfigureObraItemEtapa(modelBuilder);
-        ConfigureObraItemEtapaPadrao(modelBuilder);
-        ConfigureFuncionario(modelBuilder);
-        ConfigureFuncao(modelBuilder);
-        ConfigureObraEquipamento(modelBuilder);
-        ConfigureObraFuncionario(modelBuilder);
-        ConfigureObraFornecedor(modelBuilder);
-        ConfigureEquipamento(modelBuilder);
-        ConfigureRetrabalho(modelBuilder);
-        ConfigurePendencia(modelBuilder);
-        ConfigureObraDocumento(modelBuilder);
-        ConfigureObraImagem(modelBuilder);
-        ConfigureObraItemEtapaPadraoInsumo(modelBuilder);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 
-
-        ConfigureCliente(modelBuilder);
-        ConfigureFornecedor(modelBuilder);
-        ConfigureInsumo(modelBuilder);
-        ConfigureObraInsumo(modelBuilder);
-        ConfigureObraInsumoLista(modelBuilder);
-        ConfigureFornecedorInsumo(modelBuilder);    
-        ConfigureServico(modelBuilder);
-        ConfigureObraServico(modelBuilder);
-        ConfigureObraServicoLista(modelBuilder);
-        ConfigureFornecedorServico(modelBuilder);
-        ConfigureObra(modelBuilder);
-
-
-
+        foreach (var relationship in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))
+        {
+            if (relationship.IsOwnership) continue;
+            relationship.DeleteBehavior = DeleteBehavior.Restrict;
+        }
     }
 
     #region Configurações de Entidades
 
-    private static void ConfigureObra(ModelBuilder modelBuilder)
+    public class PessoaConfiguration : IEntityTypeConfiguration<Pessoa>
     {
-        modelBuilder.Entity<Obra>(entity =>
-        {           
-            entity.HasOne(d => d.ResponsavelObra)
-                  .WithMany()
+        public void Configure(EntityTypeBuilder<Pessoa> builder)
+        {
+            builder.ToTable("Pessoa");
+
+            // Configura a estratégia de herança Table-per-Hierarchy (TPH)
+            // A coluna "TipoEntidade" será o Discriminator para saber qual tipo de pessoa cada registro é.
+            //builder.HasDiscriminator(p => p.TipoEntidade)
+            //       .HasValue<Cliente>(TipoEntidadePessoa.Cliente)
+            //       .HasValue<Funcionario>(TipoEntidadePessoa.Funcionario)
+            //       .HasValue<Fornecedor>(TipoEntidadePessoa.Fornecedor)
+            //       .HasValue<Usuario>(TipoEntidadePessoa.Usuario);
+
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Nome).HasMaxLength(100);
+            builder.Property(e => e.CpfCnpj).HasMaxLength(20);
+            builder.Property(e => e.Email).HasMaxLength(100);
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+
+            // Relacionamento com Endereco (One-to-One opcional)
+            builder.HasOne(p => p.Endereco)
+                   .WithMany()
+                   .HasForeignKey(p => p.EnderecoId)
+                   .OnDelete(DeleteBehavior.SetNull); // Se deletar o endereço, o campo na pessoa fica nulo
+        }
+    }
+
+    public class EnderecoConfiguration : IEntityTypeConfiguration<Endereco>
+    {
+        public void Configure(EntityTypeBuilder<Endereco> builder)
+        {
+            builder.ToTable("Endereco");
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Logradouro).HasMaxLength(255);
+            builder.Property(e => e.Numero).HasMaxLength(50);
+            builder.Property(e => e.Bairro).HasMaxLength(150);
+            builder.Property(e => e.Cidade).HasMaxLength(150);
+            builder.Property(e => e.Estado).HasMaxLength(100);
+            builder.Property(e => e.UF).HasMaxLength(2);
+            builder.Property(e => e.CEP).HasMaxLength(9);
+        }
+    }    
+
+    public class ClienteConfiguration : IEntityTypeConfiguration<Cliente>
+    {
+        public void Configure(EntityTypeBuilder<Cliente> builder)
+        {
+            builder.ToTable("Cliente");
+
+        }
+    }
+
+    public class FuncionarioConfiguration : IEntityTypeConfiguration<Funcionario>
+    {
+        public void Configure(EntityTypeBuilder<Funcionario> builder)
+        {
+            builder.ToTable("Funcionario");
+
+            // Configura apenas as propriedades específicas de Funcionario
+            builder.Property(e => e.Salario).HasColumnType("decimal(18, 2)");
+
+            builder.HasOne(e => e.Funcao)
+                   .WithMany() // Supondo que uma Função pode pertencer a vários funcionários
+                   .HasForeignKey(e => e.FuncaoId);
+        }
+    }
+
+    public class FornecedorConfiguration : IEntityTypeConfiguration<Fornecedor>
+    {
+        public void Configure(EntityTypeBuilder<Fornecedor> builder)
+        {
+            builder.ToTable("Fornecedor");
+
+            builder.Property(e => e.Tipo).IsRequired();
+        }
+    }
+
+    public class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
+    {
+        public void Configure(EntityTypeBuilder<Usuario> builder)
+        {
+            builder.ToTable("Usuario");
+
+
+            builder.Property(e => e.SenhaHash).IsRequired();
+            builder.Property(e => e.Sobrenome).HasMaxLength(100);
+
+            builder.HasOne(e => e.PerfilUsuario)
+                   .WithMany(p => p.Usuarios)
+                   .HasForeignKey(e => e.PerfilUsuarioId);
+        }
+    }
+
+    public class ProjetoConfiguration : IEntityTypeConfiguration<Projeto>
+    {
+        public void Configure(EntityTypeBuilder<Projeto> builder)
+        {
+            builder.ToTable("Projeto");
+            builder.HasKey(e => e.Id);
+
+            builder.HasOne(p => p.Cliente)
+                   .WithMany(c => c.Projetos)
+                   .HasForeignKey(p => p.ClienteId)
+                   .OnDelete(DeleteBehavior.Cascade); // Se deletar um cliente, seus projetos são deletados.
+
+            builder.HasOne(p => p.Endereco)
+                   .WithMany()
+                   .HasForeignKey(p => p.EnderecoId);
+            // O DeleteBehavior.Restrict é o padrão, o que é bom aqui.
+        }
+    }
+
+    public class ObraConfiguration : IEntityTypeConfiguration<Obra>
+    {
+        public void Configure(EntityTypeBuilder<Obra> builder)
+        {
+            builder.HasOne(d => d.ResponsavelObra)
+                  .WithMany() // Um funcionário pode ser responsável por várias obras
                   .HasForeignKey(d => d.ResponsavelObraId)
-                  .OnDelete(DeleteBehavior.NoAction);
-        });
+                  .OnDelete(DeleteBehavior.NoAction); // Não deletar o funcionário se a obra for removida
+
+            builder.HasOne(o => o.Projeto)
+                   .WithMany(p => p.Obras)
+                   .HasForeignKey(o => o.ProjetoId)
+                   .OnDelete(DeleteBehavior.Cascade); // Se deletar o projeto, suas obras são deletadas.
+        }
     }
 
 
-    private static void ConfigureEquipamento(ModelBuilder modelBuilder)
+    public class EquipamentoConfiguration : IEntityTypeConfiguration<Equipamento>
     {
-        modelBuilder.Entity<Equipamento>(entity =>
+        public void Configure(EntityTypeBuilder<Equipamento> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Nome).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.CustoLocacaoDiaria).HasPrecision(18, 2);
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
-        });
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Nome).IsRequired().HasMaxLength(100);
+            builder.Property(e => e.CustoLocacaoDiaria).HasPrecision(18, 2);
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+        }
     }
 
-    private static void ConfigureInsumo(ModelBuilder modelBuilder)
+    public class InsumoConfiguration : IEntityTypeConfiguration<Insumo>
     {
-        modelBuilder.Entity<Insumo>(entity =>
+        public void Configure(EntityTypeBuilder<Insumo> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Nome).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
-        });
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Nome).IsRequired().HasMaxLength(100);
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+        }
     }
 
-    private static void ConfigureServico(ModelBuilder modelBuilder)
+    public class ServicoConfiguration : IEntityTypeConfiguration<Servico>
     {
-        modelBuilder.Entity<Servico>(entity =>
+        public void Configure(EntityTypeBuilder<Servico> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Nome).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
-        });
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Nome).IsRequired().HasMaxLength(100);
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+        }
     }
 
-
-    private static void ConfigureUsuario(ModelBuilder modelBuilder)
+    public class FuncaoConfiguration : IEntityTypeConfiguration<Funcao>
     {
-        modelBuilder.Entity<Usuario>(entity =>
+        public void Configure(EntityTypeBuilder<Funcao> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Nome).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Email).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.SenhaHash).IsRequired();
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
-
-            entity.HasOne(e => e.PerfilUsuario)
-                  .WithMany(p => p.Usuarios)
-                  .HasForeignKey(e => e.PerfilUsuarioId);
-        });
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Nome).IsRequired().HasMaxLength(100);
+            builder.Property(e => e.Ativo).IsRequired();
+        }
     }
 
-    private static void ConfigurePerfilUsuario(ModelBuilder modelBuilder)
+
+
+    public class PerfilUsuarioConfiguration : IEntityTypeConfiguration<PerfilUsuario>
     {
-        modelBuilder.Entity<PerfilUsuario>(entity =>
+        public void Configure(EntityTypeBuilder<PerfilUsuario> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Nome).IsRequired().HasMaxLength(100);
-        });
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Nome).IsRequired().HasMaxLength(100);
+        }
     }
+   
 
-    private static void ConfigureRelacionamentosObra(ModelBuilder modelBuilder)
+
+    public class FornecedorInsumoConfiguration : IEntityTypeConfiguration<FornecedorInsumo>
     {
-        modelBuilder.Entity<ObraFuncionario>()
-            .HasKey(x => x.Id);
-        
-        modelBuilder.Entity<ObraFornecedor>()
-            .HasKey(x => x.Id);
-
-        modelBuilder.Entity<ObraInsumo>()
-            .HasKey(x => x.Id);
-        
-        modelBuilder.Entity<ObraServico>()
-            .HasKey(x => x.Id);
-
-        modelBuilder.Entity<ObraEquipamento>()
-            .HasKey(x => x.Id);
-    }
-
-    private static void ConfigureObraEtapa(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<ObraEtapa>(entity =>
+        public void Configure(EntityTypeBuilder<FornecedorInsumo> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Nome).IsRequired().HasMaxLength(150);
-            entity.Property(e => e.Ordem).IsRequired();
-            entity.Property(e => e.Status).IsRequired();
-            entity.Property(e => e.DataInicio);
-            entity.Property(e => e.DataConclusao);
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.PrecoUnitario).HasPrecision(18, 2);
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
 
-            entity.HasOne(e => e.Obra)
-                  .WithMany(o => o.Etapas)
-                  .HasForeignKey(e => e.ObraId);
-        });
+            builder.HasOne(e => e.Fornecedor).WithMany().HasForeignKey(e => e.FornecedorId);
+            builder.HasOne(e => e.Insumo).WithMany().HasForeignKey(e => e.InsumoId);
+        }
     }
 
-    private static void ConfigureObraEtapaPadrao(ModelBuilder modelBuilder)
+    public class FornecedorServicoConfiguration : IEntityTypeConfiguration<FornecedorServico>
     {
-        modelBuilder.Entity<ObraEtapaPadrao>(entity =>
+        public void Configure(EntityTypeBuilder<FornecedorServico> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Nome).IsRequired().HasMaxLength(150);
-            entity.Property(e => e.Ordem).IsRequired();
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
-        });
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.PrecoUnitario).HasPrecision(18, 2);
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+
+            builder.HasOne(e => e.Fornecedor).WithMany().HasForeignKey(e => e.FornecedorId);
+            builder.HasOne(e => e.Servico).WithMany().HasForeignKey(e => e.ServicoId);
+        }
     }
 
-    private static void ConfigureObraItemEtapa(ModelBuilder modelBuilder)
+   
+    public class ObraFuncionarioConfiguration : IEntityTypeConfiguration<ObraFuncionario>
     {
-        modelBuilder.Entity<ObraItemEtapa>(entity =>
+        public void Configure(EntityTypeBuilder<ObraFuncionario> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Nome).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.Ordem).IsRequired();
-            entity.Property(e => e.Concluido).IsRequired();
-            entity.Property(e => e.IsDataPrazo);
-            entity.Property(e => e.DiasPrazo);
-            entity.Property(e => e.PrazoAtivo);
-            entity.Property(e => e.DataConclusao);
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.FuncionarioNome).HasMaxLength(100);
+            builder.Property(e => e.FuncaoNoObra).HasMaxLength(100);
+            builder.Property(e => e.DataInicio).IsRequired();
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
 
-            entity.HasOne(e => e.ObraEtapa)
-                  .WithMany(e => e.Itens)
-                  .HasForeignKey(e => e.ObraEtapaId);
-        });
-
+            builder.HasOne(e => e.Obra).WithMany(o => o.Funcionarios).HasForeignKey(e => e.ObraId);
+        }
     }
 
-    private static void ConfigureObraItemEtapaPadrao(ModelBuilder modelBuilder)
+    public class ObraFornecedorConfiguration : IEntityTypeConfiguration<ObraFornecedor>
     {
-        modelBuilder.Entity<ObraItemEtapaPadrao>(entity =>
+        public void Configure(EntityTypeBuilder<ObraFornecedor> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Nome).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.Ordem).IsRequired();
-            entity.Property(e => e.IsDataPrazo);
-            entity.Property(e => e.DiasPrazo);
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.FornecedorNome).HasMaxLength(100);
+            builder.Property(e => e.DataInicio).IsRequired();
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
 
-            entity.HasOne(e => e.ObraEtapaPadrao)
-                  .WithMany(eo => eo.Itens)
-                  .HasForeignKey(e => e.ObraEtapaPadraoId)
-                  .OnDelete(DeleteBehavior.Cascade);
-        });
+            builder.HasOne(e => e.Obra).WithMany(o => o.Fornecedores).HasForeignKey(e => e.ObraId);
+        }
     }
 
-    private static void ConfigureFuncionario(ModelBuilder modelBuilder)
+    public class ObraEquipamentoConfiguration : IEntityTypeConfiguration<ObraEquipamento>
     {
-        modelBuilder.Entity<Funcionario>(entity =>
+        public void Configure(EntityTypeBuilder<ObraEquipamento> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Nome).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.CpfCnpj).IsRequired().HasMaxLength(20);
-            entity.Property(e => e.Salario).HasColumnType("decimal(18,2)");
-            entity.Property(e => e.Email).HasMaxLength(100);
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
-        });
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.DataInicioUso).IsRequired();
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+
+            builder.HasOne(e => e.Obra).WithMany(o => o.Equipamentos).HasForeignKey(e => e.ObraId);
+        }
     }
 
-    private static void ConfigureFuncao(ModelBuilder modelBuilder)
+    public class ObraInsumoConfiguration : IEntityTypeConfiguration<ObraInsumo>
     {
-        modelBuilder.Entity<Funcao>(entity =>
+        public void Configure(EntityTypeBuilder<ObraInsumo> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Nome).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Ativo).IsRequired();
-        });
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Quantidade).HasPrecision(18, 2);
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+
+            builder.HasOne(e => e.Lista).WithMany(l => l.Itens).HasForeignKey(e => e.ObraInsumoListaId).OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(e => e.Insumo).WithMany().HasForeignKey(e => e.InsumoId);
+        }
     }
 
-    private static void ConfigureObraInsumo(ModelBuilder modelBuilder)
+    public class ObraInsumoListaConfiguration : IEntityTypeConfiguration<ObraInsumoLista>
     {
-        modelBuilder.Entity<ObraInsumo>(entity =>
+        public void Configure(EntityTypeBuilder<ObraInsumoLista> builder)
         {
-            entity.HasKey(e => e.Id);
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Data).IsRequired();
 
-            entity.Property(e => e.Quantidade).HasPrecision(18, 2);
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
-
-            entity.HasOne(e => e.Lista)
-                  .WithMany(l => l.Itens)
-                  .HasForeignKey(e => e.ObraInsumoListaId)
-                  .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.Insumo)
-                  .WithMany()
-                  .HasForeignKey(e => e.InsumoId)
-                  .OnDelete(DeleteBehavior.Restrict);
-        });
+            builder.HasOne(e => e.Obra).WithMany(o => o.ListasInsumo).HasForeignKey(e => e.ObraId).OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(e => e.Responsavel).WithMany().HasForeignKey(e => e.ResponsavelId);
+        }
     }
 
-    private static void ConfigureObraInsumoLista(ModelBuilder modelBuilder)
+    public class ObraServicoConfiguration : IEntityTypeConfiguration<ObraServico>
     {
-        modelBuilder.Entity<ObraInsumoLista>(entity =>
+        public void Configure(EntityTypeBuilder<ObraServico> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Data).IsRequired();
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Quantidade).HasPrecision(18, 2);
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
 
-            entity.HasOne(e => e.Obra)
-                  .WithMany(o => o.ListasInsumo)
-                  .HasForeignKey(e => e.ObraId)
-                  .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.Responsavel)
-                  .WithMany()
-                  .HasForeignKey(e => e.ResponsavelId)
-                  .OnDelete(DeleteBehavior.Restrict);
-        });
+            builder.HasOne(e => e.Lista).WithMany(l => l.Itens).HasForeignKey(e => e.ObraServicoListaId).OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(e => e.Servico).WithMany().HasForeignKey(e => e.ServicoId);
+        }
     }
 
-     private static void ConfigureObraServico(ModelBuilder modelBuilder)
+    public class ObraServicoListaConfiguration : IEntityTypeConfiguration<ObraServicoLista>
     {
-        modelBuilder.Entity<ObraServico>(entity =>
+        public void Configure(EntityTypeBuilder<ObraServicoLista> builder)
         {
-            entity.HasKey(e => e.Id);
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Data).IsRequired();
 
-            entity.Property(e => e.Quantidade).HasPrecision(18, 2);
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
-
-            entity.HasOne(e => e.Lista)
-                  .WithMany(l => l.Itens)
-                  .HasForeignKey(e => e.ObraServicoListaId)
-                  .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.Servico)
-                  .WithMany()
-                  .HasForeignKey(e => e.ServicoId)
-                  .OnDelete(DeleteBehavior.Restrict);
-        });
+            builder.HasOne(e => e.Obra).WithMany(o => o.ListasServico).HasForeignKey(e => e.ObraId).OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(e => e.Responsavel).WithMany().HasForeignKey(e => e.ResponsavelId);
+        }
     }
 
-    private static void ConfigureObraServicoLista(ModelBuilder modelBuilder)
+    public class ObraEtapaConfiguration : IEntityTypeConfiguration<ObraEtapa>
     {
-        modelBuilder.Entity<ObraServicoLista>(entity =>
+        public void Configure(EntityTypeBuilder<ObraEtapa> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Data).IsRequired();
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Nome).IsRequired().HasMaxLength(150);
+            builder.Property(e => e.Ordem).IsRequired();
+            builder.Property(e => e.Status).IsRequired();
 
-            entity.HasOne(e => e.Obra)
-                  .WithMany(o => o.ListasServico)
-                  .HasForeignKey(e => e.ObraId)
-                  .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.Responsavel)
-                  .WithMany()
-                  .HasForeignKey(e => e.ResponsavelId)
-                  .OnDelete(DeleteBehavior.Restrict);
-        });
+            builder.HasOne(e => e.Obra).WithMany(o => o.Etapas).HasForeignKey(e => e.ObraId);
+        }
     }
 
-
-
-    private static void ConfigureObraFuncionario(ModelBuilder modelBuilder)
+    public class ObraItemEtapaConfiguration : IEntityTypeConfiguration<ObraItemEtapa>
     {
-        modelBuilder.Entity<ObraFuncionario>(entity =>
+        public void Configure(EntityTypeBuilder<ObraItemEtapa> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.FuncionarioNome).HasMaxLength(100);
-            entity.Property(e => e.FuncaoNoObra).HasMaxLength(100);
-            entity.Property(e => e.DataInicio).IsRequired();
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Nome).IsRequired().HasMaxLength(200);
+            builder.Property(e => e.Ordem).IsRequired();
+            builder.Property(e => e.Concluido).IsRequired();
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
 
-            entity.HasOne(e => e.Obra)
-                  .WithMany(o => o.Funcionarios)
-                  .HasForeignKey(e => e.ObraId);
-
-         
-        });
-    }
-    private static void ConfigureObraFornecedor(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<ObraFornecedor>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.FornecedorNome).HasMaxLength(100);
-            entity.Property(e => e.DataInicio).IsRequired();
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
-
-            entity.HasOne(e => e.Obra)
-                  .WithMany(o => o.Fornecedores)
-                  .HasForeignKey(e => e.ObraId);
-
-         
-        });
+            builder.HasOne(e => e.ObraEtapa).WithMany(e => e.Itens).HasForeignKey(e => e.ObraEtapaId);
+        }
     }
 
-    private static void ConfigureObraEquipamento(ModelBuilder modelBuilder)
+    public class ObraEtapaPadraoConfiguration : IEntityTypeConfiguration<ObraEtapaPadrao>
     {
-        modelBuilder.Entity<ObraEquipamento>(entity =>
+        public void Configure(EntityTypeBuilder<ObraEtapaPadrao> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.DataInicioUso).IsRequired();
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
-
-            entity.HasOne(e => e.Obra)
-                  .WithMany(o => o.Equipamentos)
-                  .HasForeignKey(e => e.ObraId);
-
-         
-        });
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Nome).IsRequired().HasMaxLength(150);
+            builder.Property(e => e.Ordem).IsRequired();
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+        }
     }
 
-    private static void ConfigureRetrabalho(ModelBuilder modelBuilder)
+    public class ObraItemEtapaPadraoConfiguration : IEntityTypeConfiguration<ObraItemEtapaPadrao>
     {
-        modelBuilder.Entity<ObraRetrabalho>(entity =>
+        public void Configure(EntityTypeBuilder<ObraItemEtapaPadrao> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Titulo).IsRequired().HasMaxLength(150);
-            entity.Property(e => e.Descricao).HasMaxLength(500);
-            entity.Property(e => e.Status).IsRequired();
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Nome).IsRequired().HasMaxLength(200);
+            builder.Property(e => e.Ordem).IsRequired();
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
 
-            entity.HasOne(e => e.Obra)
-                  .WithMany(o => o.Retrabalhos)
-                  .HasForeignKey(e => e.ObraId);
-
-            entity.HasOne(e => e.Responsavel)
-                  .WithMany()
-                  .HasForeignKey(e => e.ResponsavelId)
-                  .OnDelete(DeleteBehavior.Restrict);
-        });
+            builder.HasOne(e => e.ObraEtapaPadrao)
+                   .WithMany(eo => eo.Itens)
+                   .HasForeignKey(e => e.ObraEtapaPadraoId)
+                   .OnDelete(DeleteBehavior.Cascade);
+        }
     }
 
-    private static void ConfigurePendencia(ModelBuilder modelBuilder)
+    public class ObraItemEtapaPadraoInsumoConfiguration : IEntityTypeConfiguration<ObraItemEtapaPadraoInsumo>
     {
-        modelBuilder.Entity<ObraPendencia>(entity =>
+        public void Configure(EntityTypeBuilder<ObraItemEtapaPadraoInsumo> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Titulo).IsRequired().HasMaxLength(150);
-            entity.Property(e => e.Descricao).HasMaxLength(500);
-            entity.Property(e => e.Status).IsRequired();
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.QuantidadeSugerida).HasPrecision(18, 2);
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
 
-            entity.HasOne(e => e.Obra)
-                  .WithMany(o => o.Pendencias)
-                  .HasForeignKey(e => e.ObraId);
-
-            entity.HasOne(e => e.Responsavel)
-                  .WithMany()
-                  .HasForeignKey(e => e.ResponsavelId)
-                  .OnDelete(DeleteBehavior.Restrict);
-        });
+            builder.HasOne(e => e.ObraItemEtapaPadrao)
+                   .WithMany(p => p.Insumos)
+                   .HasForeignKey(e => e.ObraItemEtapaPadraoId)
+                   .OnDelete(DeleteBehavior.Cascade);
+        }
     }
 
-    private static void ConfigureObraDocumento(ModelBuilder modelBuilder)
+    public class ObraRetrabalhoConfiguration : IEntityTypeConfiguration<ObraRetrabalho>
     {
-        modelBuilder.Entity<ObraDocumento>(entity =>
+        public void Configure(EntityTypeBuilder<ObraRetrabalho> builder)
         {
-            entity.HasKey(e => e.Id);
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Titulo).IsRequired().HasMaxLength(150);
+            builder.Property(e => e.Descricao).HasMaxLength(500);
+            builder.Property(e => e.Status).IsRequired();
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
 
-            entity.Property(e => e.NomeOriginal).IsRequired().HasMaxLength(255);
-            entity.Property(e => e.CaminhoRelativo).IsRequired().HasMaxLength(500);
-            entity.Property(e => e.Extensao).IsRequired().HasMaxLength(10);
-            entity.Property(e => e.TamanhoEmKb).HasPrecision(18, 2);
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
-
-            entity.HasOne(e => e.Obra)
-                  .WithMany(o => o.Documentos)
-                  .HasForeignKey(e => e.ObraId);
-        });
-
-
+            builder.HasOne(e => e.Obra).WithMany(o => o.Retrabalhos).HasForeignKey(e => e.ObraId);
+            builder.HasOne(e => e.Responsavel).WithMany().HasForeignKey(e => e.ResponsavelId);
+        }
     }
 
-    private static void ConfigureObraImagem(ModelBuilder modelBuilder)
+    public class ObraPendenciaConfiguration : IEntityTypeConfiguration<ObraPendencia>
     {
-        modelBuilder.Entity<ObraImagem>(entity =>
+        public void Configure(EntityTypeBuilder<ObraPendencia> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.NomeOriginal).IsRequired().HasMaxLength(255);
-            entity.Property(e => e.CaminhoRelativo).IsRequired().HasMaxLength(500);
-            entity.Property(e => e.TamanhoEmKb).HasPrecision(18, 2);
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Titulo).IsRequired().HasMaxLength(150);
+            builder.Property(e => e.Descricao).HasMaxLength(500);
+            builder.Property(e => e.Status).IsRequired();
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
 
-            entity.HasOne(e => e.Obra)
-                  .WithMany(o => o.Imagens)
-                  .HasForeignKey(e => e.ObraId);
-        });
+            builder.HasOne(e => e.Obra).WithMany(o => o.Pendencias).HasForeignKey(e => e.ObraId);
+            builder.HasOne(e => e.Responsavel).WithMany().HasForeignKey(e => e.ResponsavelId);
+        }
     }
 
-
-    private static void ConfigureObraItemEtapaPadraoInsumo(ModelBuilder modelBuilder)
+    public class ObraDocumentoConfiguration : IEntityTypeConfiguration<ObraDocumento>
     {
-        modelBuilder.Entity<ObraItemEtapaPadraoInsumo>(entity =>
+        public void Configure(EntityTypeBuilder<ObraDocumento> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.QuantidadeSugerida).HasPrecision(18, 2);
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.NomeOriginal).IsRequired().HasMaxLength(255);
+            builder.Property(e => e.CaminhoRelativo).IsRequired().HasMaxLength(500);
+            builder.Property(e => e.Extensao).IsRequired().HasMaxLength(10);
+            builder.Property(e => e.TamanhoEmKb).HasPrecision(18, 2);
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
 
-            entity.HasOne(e => e.ObraItemEtapaPadrao)
-                  .WithMany(p => p.Insumos)
-                  .HasForeignKey(e => e.ObraItemEtapaPadraoId)
-                  .OnDelete(DeleteBehavior.Cascade);
-        });
+            builder.HasOne(e => e.Obra).WithMany(o => o.Documentos).HasForeignKey(e => e.ObraId);
+        }
     }
 
-
-    private static void ConfigureCliente(ModelBuilder modelBuilder)
+    public class ObraImagemConfiguration : IEntityTypeConfiguration<ObraImagem>
     {
-        modelBuilder.Entity<Cliente>(entity =>
+        public void Configure(EntityTypeBuilder<ObraImagem> builder)
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Nome).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.CpfCnpj).IsRequired().HasMaxLength(20);
-            entity.Property(e => e.Email).HasMaxLength(100);
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
-        });
-    }
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.NomeOriginal).IsRequired().HasMaxLength(255);
+            builder.Property(e => e.CaminhoRelativo).IsRequired().HasMaxLength(500);
+            builder.Property(e => e.TamanhoEmKb).HasPrecision(18, 2);
+            builder.Property(e => e.DataHoraCadastro).IsRequired();
+            builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
 
-    private static void ConfigureFornecedor(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<Fornecedor>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Nome).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.CpfCnpj).IsRequired().HasMaxLength(20);
-            entity.Property(e => e.Email).HasMaxLength(100);
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
-        });
-    }
-
-    private static void ConfigureFornecedorInsumo(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<FornecedorInsumo>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.PrecoUnitario).HasPrecision(18, 2);
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
-
-            entity.HasOne(e => e.Fornecedor)
-                  .WithMany()
-                  .HasForeignKey(e => e.FornecedorId)
-                  .OnDelete(DeleteBehavior.Restrict);
-
-
-            entity.HasOne(e => e.Insumo)
-                  .WithMany()
-                  .HasForeignKey(e => e.InsumoId)
-                  .OnDelete(DeleteBehavior.Restrict);
-        });
-    }
-
-
-    private static void ConfigureFornecedorServico(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<FornecedorServico>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.PrecoUnitario).HasPrecision(18, 2);
-            entity.Property(e => e.DataHoraCadastro).IsRequired();
-            entity.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
-
-            entity.HasOne(e => e.Fornecedor)
-                  .WithMany()
-                  .HasForeignKey(e => e.FornecedorId)
-                  .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne(e => e.Servico)
-                  .WithMany()
-                  .HasForeignKey(e => e.ServicoId)
-                  .OnDelete(DeleteBehavior.Restrict);
-        });
+            builder.HasOne(e => e.Obra).WithMany(o => o.Imagens).HasForeignKey(e => e.ObraId);
+        }
     }
 
 

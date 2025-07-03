@@ -1,8 +1,9 @@
-﻿namespace ByTescaro.ConstrutorApp.Domain.Entities
+﻿using ByTescaro.ConstrutorApp.Domain.Common;
+
+namespace ByTescaro.ConstrutorApp.Domain.Entities
 {
-    public class OrcamentoItem
+    public class OrcamentoItem : EntidadeBase
     {
-        public long Id { get; set; }
         public long OrcamentoObraId { get; set; }
         public long? InsumoId { get; set; }
         public long? ServicoId { get; set; }
@@ -14,7 +15,5 @@
         public Insumo Insumo { get; set; } = default!;
         public Servico Servico { get; set; } = default!;
         public Fornecedor Fornecedor { get; set; } = default!;
-        public string UsuarioCadastro { get; set; } = string.Empty;
-        public DateTime DataHoraCadastro { get; set; }
     }
 }

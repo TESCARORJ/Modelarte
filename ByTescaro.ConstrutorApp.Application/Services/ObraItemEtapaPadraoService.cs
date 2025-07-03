@@ -76,7 +76,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entity.DataHoraCadastro = DateTime.Now;
             entity.UsuarioCadastro = UsuarioLogado;
 
-            await _repo.AddAsync(entity); // O 'entity' agora terá o ID gerado após o SaveChanges interno do AddAsync
+            _repo.Add(entity); // O 'entity' agora terá o ID gerado após o SaveChanges interno do AddAsync
 
             // Mapeia a entidade atualizada de volta para um DTO e o retorna
             var createdDto = _mapper.Map<ObraItemEtapaPadraoDto>(entity);
@@ -97,14 +97,14 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             }
 
             _mapper.Map(dto, entity);
-            await _repo.UpdateAsync(entity);
+            _repo.Update(entity);
         }
 
         public async Task RemoverAsync(long id)
         {
             var entity = await _repo.GetByIdAsync(id);
             if (entity != null)
-                await _repo.RemoveAsync(entity);
+                _repo.Remove(entity);
         }
 
     }

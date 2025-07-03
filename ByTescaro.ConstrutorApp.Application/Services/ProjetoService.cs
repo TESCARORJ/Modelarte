@@ -141,7 +141,7 @@ public class ProjetoService : IProjetoService
 
             if (obra.ResponsavelObraId.HasValue)
             {
-                var responsavelExiste = await _funcionarioRepo.ExistsAsync(obra.ResponsavelObraId.Value);
+                var responsavelExiste = await _funcionarioRepo.ExistsAsync(x => x.Id == obra.ResponsavelObraId);
                 if (!responsavelExiste)
                 {
                     throw new InvalidOperationException($"O responsável pela obra com ID {obra.ResponsavelObraId.Value} não existe.");
@@ -168,7 +168,7 @@ public class ProjetoService : IProjetoService
         // 3. Adicione a entidade raiz (Projeto) ao repositório.
         // O EF Core irá rastrear todas as entidades relacionadas (Obras, Etapas, Itens)
         // porque elas fazem parte do grafo de objetos.
-        await _repo.AddAsync(projeto); // Esta chamada irá salvar todo o grafo em uma transação.
+        _repo.Add(projeto); // Esta chamada irá salvar todo o grafo em uma transação.
 
         // 4. Registre a auditoria após a operação de salvamento bem-sucedida.
         await _auditoriaService.RegistrarCriacaoAsync(_mapper.Map<ProjetoDto>(projeto), UsuarioLogado);
@@ -223,7 +223,7 @@ public class ProjetoService : IProjetoService
         if (projeto == null) return;
 
         _mapper.Map(dto, projeto);
-        _repo.AnexarEntidade(projeto);
+        _repo.Update(projeto);
 
         var obrasAtuais = await _obraRepo.GetByProjetoIdAsync(projeto.Id);
         var idsRemovidos = obrasAtuais
@@ -234,7 +234,7 @@ public class ProjetoService : IProjetoService
         foreach (var idRemovido in idsRemovidos)
         {
             var obra = obrasAtuais.First(o => o.Id == idRemovido);
-            await _obraRepo.RemoveAsync(obra);
+            await _obraRepo.RemoveAsync(obra.Id);
             var dtoObra = dto.Obras.FirstOrDefault(o => o.Id == idRemovido);
             if (dtoObra != null)
                 dto.Obras.Remove(dtoObra);
@@ -248,7 +248,7 @@ public class ProjetoService : IProjetoService
                 novaObra.ProjetoId = projeto.Id;
                 novaObra.UsuarioCadastro = UsuarioLogado;
                 novaObra.DataHoraCadastro = DateTime.Now;
-                await _obraRepo.AddAsync(novaObra);
+                _obraRepo.Add(novaObra);
             }
             else
             {
@@ -265,8 +265,8 @@ public class ProjetoService : IProjetoService
         }
 
         _mapper.Map(dto, projeto);
-        _repo.AnexarEntidade(projeto);
-        await _repo.UpdateAsync(projeto);
+        _repo.Update(projeto);
+        //_repo.Update(projeto);
         await _auditoriaService.RegistrarAtualizacaoAsync(_mapper.Map<ProjetoDto>(projeto), dto, UsuarioLogado);
     }
     public async Task RemoverAsync(long id)
@@ -274,7 +274,7 @@ public class ProjetoService : IProjetoService
         var projeto = await _repo.GetByIdAsync(id);
         if (projeto == null) return;
 
-        await _repo.RemoveAsync(projeto);
+        _repo.Remove(projeto);
         await _auditoriaService.RegistrarExclusaoAsync(_mapper.Map<ProjetoDto>(projeto), UsuarioLogado);
     }
     public async Task<IEnumerable<ProjetoDto>> ObterTodosAgendadosAsync()

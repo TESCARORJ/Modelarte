@@ -44,7 +44,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var entity = _mapper.Map<ObraEquipamento>(dto);
             entity.DataHoraCadastro = DateTime.Now;
             entity.UsuarioCadastro = UsuarioLogado;
-            await _repo.AddAsync(entity);
+            _repo.Add(entity);
         }
 
         public async Task AtualizarAsync(ObraEquipamentoDto dto)
@@ -53,14 +53,14 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             if (entity == null) return;
 
             _mapper.Map(dto, entity);
-            await _repo.UpdateAsync(entity);
+            _repo.Update(entity);
         }
 
         public async Task RemoverAsync(long id)
         {
             var entity = await _repo.GetByIdAsync(id);
             if (entity != null)
-                await _repo.RemoveAsync(entity);
+                _repo.Remove(entity);
         }
 
         public async Task<List<EquipamentoDto>> ObterEquipamentosDisponiveisAsync(long obraId)

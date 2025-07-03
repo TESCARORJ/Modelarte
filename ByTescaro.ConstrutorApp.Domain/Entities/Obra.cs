@@ -1,10 +1,10 @@
-﻿using ByTescaro.ConstrutorApp.Domain.Enums;
+﻿using ByTescaro.ConstrutorApp.Domain.Common;
+using ByTescaro.ConstrutorApp.Domain.Enums;
 namespace ByTescaro.ConstrutorApp.Domain.Entities
 {
 
-    public class Obra
+    public class Obra : EntidadeBase
     {
-        public long Id { get; set; }
         public long ProjetoId { get; set; }
         public Projeto Projeto { get; set; } = default!;
         public string Nome { get; set; } = string.Empty;
@@ -22,9 +22,6 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public string? UF { get; set; }
         public string? CEP { get; set; }
         public string? Complemento { get; set; }
-
-        public DateTime DataHoraCadastro { get; set; }
-        public string UsuarioCadastro { get; set; } = string.Empty;
 
         public ResponsavelMaterialEnum ResponsavelMaterial { get; set; }
         public long? ResponsavelObraId { get; set; }

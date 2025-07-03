@@ -49,7 +49,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         public async Task CriarAsync(FuncaoDto dto)
         {
             var entity = _mapper.Map<Funcao>(dto);
-            await _repo.AddAsync(entity);
+            _repo.Add(entity);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
@@ -68,7 +68,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
             var nova = _mapper.Map<Funcao>(dto);
 
-            await _repo.UpdateAsync(nova);
+            _repo.Update(nova);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
@@ -86,7 +86,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var entity = await _repo.GetByIdAsync(id);
             if (entity == null) return;
 
-            await _repo.RemoveAsync(entity);
+            _repo.Remove(entity);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {

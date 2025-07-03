@@ -51,7 +51,7 @@ public class UsuarioService : IUsuarioService
         var hasher = new PasswordHasher<Usuario>();
         entity.SenhaHash = hasher.HashPassword(entity, dto.Senha!);
 
-        await _repo.AddAsync(entity);
+        _repo.Add(entity);
         await _auditoriaService.RegistrarCriacaoAsync(_mapper.Map<UsuarioDto>(entity), UsuarioLogado);
     }
 
@@ -76,7 +76,7 @@ public class UsuarioService : IUsuarioService
             }
         }
 
-        await _repo.UpdateAsync(entityAntigo);
+        _repo.Update(entityAntigo);
         await _auditoriaService.RegistrarAtualizacaoAsync(entityAntigo, _mapper.Map<Usuario>(dto), UsuarioLogado);
     }
 
@@ -86,7 +86,7 @@ public class UsuarioService : IUsuarioService
         var usuario = await _repo.GetByIdAsync(id);
         if (usuario == null) return;
         usuario.Ativo = false;
-        await _repo.UpdateAsync(usuario);
+        _repo.Update(usuario);
 
     }
 
@@ -95,7 +95,7 @@ public class UsuarioService : IUsuarioService
         var entity = await _repo.GetByIdAsync(id);
         if (entity == null) return;
 
-        await _repo.RemoveAsync(entity);
+        _repo.Remove(entity);
         await _auditoriaService.RegistrarExclusaoAsync(entity, UsuarioLogado);
     }
 

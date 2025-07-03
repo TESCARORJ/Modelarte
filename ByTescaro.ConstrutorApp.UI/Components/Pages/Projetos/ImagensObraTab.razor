@@ -8,7 +8,7 @@
 @inject IJSRuntime JS
 @inject NotificationService NotificationService
 @inject DialogService DialogService
-@inject IObraImagemRepository ObraImagemRepo
+@inject IUnitOfWork UnitOfWork
 @inject IAuditoriaService AuditoriaService
 @inject IMapper Mapper
 
@@ -91,7 +91,7 @@
                     };
 
                 var entidade = Mapper.Map<ObraImagem>(imagemDto);
-                await ObraImagemRepo.AddAsync(entidade);
+                UnitOfWork.ObraImagemRepository.Add(entidade);
                 await AuditoriaService.RegistrarCriacaoAsync(imagemDto, nomeUsuarioLogado);
 
                 imagemDto.Id = entidade.Id;
@@ -137,10 +137,10 @@
                 if (File.Exists(caminhoFisico))
                     File.Delete(caminhoFisico);
 
-                var entidade = await ObraImagemRepo.GetByIdAsync(imagem.Id);
+                var entidade = await UnitOfWork.ObraImagemRepository.GetByIdAsync(imagem.Id);
                 if (entidade != null)
                 {
-                    await ObraImagemRepo.RemoveAsync(entidade);
+                    UnitOfWork.ObraImagemRepository.Remove(entidade);
                     await AuditoriaService.RegistrarExclusaoAsync(imagem, nomeUsuarioLogado);
                 }
 

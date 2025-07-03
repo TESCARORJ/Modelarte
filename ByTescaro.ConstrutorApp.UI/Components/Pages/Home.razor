@@ -120,14 +120,14 @@
         ProjetosPausados = projetos.Count(p => p.Status == StatusProjeto.Pausado).ToString();
 
         Funcionarios = (await FuncionarioService.GetAllAsync()).Count().ToString();
-        var (alocadosFuncionario, naoAlocadosFuncionarios) = await FuncionarioService.ObterResumoAlocacaoAsync();
-        FuncionariosAlocados = alocadosFuncionario.ToString();
-        FuncionariosDisponiveis = naoAlocadosFuncionarios.ToString();
+        // var (alocadosFuncionario, naoAlocadosFuncionarios) = await FuncionarioService.ObterResumoAlocacaoAsync();
+        // FuncionariosAlocados = alocadosFuncionario.ToString();
+        // FuncionariosDisponiveis = naoAlocadosFuncionarios.ToString();
 
         Equipamentos = (await EquipamentoService.GetAllAsync()).Count().ToString();
-        var (alocadosEquipamentos, naoAlocadosEquipamentos) = await EquipamentoService.ObterResumoAlocacaoAsync();
-        EquipamentosAlocados = alocadosEquipamentos.ToString();
-        EquipamentosDisponiveis = naoAlocadosEquipamentos.ToString();
+        // var (alocadosEquipamentos, naoAlocadosEquipamentos) = await EquipamentoService.ObterResumoAlocacaoAsync();
+        // EquipamentosAlocados = alocadosEquipamentos.ToString();
+        // EquipamentosDisponiveis = naoAlocadosEquipamentos.ToString();
 
         Clientes = (await ClienteService.GetAllAsync()).Count().ToString();
         Insumos = (await InsumoService.GetAllAsync()).Count().ToString();

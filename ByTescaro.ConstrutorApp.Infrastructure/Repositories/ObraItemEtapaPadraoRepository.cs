@@ -5,57 +5,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 {
-    public class ObraItemEtapaPadraoRepository : IObraItemEtapaPadraoRepository
+    public class ObraItemEtapaPadraoRepository : Repository<ObraItemEtapaPadrao>,  IObraItemEtapaPadraoRepository
     {
-        private readonly ApplicationDbContext _context;
-
-        public ObraItemEtapaPadraoRepository(ApplicationDbContext context)
+        public ObraItemEtapaPadraoRepository(ApplicationDbContext context) : base(context)
         {
-            _context = context;
         }
 
-        public async Task<ObraItemEtapaPadrao?> GetByIdAsync(long id)
-        {
-            return await _context.ObraItemEtapaPadrao
-                .Include(x => x.ObraEtapaPadrao)
-                .Include(x => x.Insumos)
-                    .ThenInclude(i => i.Insumo)
-                .FirstOrDefaultAsync(x => x.Id == id);
-        }
-
-
-        public async Task<List<ObraItemEtapaPadrao>> GetAllAsync()
-        {
-            return await _context.ObraItemEtapaPadrao.Include(x => x.ObraEtapaPadrao).ToListAsync();
-        }
-
-        public async Task AddAsync(ObraItemEtapaPadrao entity)
-        {
-            await _context.ObraItemEtapaPadrao.AddAsync(entity);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task UpdateAsync(ObraItemEtapaPadrao entity)
-        {
-            _context.ObraItemEtapaPadrao.Update(entity);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task RemoveAsync(ObraItemEtapaPadrao entity)
-        {
-            _context.ObraItemEtapaPadrao.Remove(entity);
-            await _context.SaveChangesAsync();
-        }
-
-
-        public async Task<bool> ExistsAsync(long id)
-        {
-            return await _context.ObraItemEtapaPadrao.AnyAsync(i => i.Id == id);
-        }
+        
 
         public async Task<List<ObraItemEtapaPadrao>> GetByEtapaPadraoIdAsync(long obraEtapaId)
         {
-            return await _context.ObraItemEtapaPadrao
+            return await _dbSet
                 .Include(x => x.ObraEtapaPadrao)
                 .Where(i => i.ObraEtapaPadraoId == obraEtapaId)
                 .AsNoTracking()
@@ -66,7 +26,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         {
             // Verifica se existe algum item com o mesmo nome na mesma etapa,
             // ignorando o próprio ID do item que está sendo editado (se for o caso).
-            return await _context.ObraItemEtapaPadrao
+            return await _dbSet
                 .AnyAsync(x => x.Nome == nome &&
                                x.ObraEtapaPadraoId == obraEtapaPadraoId &&
                                x.Id != idExcluido);

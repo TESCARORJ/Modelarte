@@ -75,7 +75,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 dto.DataHoraCadastro = DateTime.Now;
 
                 var fornecedor = _mapper.Map<Fornecedor>(dto);
-                await _repo.AddAsync(fornecedor); // ✅ await aqui pode ficar, pois é por fornecedor, mas serializado
+                _repo.Add(fornecedor); 
             }
 
             await _context.SaveChangesAsync();

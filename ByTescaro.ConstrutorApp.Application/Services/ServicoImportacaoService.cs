@@ -92,7 +92,7 @@ public class ServicoImportacaoService : IServicoImportacaoService
             dto.Ativo = true;
 
             var entidade = _mapper.Map<Servico>(dto);
-            await _repo.AddAsync(entidade);
+            _repo.Add(entidade);
         }
 
         await _context.SaveChangesAsync();

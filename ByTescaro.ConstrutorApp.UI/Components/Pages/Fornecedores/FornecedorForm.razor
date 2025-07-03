@@ -104,6 +104,42 @@
 
     private async Task Salvar(FornecedorDto model)
     {
+        // === VALIDAÇÃO MANUAL DO CPF/CNPJ E TIPO DE PESSOA ===
+        bool isFormValid = true; // Flag para controlar se o formulário é válido.
+
+        // 1. Validação do Tipo de Pessoa (já que é obrigatório)
+        if (!model.TipoPessoa.HasValue)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro de Validação", Detail = "Tipo de Pessoa é obrigatório.", Duration = 5000 });
+            isFormValid = false;
+        }
+
+        // 2. Validação do CPF/CNPJ (apenas se o campo CpfCnpj não estiver vazio e o TipoPessoa estiver definido)
+        if (isFormValid && !string.IsNullOrWhiteSpace(model.CpfCnpj) && model.TipoPessoa.HasValue)
+        {
+            if (!CpfCnpjValidator.IsCpfCnpjValid(model.CpfCnpj, model.TipoPessoa))
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro de Validação", Detail = "CPF/CNPJ inválido para o tipo de pessoa selecionado.", Duration = 5000 });
+                isFormValid = false;
+            }
+        }
+        else if (isFormValid && string.IsNullOrWhiteSpace(model.CpfCnpj))
+        {
+            // Se CpfCnpj estiver vazio, e for obrigatório (como indicado pelo RadzenRequiredValidator),
+            // a validação do RadzenTemplateForm já irá capturar isso.
+            // Não precisamos de uma notificação extra aqui.
+            // isFormValid permanecerá true se apenas o campo CpfCnpj estiver vazio e não houver outros erros.
+        }
+
+        // Se alguma validação manual falhou, interrompa a execução
+        if (!isFormValid)
+        {
+            // O RadzenTemplateForm já exibirá os erros dos RequiredValidators.
+            // Para erros de CustomValidator, a notificação já foi enviada.
+            return;
+        }
+
+
         try
         {
             if (model.Id == 0)

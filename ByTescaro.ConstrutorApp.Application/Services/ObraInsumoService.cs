@@ -26,7 +26,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         public async Task CriarAsync(ObraInsumoDto dto)
         {
             var entity = _mapper.Map<ObraInsumo>(dto);
-            await _repo.AddAsync(entity);
+            _repo.Add(entity);
         }
 
         public async Task AtualizarAsync(ObraInsumoDto dto)
@@ -35,14 +35,14 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             if (entity == null) return;
 
             _mapper.Map(dto, entity);
-            await _repo.UpdateAsync(entity);
+            _repo.Update(entity);
         }
 
         public async Task RemoverAsync(long id)
         {
             var entity = await _repo.GetByIdAsync(id);
             if (entity != null)
-                await _repo.RemoveAsync(entity);
+                _repo.Remove(entity);
         }
 
         public async Task<List<InsumoDto>> ObterInsumosDisponiveisAsync(long obraId)

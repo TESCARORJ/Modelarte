@@ -43,7 +43,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var entity = _mapper.Map<ObraFuncionario>(dto);
             entity.DataHoraCadastro = DateTime.Now;
             entity.UsuarioCadastro = UsuarioLogado;
-            await _repo.AddAsync(entity);
+            _repo.Add(entity);
         }
 
         public async Task AtualizarAsync(ObraFuncionarioDto dto)
@@ -52,14 +52,14 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             if (entity == null) return;
 
             _mapper.Map(dto, entity);
-            await _repo.UpdateAsync(entity);
+            _repo.Update(entity);
         }
 
         public async Task RemoverAsync(long id)
         {
             var entity = await _repo.GetByIdAsync(id);
             if (entity != null)
-                await _repo.RemoveAsync(entity);
+                _repo.Remove(entity);
         }
 
         public async Task<List<FuncionarioDto>> ObterFuncionariosDisponiveisAsync(long obraId)
@@ -79,35 +79,11 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             return _mapper.Map<List<FuncionarioDto>>(disponiveis);
         }
 
-        //public async Task<List<FuncionarioDto>> ObterFuncionariosTotalDisponiveisAsync()
-        //{
-        //    var todosFuncionarios = await _funcionarioRepository.GetAllAsync();
-        //    var funcionariosAlocados = await _repo.GetAllAsync(); // Todos alocados em qualquer obra
-
-        //    var idsAlocadosEmOutrasObras = funcionariosAlocados
-        //        .Where(f => f.ObraId > 0)
-        //        .Select(f => f.FuncionarioId)
-
-        //        .ToHashSet();
-
-        //    var disponiveis = todosFuncionarios
-        //        .Where(f => !idsAlocadosEmOutrasObras.Contains(f.Id))
-        //        .ToList();
-
-        //    return _mapper.Map<List<FuncionarioDto>>(disponiveis);
-        //}
 
         public async Task<List<FuncionarioDto>> ObterFuncionariosTotalDisponiveisAsync()
         {
             var todosFuncionarios = await _funcionarioRepository
                 .GetAllIncludingAsync(f => f.Funcao); 
-
-            //var funcionariosAlocados = await _repo.GetAllAsync(); // Todos alocados
-
-            //var idsAlocadosEmOutrasObras = funcionariosAlocados
-            //    .Where(f => f.ObraId > 0)
-            //    .Select(f => f.FuncionarioId)
-            //    .ToHashSet();
 
             var disponiveis = todosFuncionarios.ToList();
 

@@ -43,7 +43,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entity.DataHoraCadastro = DateTime.Now;
             entity.UsuarioCadastro = UsuarioLogado;
 
-            await _repo.AddAsync(entity); 
+            _repo.Add(entity); 
 
             return _mapper.Map<ObraDto>(entity);
         }
@@ -61,7 +61,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         {
             var entity = await _repo.GetByIdAsync(id);
             if (entity != null)
-                await _repo.RemoveAsync(entity);
+                _repo.Remove(entity);
         }
 
         public async Task<int> CalcularProgressoAsync(long obraId)

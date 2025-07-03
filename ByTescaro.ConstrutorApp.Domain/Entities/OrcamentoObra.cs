@@ -1,4 +1,5 @@
-﻿using ByTescaro.ConstrutorApp.Domain.Enums;
+﻿using ByTescaro.ConstrutorApp.Domain.Common;
+using ByTescaro.ConstrutorApp.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,9 +8,8 @@ using System.Threading.Tasks;
 
 namespace ByTescaro.ConstrutorApp.Domain.Entities
 {
-    public class OrcamentoObra
+    public class OrcamentoObra : EntidadeBase
     {
-        public long Id { get; set; }
         public long ObraId { get; set; }
         public DateTime DataReferencia { get; set; }
         public string Responsavel { get; set; } = string.Empty;
@@ -18,7 +18,5 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public decimal TotalEstimado { get; set; }
         public Obra? Obra { get; set; }
         public ICollection<OrcamentoItem> Itens { get; set; } = new List<OrcamentoItem>();
-        public string UsuarioCadastro { get; set; } = string.Empty;
-        public DateTime DataHoraCadastro { get; set; }
     }
 }

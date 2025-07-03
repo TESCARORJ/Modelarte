@@ -10,18 +10,15 @@ using System.Threading.Tasks;
 
 namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 {
-    public class FuncaoRepository : IFuncaoRepository
+    public class FuncaoRepository : Repository<Funcao>, IFuncaoRepository
     {
-        private readonly ApplicationDbContext _context;
-
-        public FuncaoRepository(ApplicationDbContext context)
+        public FuncaoRepository(ApplicationDbContext context) : base(context)
         {
-            _context = context;
         }
 
         public async Task<List<Funcao>> ObterTodasAsync()
         {
-            return await _context.Funcao
+            return await _dbSet
                 .AsNoTracking()
                 .OrderBy(f => f.Nome)
                 .ToListAsync();
@@ -29,49 +26,9 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 
         public async Task<Funcao?> ObterPorNomeAsync(string nome)
         {
-            return await _context.Funcao
+            return await _dbSet
                 .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.Nome == nome);
-        }
-
-        public async Task<Funcao?> GetByIdAsync(long id)
-        {
-            return await _context.Funcao.FindAsync(id);
-        }
-
-        public async Task AddAsync(Funcao entity)
-        {
-            await _context.Funcao.AddAsync(entity);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task UpdateAsync(Funcao entity)
-        {
-            var local = _context.Funcao.Local.FirstOrDefault(e => e.Id == entity.Id);
-            if (local != null) _context.Entry(local).State = EntityState.Detached;
-
-            _context.Attach(entity);
-            _context.Entry(entity).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task RemoveAsync(Funcao entity)
-        {
-            _context.Funcao.Remove(entity);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task<List<Funcao>> GetAllAsync()
-        {
-            return await _context.Funcao
-                .AsNoTracking()
-                .OrderBy(f => f.Nome)
-                .ToListAsync();
-        }
-
-        public async Task<bool> ExistsAsync(long id)
-        {
-            return await _context.Funcao.AnyAsync(f => f.Id == id);
         }
     }
 }

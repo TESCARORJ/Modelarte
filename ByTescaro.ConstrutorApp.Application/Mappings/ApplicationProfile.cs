@@ -9,22 +9,90 @@ public class ApplicationProfile : Profile
 {
     public ApplicationProfile()
     {
+
+        // =========================================================================
+        // MAPEAMENTO DE ENDEREÇO
+        // Ensina o AutoMapper a criar um objeto Endereco a partir de um DTO.
+        // =========================================================================
+        CreateMap<ClienteDto, Endereco>()
+               .ForMember(dest => dest.Id, opt => opt.Ignore());
+
+        CreateMap<FuncionarioDto, Endereco>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore());
+
+        CreateMap<FornecedorDto, Endereco>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore());
+
+        //CreateMap<UsuarioDto, Endereco>()
+        //    .ForMember(dest => dest.Id, opt => opt.Ignore());
+
+        CreateMap<ProjetoDto, Endereco>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore());
+
+
+
         // ==== Administração ====
         CreateMap<PerfilUsuario, PerfilUsuarioDto>().ReverseMap();
-        CreateMap<Usuario, UsuarioDto>().ReverseMap();
+        CreateMap<Usuario, UsuarioDto>();
+        //.ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Endereco.Logradouro))
+        //.ForMember(dest => dest.Numero, opt => opt.MapFrom(src => src.Endereco.Numero))
+        //.ForMember(dest => dest.Bairro, opt => opt.MapFrom(src => src.Endereco.Bairro))
+        //.ForMember(dest => dest.Cidade, opt => opt.MapFrom(src => src.Endereco.Cidade))
+        //.ForMember(dest => dest.Estado, opt => opt.MapFrom(src => src.Endereco.Estado))
+        //.ForMember(dest => dest.UF, opt => opt.MapFrom(src => src.Endereco.UF))
+        //.ForMember(dest => dest.CEP, opt => opt.MapFrom(src => src.Endereco.CEP))
+        //.ForMember(dest => dest.Complemento, opt => opt.MapFrom(src => src.Endereco.Complemento));
+
+        CreateMap<UsuarioDto, Usuario>();
+        //.ForMember(dest => dest.Endereco, opt => opt.MapFrom(src => src));
 
         // ==== Cadastros Básicos ====
-        CreateMap<Cliente, ClienteDto>().ReverseMap();
+        CreateMap<Cliente, ClienteDto>()
+            .ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Endereco.Logradouro))
+            .ForMember(dest => dest.Numero, opt => opt.MapFrom(src => src.Endereco.Numero))
+            .ForMember(dest => dest.Bairro, opt => opt.MapFrom(src => src.Endereco.Bairro))
+            .ForMember(dest => dest.Cidade, opt => opt.MapFrom(src => src.Endereco.Cidade))
+            .ForMember(dest => dest.Estado, opt => opt.MapFrom(src => src.Endereco.Estado))
+            .ForMember(dest => dest.UF, opt => opt.MapFrom(src => src.Endereco.UF))
+            .ForMember(dest => dest.CEP, opt => opt.MapFrom(src => src.Endereco.CEP))
+            .ForMember(dest => dest.Complemento, opt => opt.MapFrom(src => src.Endereco.Complemento));
+
+        CreateMap<ClienteDto, Cliente>()
+            .ForMember(dest => dest.Endereco, opt => opt.MapFrom(src => src));
 
         CreateMap<Funcionario, FuncionarioDto>()
-            .ForMember(dest => dest.FuncaoNome, opt => opt.MapFrom(src => src.Funcao.Nome))
-            .ReverseMap()
-            .ForMember(dest => dest.Funcao, opt => opt.Ignore());
+           .ForMember(dest => dest.FuncaoNome, opt => opt.MapFrom(src => src.Funcao.Nome))
+           .ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Endereco.Logradouro))
+           .ForMember(dest => dest.Numero, opt => opt.MapFrom(src => src.Endereco.Numero))
+           .ForMember(dest => dest.Bairro, opt => opt.MapFrom(src => src.Endereco.Bairro))
+           .ForMember(dest => dest.Cidade, opt => opt.MapFrom(src => src.Endereco.Cidade))
+           .ForMember(dest => dest.Estado, opt => opt.MapFrom(src => src.Endereco.Estado))
+           .ForMember(dest => dest.UF, opt => opt.MapFrom(src => src.Endereco.UF))
+           .ForMember(dest => dest.CEP, opt => opt.MapFrom(src => src.Endereco.CEP))
+           .ForMember(dest => dest.Complemento, opt => opt.MapFrom(src => src.Endereco.Complemento));
+
+        CreateMap<FuncionarioDto, Funcionario>()
+            .ForMember(dest => dest.Funcao, opt => opt.Ignore())
+            .ForMember(dest => dest.Endereco, opt => opt.MapFrom(src => src));
+
+     
 
         CreateMap<Funcao, FuncaoDto>().ReverseMap();
         CreateMap<Equipamento, EquipamentoDto>().ReverseMap();
 
-        CreateMap<Fornecedor, FornecedorDto>().ReverseMap();
+        CreateMap<Fornecedor, FornecedorDto>();
+        //.ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Endereco.Logradouro))
+        //.ForMember(dest => dest.Numero, opt => opt.MapFrom(src => src.Endereco.Numero))
+        //.ForMember(dest => dest.Bairro, opt => opt.MapFrom(src => src.Endereco.Bairro))
+        //.ForMember(dest => dest.Cidade, opt => opt.MapFrom(src => src.Endereco.Cidade))
+        //.ForMember(dest => dest.Estado, opt => opt.MapFrom(src => src.Endereco.Estado))
+        //.ForMember(dest => dest.UF, opt => opt.MapFrom(src => src.Endereco.UF))
+        //.ForMember(dest => dest.CEP, opt => opt.MapFrom(src => src.Endereco.CEP))
+        //.ForMember(dest => dest.Complemento, opt => opt.MapFrom(src => src.Endereco.Complemento));
+
+        CreateMap<FornecedorDto, Fornecedor>();
+        //.ForMember(dest => dest.Endereco, opt => opt.MapFrom(src => src));
+
         CreateMap<Insumo, InsumoDto>().ReverseMap();
         CreateMap<FornecedorInsumo, FornecedorInsumoDto>()
             .ForMember(dest => dest.FornecedorNome, opt => opt.MapFrom(src => src.Fornecedor.Nome))

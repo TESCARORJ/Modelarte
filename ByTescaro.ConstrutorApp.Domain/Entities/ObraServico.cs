@@ -1,13 +1,12 @@
-﻿namespace ByTescaro.ConstrutorApp.Domain.Entities
+﻿using ByTescaro.ConstrutorApp.Domain.Common;
+
+namespace ByTescaro.ConstrutorApp.Domain.Entities
 {
-    public class ObraServico
+    public class ObraServico : EntidadeBase
     {
-        public long Id { get; set; }
         public long ObraServicoListaId { get; set; }
         public long ServicoId { get; set; }
         public decimal Quantidade { get; set; }
-        public DateTime DataHoraCadastro { get; set; }
-        public string UsuarioCadastro { get; set; } = string.Empty;
 
         // Navegação
         public ObraServicoLista Lista { get; set; } = null!;

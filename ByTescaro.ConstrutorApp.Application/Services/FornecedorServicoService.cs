@@ -51,21 +51,21 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var entidade = _mapper.Map<FornecedorServico>(dto);
             entidade.DataHoraCadastro = DateTime.Now;
             entidade.UsuarioCadastro = Usuario;
-            await _repo.AddAsync(entidade);
+            _repo.Add(entidade);
             return entidade.Id;
         }
 
         public async Task AtualizarAsync(FornecedorServicoDto dto)
         {
             var entidade = _mapper.Map<FornecedorServico>(dto);
-            await _repo.UpdateAsync(entidade);
+            _repo.Update(entidade);
         }
 
         public async Task RemoverAsync(long id)
         {
             var entidade = await _repo.GetByIdAsync(id);
             if (entidade != null)
-                await _repo.RemoveAsync(entidade);
+                _repo.Add(entidade);
         }
     }
 

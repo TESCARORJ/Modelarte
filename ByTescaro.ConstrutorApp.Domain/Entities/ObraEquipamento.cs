@@ -1,9 +1,9 @@
-﻿namespace ByTescaro.ConstrutorApp.Domain.Entities
-{
-    public class ObraEquipamento
-    {
-        public long Id { get; set; } 
+﻿using ByTescaro.ConstrutorApp.Domain.Common;
 
+namespace ByTescaro.ConstrutorApp.Domain.Entities
+{
+    public class ObraEquipamento : EntidadeBase
+    {
         public long ObraId { get; set; }
         public Obra Obra { get; set; } = default!;
 
@@ -14,9 +14,6 @@
 
         public DateTime DataInicioUso { get; set; }
         public DateTime? DataFimUso { get; set; }
-
-        public DateTime DataHoraCadastro { get; set; }
-        public string UsuarioCadastro { get; set; } = string.Empty;
     }
 
 

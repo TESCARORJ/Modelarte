@@ -5,51 +5,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 {
-    public class ObraEtapaPadraoRepository : IObraEtapaPadraoRepository
+    public class ObraEtapaPadraoRepository : Repository<ObraEtapaPadrao>, IObraEtapaPadraoRepository
     {
-        private readonly ApplicationDbContext _context;
-
-        public ObraEtapaPadraoRepository(ApplicationDbContext context)
+        public ObraEtapaPadraoRepository(ApplicationDbContext context) : base(context)
         {
-            _context = context;
-        }
-
-        public async Task<ObraEtapaPadrao?> GetByIdAsync(long id)
-        {
-            return await _context.ObraEtapaPadrao.FindAsync(id);
-        }
-
-        public async Task<List<ObraEtapaPadrao>> GetAllAsync()
-        {
-            return await _context.ObraEtapaPadrao.ToListAsync();
-        }
-
-        public async Task AddAsync(ObraEtapaPadrao entity)
-        {
-            await _context.ObraEtapaPadrao.AddAsync(entity);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task UpdateAsync(ObraEtapaPadrao entity)
-        {
-            _context.ObraEtapaPadrao.Update(entity);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task RemoveAsync(ObraEtapaPadrao entity)
-        {
-            _context.ObraEtapaPadrao.Remove(entity);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task<bool> ExistsAsync(long id)
-        {
-            return await _context.ObraEtapaPadrao.AnyAsync(e => e.Id == id);
-        }
+        }        
 
         public async Task<List<ObraEtapaPadrao>> GetByObraIdAsync(long obraId)
         {
-            return await _context.ObraEtapaPadrao
+            return await _dbSet
                 .Where(e => e.Id == obraId)
                 .AsNoTracking()
                 .ToListAsync();
@@ -57,7 +21,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 
         public async Task<ObraEtapaPadrao?> GetWithItensAsync(long etapaId)
         {
-            return await _context.ObraEtapaPadrao
+            return await _dbSet
                 .Include(e => e.Itens)
                 .FirstOrDefaultAsync(e => e.Id == etapaId);
         }

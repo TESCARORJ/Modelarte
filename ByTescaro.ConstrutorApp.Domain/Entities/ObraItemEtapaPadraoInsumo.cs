@@ -1,8 +1,9 @@
-﻿namespace ByTescaro.ConstrutorApp.Domain.Entities
+﻿using ByTescaro.ConstrutorApp.Domain.Common;
+
+namespace ByTescaro.ConstrutorApp.Domain.Entities
 {
-    public class ObraItemEtapaPadraoInsumo
+    public class ObraItemEtapaPadraoInsumo : EntidadeBase
     {
-        public long Id { get; set; }
 
         public long ObraItemEtapaPadraoId { get; set; }
         public ObraItemEtapaPadrao ObraItemEtapaPadrao { get; set; } = default!;
@@ -11,8 +12,5 @@
         public Insumo Insumo { get; set; } = default!;
 
         public decimal QuantidadeSugerida { get; set; }
-
-        public DateTime DataHoraCadastro { get; set; }
-        public string UsuarioCadastro { get; set; } = string.Empty;
     }
 }

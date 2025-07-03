@@ -97,7 +97,7 @@ public class InsumoImportacaoService : IInsumoImportacaoService
             dto.Ativo = true;
 
             var entidade = _mapper.Map<Insumo>(dto);
-            await _repo.AddAsync(entidade);
+            _repo.Add(entidade);
         }
 
         await _context.SaveChangesAsync();

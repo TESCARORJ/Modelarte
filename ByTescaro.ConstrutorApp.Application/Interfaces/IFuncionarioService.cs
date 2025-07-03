@@ -9,5 +9,6 @@ public interface IFuncionarioService
     Task CriarAsync(FuncionarioDto dto);
     Task AtualizarAsync(FuncionarioDto dto);
     Task RemoverAsync(long id);
-    Task<(int Alocados, int NaoAlocados)> ObterResumoAlocacaoAsync();
+
+    //Task<(int Alocados, int NaoAlocados)> ObterResumoAlocacaoAsync();
 }

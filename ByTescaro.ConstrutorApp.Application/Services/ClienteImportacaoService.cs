@@ -82,7 +82,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 dto.DataHoraCadastro = DateTime.Now;
 
                 var cliente = _mapper.Map<Cliente>(dto);
-                await _repo.AddAsync(cliente); // ✅ await aqui pode ficar, pois é por cliente, mas serializado
+                _repo.Add(cliente); 
             }
 
             await _context.SaveChangesAsync();

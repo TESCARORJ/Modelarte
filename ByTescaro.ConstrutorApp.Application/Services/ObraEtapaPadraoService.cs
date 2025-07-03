@@ -31,7 +31,7 @@ public class ObraEtapaPadraoService : IObraEtapaPadraoService
     public async Task CriarAsync(ObraEtapaPadraoDto dto)
     {
         var entity = _mapper.Map<ObraEtapaPadrao>(dto);
-        await _repo.AddAsync(entity);
+         _repo.Add(entity);
     }
 
     public async Task AtualizarAsync(ObraEtapaPadraoDto dto)
@@ -40,13 +40,13 @@ public class ObraEtapaPadraoService : IObraEtapaPadraoService
         if (entity == null) return;
 
         _mapper.Map(dto, entity);
-        await _repo.UpdateAsync(entity);
+        _repo.Update(entity);
     }
 
     public async Task RemoverAsync(long id)
     {
         var entity = await _repo.GetByIdAsync(id);
-        if (entity != null) await _repo.RemoveAsync(entity);
+        if (entity != null) _repo.Remove(entity);
     }
 
     public async Task<List<ObraEtapaPadraoDto>> ObterPorObraIdAsync(long obraId)
@@ -67,6 +67,6 @@ public class ObraEtapaPadraoService : IObraEtapaPadraoService
         if (etapa == null) return;
 
         etapa.Status = novoStatus;
-        await _repo.UpdateAsync(etapa);
+        _repo.Update(etapa);
     }
 }

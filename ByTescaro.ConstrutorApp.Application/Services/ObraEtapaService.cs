@@ -48,13 +48,13 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             if (etapa == null) return;
 
             etapa.Status = novoStatus;
-            await _repo.UpdateAsync(etapa);
+            _repo.Update(etapa);
         }
 
         public async Task CriarAsync(ObraEtapaDto dto)
         {
             var entity = _mapper.Map<ObraEtapa>(dto);
-            await _repo.AddAsync(entity);
+            _repo.Add(entity);
         }
 
         public async Task AtualizarAsync(ObraEtapaDto dto)
@@ -63,13 +63,13 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             if (entity == null) return;
 
             _mapper.Map(dto, entity);
-            await _repo.UpdateAsync(entity);
+            _repo.Update(entity);
         }
 
         public async Task RemoverAsync(long id)
         {
             var entity = await _repo.GetByIdAsync(id);
-            if (entity != null) await _repo.RemoveAsync(entity);
+            if (entity != null) _repo.Remove(entity);
         }
     }
 }

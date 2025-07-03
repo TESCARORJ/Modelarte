@@ -50,19 +50,19 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
             return Ok();
         }
 
-        [HttpGet("ObterResumoAlocacaoAsync")]
-        public async Task<IActionResult> ObterResumoAlocacaoAsync()
-        {
-            var (alocados, naoAlocados) = await _service.ObterResumoAlocacaoAsync();
+        //[HttpGet("ObterResumoAlocacaoAsync")]
+        //public async Task<IActionResult> ObterResumoAlocacaoAsync()
+        //{
+        //    var (alocados, naoAlocados) = await _service.ObterResumoAlocacaoAsync();
 
-            var dto = new ResumoAlocacaoDto
-            {
-                Alocados = alocados,
-                NaoAlocados = naoAlocados
-            };
+        //    var dto = new ResumoAlocacaoDto
+        //    {
+        //        Alocados = alocados,
+        //        NaoAlocados = naoAlocados
+        //    };
 
-            return Ok(dto);
-        }
+        //    return Ok(dto);
+        //}
     }
 
 }

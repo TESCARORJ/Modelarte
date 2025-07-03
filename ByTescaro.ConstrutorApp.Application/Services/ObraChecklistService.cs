@@ -153,7 +153,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             {
                 // O repositório deve cuidar da remoção em cascata dos itens ou isso deve ser feito manualmente.
                 // Assumindo que o repositório ou o banco de dados lida com isso.
-                await _etapaRepo.RemoveAsync(etapa);
+                _etapaRepo.Remove(etapa);
             }
 
             // 4. SINCRONIZAÇÃO (ADIÇÃO/ATUALIZAÇÃO): Processar cada etapa do DTO
@@ -165,14 +165,14 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     novaEtapa.ObraId = obraId;
                     novaEtapa.Itens = new List<ObraItemEtapa>(); // Prevenir problemas com AutoMapper
 
-                    await _etapaRepo.AddAsync(novaEtapa);
+                    _etapaRepo.Add(novaEtapa);
 
                     // Adicionar os itens desta nova etapa
                     foreach (var itemDto in etapaDto.Itens)
                     {
                         var novoItem = _mapper.Map<ObraItemEtapa>(itemDto);
                         novoItem.ObraEtapaId = novaEtapa.Id; // Lincar com o ID da etapa recém-criada
-                        await _itemRepo.AddAsync(novoItem);
+                        _itemRepo.Add(novoItem);
                     }
                 }
                 else // É uma etapa existente
@@ -182,7 +182,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
                     // Atualizar os dados da etapa
                     _mapper.Map(etapaDto, etapaExistente);
-                    await _etapaRepo.UpdateAsync(etapaExistente);
+                    _etapaRepo.Update(etapaExistente);
 
                     // Sincronizar os itens desta etapa
                     var itensAtuaisDaEtapa = await _itemRepo.GetByEtapaIdAsync(etapaExistente.Id);
@@ -191,7 +191,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     var itensRemovidos = itensAtuaisDaEtapa.Where(i => !etapaDto.Itens.Any(dto => dto.Id == i.Id)).ToList();
                     foreach (var item in itensRemovidos)
                     {
-                        await _itemRepo.RemoveAsync(item);
+                        _itemRepo.Remove(item);
                     }
 
                     // Adicionar ou atualizar itens
@@ -201,7 +201,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                         {
                             var novoItem = _mapper.Map<ObraItemEtapa>(itemDto);
                             novoItem.ObraEtapaId = etapaExistente.Id;
-                            await _itemRepo.AddAsync(novoItem);
+                            _itemRepo.Add(novoItem);
                         }
                         else // Item existente
                         {
@@ -212,7 +212,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                 bool eraConcluido = itemExistente.Concluido;
 
                                 _mapper.Map(itemDto, itemExistente);
-                                await _itemRepo.UpdateAsync(itemExistente);
+                                _itemRepo.Update(itemExistente);
 
                                 bool foiConcluidoAgora = itemExistente.Concluido && !eraConcluido;
 

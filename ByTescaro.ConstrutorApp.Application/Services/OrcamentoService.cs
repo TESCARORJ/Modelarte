@@ -48,7 +48,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 item.DataHoraCadastro = DateTime.Now;
             }
 
-            await _repo.AddAsync(entidade);
+            _repo.Add(entidade);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
@@ -106,7 +106,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 item.DataHoraCadastro = DateTime.Now;
             }
 
-            await _repo.UpdateAsync(entidade);
+            _repo.Update(entidade);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
@@ -124,7 +124,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var entidade = await _repo.GetByIdComItensAsync(id);
             if (entidade == null) return;
 
-            await _repo.RemoveAsync(entidade);
+            _repo.Remove(entidade);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {

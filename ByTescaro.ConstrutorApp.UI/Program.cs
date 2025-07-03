@@ -64,7 +64,7 @@ builder.Services.AddScoped<AuthCookieService>();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString, sqlOptions =>
         sqlOptions.EnableRetryOnFailure(3, TimeSpan.FromSeconds(10), null)));
 
@@ -84,75 +84,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 builder.Services.AddAuthorization();
-
-#endregion
-
-#region [ Application Services ]
-
-
-
-builder.Services.AddHttpClient<CepService>();
-builder.Services.AddScoped<IUsuarioLogadoService, UsuarioLogadoService>();
-builder.Services.AddScoped<IPerfilUsuarioService, PerfilUsuarioService>();
-builder.Services.AddScoped<IAuditoriaService, AuditoriaService>();
-builder.Services.AddScoped<IUsuarioService, UsuarioService>();
-builder.Services.AddScoped<ILogAuditoriaService, LogAuditoriaService>();
-builder.Services.AddScoped<IClienteService, ClienteService>();
-builder.Services.AddScoped<IProjetoService, ProjetoService>();
-builder.Services.AddScoped<IEquipamentoService, EquipamentoService>();
-builder.Services.AddScoped<IFuncionarioService, FuncionarioService>();
-builder.Services.AddScoped<IObraService, ObraService>();
-builder.Services.AddScoped<IObraEtapaPadraoService, ObraEtapaPadraoService>();
-builder.Services.AddScoped<IObraItemEtapaPadraoService, ObraItemEtapaPadraoService>();
-builder.Services.AddScoped<IObraEtapaService, ObraEtapaService>();
-builder.Services.AddScoped<IObraItemEtapaService, ObraItemEtapaService>(); 
-builder.Services.AddScoped<IObraEquipamentoService, ObraEquipamentoService>();
-builder.Services.AddScoped<IObraFuncionarioService, ObraFuncionarioService>();
-builder.Services.AddScoped<IObraFornecedorService, ObraFornecedorService>();
-builder.Services.AddScoped<IFuncaoService, FuncaoService>();
-builder.Services.AddScoped<IClienteImportacaoService, ClienteImportacaoService>();
-builder.Services.AddScoped<IObraChecklistService, ObraChecklistService>();
-builder.Services.AddScoped<IObraRetrabalhoService, ObraRetrabalhoService>();
-builder.Services.AddScoped<IObraPendenciaService, ObraPendenciaService>();
-builder.Services.AddScoped<IObraItemEtapaPadraoInsumoService, ObraItemEtapaPadraoInsumoService>();
-builder.Services.AddScoped<IFornecedorService, FornecedorService>();
-builder.Services.AddScoped<IFornecedorImportacaoService, FornecedorImportacaoService>();
-builder.Services.AddScoped<IFornecedorInsumoService, FornecedorInsumoService>();
-builder.Services.AddScoped<IInsumoImportacaoService, InsumoImportacaoService>();
-builder.Services.AddScoped<IInsumoService, InsumoService>();
-builder.Services.AddScoped<IObraInsumoService, ObraInsumoService>();
-builder.Services.AddScoped<IObraInsumoListaService, ObraInsumoListaService>();
-builder.Services.AddScoped<IFornecedorServicoService, FornecedorServicoService>();
-builder.Services.AddScoped<IServicoImportacaoService, ServicoImportacaoService>();
-builder.Services.AddScoped<IServicoService, ServicoService>();
-builder.Services.AddScoped<IObraServicoService, ObraServicoService>();
-builder.Services.AddScoped<IObraServicoListaService, ObraServicoListaService>();
-builder.Services.AddScoped<IOrcamentoService, OrcamentoService>();
-builder.Services.AddScoped<IOrcamentoItemService, OrcamentoItemService>();
-builder.Services.AddScoped<IOrcamentoObraService, OrcamentoObraService>();
-
-// Configuração do Z-API para notificações via WhatsApp
-builder.Services.AddHttpClient();
-// 1. Lê a seção "ZApiSettings" do appsettings.json e a registra.
-builder.Services.Configure<ZApiSettings>(builder.Configuration.GetSection("ZApiSettings"));
-
-// 2. Adiciona e configura um HttpClient nomeado especificamente para a Z-API.
-builder.Services.AddHttpClient("ZApiClient", (serviceProvider, client) =>
-{
-    var settings = serviceProvider.GetRequiredService<IOptions<ZApiSettings>>().Value;
-
-    client.BaseAddress = new Uri(settings.BaseUrl);
-
-    // AGORA USANDO O TOKEN CORRETO PARA O HEADER:
-    client.DefaultRequestHeaders.Add("Client-Token", settings.ClientToken);
-});
-
-// 3. Registra o serviço de notificação para injeção de dependência.
-builder.Services.AddScoped<INotificationService, ZApiNotificationService>();
-
-
-
-builder.Services.AddAutoMapper(typeof(ApplicationProfile));
 
 #endregion
 
@@ -376,6 +307,7 @@ builder.Services.AddScoped<OrcamentoItemApiService>(sp =>
 
 #region [ Repository ]
 
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IProjetoRepository, ProjetoRepository>();
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IFuncionarioRepository, FuncionarioRepository>();
@@ -409,6 +341,75 @@ builder.Services.AddScoped<IFornecedorServicoRepository, FornecedorServicoReposi
 builder.Services.AddScoped<IOrcamentoRepository, OrcamentoRepository>();
 builder.Services.AddScoped<IOrcamentoItemRepository, OrcamentoItemRepository>();
 builder.Services.AddScoped<IOrcamentoObraRepository, OrcamentoObraRepository>();
+
+#endregion
+
+#region [ Application Services ]
+
+
+
+builder.Services.AddHttpClient<CepService>();
+builder.Services.AddScoped<IUsuarioLogadoService, UsuarioLogadoService>();
+builder.Services.AddScoped<IPerfilUsuarioService, PerfilUsuarioService>();
+builder.Services.AddScoped<IAuditoriaService, AuditoriaService>();
+builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<ILogAuditoriaService, LogAuditoriaService>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
+builder.Services.AddScoped<IProjetoService, ProjetoService>();
+builder.Services.AddScoped<IEquipamentoService, EquipamentoService>();
+builder.Services.AddScoped<IFuncionarioService, FuncionarioService>();
+builder.Services.AddScoped<IObraService, ObraService>();
+builder.Services.AddScoped<IObraEtapaPadraoService, ObraEtapaPadraoService>();
+builder.Services.AddScoped<IObraItemEtapaPadraoService, ObraItemEtapaPadraoService>();
+builder.Services.AddScoped<IObraEtapaService, ObraEtapaService>();
+builder.Services.AddScoped<IObraItemEtapaService, ObraItemEtapaService>();
+builder.Services.AddScoped<IObraEquipamentoService, ObraEquipamentoService>();
+builder.Services.AddScoped<IObraFuncionarioService, ObraFuncionarioService>();
+builder.Services.AddScoped<IObraFornecedorService, ObraFornecedorService>();
+builder.Services.AddScoped<IFuncaoService, FuncaoService>();
+builder.Services.AddScoped<IClienteImportacaoService, ClienteImportacaoService>();
+builder.Services.AddScoped<IObraChecklistService, ObraChecklistService>();
+builder.Services.AddScoped<IObraRetrabalhoService, ObraRetrabalhoService>();
+builder.Services.AddScoped<IObraPendenciaService, ObraPendenciaService>();
+builder.Services.AddScoped<IObraItemEtapaPadraoInsumoService, ObraItemEtapaPadraoInsumoService>();
+builder.Services.AddScoped<IFornecedorService, FornecedorService>();
+builder.Services.AddScoped<IFornecedorImportacaoService, FornecedorImportacaoService>();
+builder.Services.AddScoped<IFornecedorInsumoService, FornecedorInsumoService>();
+builder.Services.AddScoped<IInsumoImportacaoService, InsumoImportacaoService>();
+builder.Services.AddScoped<IInsumoService, InsumoService>();
+builder.Services.AddScoped<IObraInsumoService, ObraInsumoService>();
+builder.Services.AddScoped<IObraInsumoListaService, ObraInsumoListaService>();
+builder.Services.AddScoped<IFornecedorServicoService, FornecedorServicoService>();
+builder.Services.AddScoped<IServicoImportacaoService, ServicoImportacaoService>();
+builder.Services.AddScoped<IServicoService, ServicoService>();
+builder.Services.AddScoped<IObraServicoService, ObraServicoService>();
+builder.Services.AddScoped<IObraServicoListaService, ObraServicoListaService>();
+builder.Services.AddScoped<IOrcamentoService, OrcamentoService>();
+builder.Services.AddScoped<IOrcamentoItemService, OrcamentoItemService>();
+builder.Services.AddScoped<IOrcamentoObraService, OrcamentoObraService>();
+
+// Configuração do Z-API para notificações via WhatsApp
+builder.Services.AddHttpClient();
+// 1. Lê a seção "ZApiSettings" do appsettings.json e a registra.
+builder.Services.Configure<ZApiSettings>(builder.Configuration.GetSection("ZApiSettings"));
+
+// 2. Adiciona e configura um HttpClient nomeado especificamente para a Z-API.
+builder.Services.AddHttpClient("ZApiClient", (serviceProvider, client) =>
+{
+    var settings = serviceProvider.GetRequiredService<IOptions<ZApiSettings>>().Value;
+
+    client.BaseAddress = new Uri(settings.BaseUrl);
+
+    // AGORA USANDO O TOKEN CORRETO PARA O HEADER:
+    client.DefaultRequestHeaders.Add("Client-Token", settings.ClientToken);
+});
+
+// 3. Registra o serviço de notificação para injeção de dependência.
+builder.Services.AddScoped<INotificationService, ZApiNotificationService>();
+
+
+
+builder.Services.AddAutoMapper(typeof(ApplicationProfile));
 
 #endregion
 

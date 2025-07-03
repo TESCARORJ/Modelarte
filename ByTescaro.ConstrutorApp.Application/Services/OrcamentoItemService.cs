@@ -30,7 +30,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         public async Task CriarAsync(OrcamentoItemDto dto)
         {
             var entidade = _mapper.Map<OrcamentoItem>(dto);
-            await _repo.AddAsync(entidade);
+            _repo.Update(entidade);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
@@ -48,7 +48,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             if (atual is null) return;
 
             var novo = _mapper.Map<OrcamentoItem>(dto);
-            await _repo.UpdateAsync(novo);
+            _repo.Update(novo);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
@@ -66,7 +66,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var entidade = await _repo.GetByIdAsync(id);
             if (entidade == null) return;
 
-            await _repo.RemoveAsync(entidade);
+            _repo.Remove(entidade);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {

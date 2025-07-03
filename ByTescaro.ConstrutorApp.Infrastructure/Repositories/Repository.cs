@@ -1,19 +1,15 @@
-﻿using ByTescaro.ConstrutorApp.Domain.Interfaces;
+﻿using ByTescaro.ConstrutorApp.Domain.Common;
+using ByTescaro.ConstrutorApp.Domain.Interfaces;
 using ByTescaro.ConstrutorApp.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 {
-    public class Repository<T> : IRepository<T> where T : class
+    public class Repository<T> : IRepository<T> where T : EntidadeBase
     {
-        private readonly ApplicationDbContext _context;
-        private readonly DbSet<T> _dbSet;
+        protected readonly ApplicationDbContext _context;
+        protected readonly DbSet<T> _dbSet;
 
         public Repository(ApplicationDbContext context)
         {
@@ -21,15 +17,34 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
             _dbSet = _context.Set<T>();
         }
 
-        public async Task<T?> GetByIdAsync(long id) => await _dbSet.FindAsync(id);
-        public async Task<List<T>> GetAllAsync() => await _dbSet.ToListAsync();
-        public async Task<List<T>> FindAll(Expression<Func<T, bool>> filtro)
+        public virtual async Task<T?> GetByIdAsync(long id) => await _dbSet.FindAsync(id);
+
+        public virtual async Task<List<T>> GetAllAsync() => await _dbSet.AsNoTracking().ToListAsync();
+        
+        public virtual async Task<List<T>> GetActivesAsync() => await _dbSet.Where(e => e.Ativo).AsNoTracking().ToListAsync();
+
+        public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate) => await _dbSet.AsNoTracking().Where(predicate).ToListAsync();
+        
+        public async Task<T?> FindOneAsync(Expression<Func<T, bool>> predicate) => await _dbSet.FirstOrDefaultAsync(predicate);
+
+        public async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate) => await _dbSet.AnyAsync(predicate);
+
+        public virtual void Add(T entity)
         {
-            return await _dbSet.Where(filtro).ToListAsync();
+            // O AddAsync foi removido pois o Add síncrono é suficiente.
+            // O EF Core rastreia a entidade em memória.
+            _dbSet.Add(entity);
         }
-        public async Task AddAsync(T entity) => await _dbSet.AddAsync(entity);
-        public async Task UpdateAsync(T entity) =>  _dbSet.Update(entity);
-        public async Task RemoveAsync(T entity) =>  _dbSet.Remove(entity);
-        public async Task<bool> ExistsAsync(long id) => await _dbSet.FindAsync(id) != null;
+
+        public virtual void Update(T entity)
+        {
+            _dbSet.Update(entity);
+
+        }
+
+        public virtual void Remove(T entity)
+        {
+            _dbSet.Remove(entity);
+        }
     }
 }

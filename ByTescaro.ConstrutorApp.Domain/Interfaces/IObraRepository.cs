@@ -13,5 +13,8 @@ namespace ByTescaro.ConstrutorApp.Domain.Interfaces
         void AnexarEntidade<T>(T entidade) where T : class;
 
         void RemoverEntidade<T>(T entidade) where T : class;
+
+        Task UpdateAsync(Obra obra);
+        Task RemoveAsync(long id);
     }
 }

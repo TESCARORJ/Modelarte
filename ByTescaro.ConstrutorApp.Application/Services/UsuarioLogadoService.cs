@@ -1,33 +1,39 @@
-﻿using ByTescaro.ConstrutorApp.Application.Interfaces;
+﻿// Arquivo: Application/Services/UsuarioLogadoService.cs
+
+using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Entities.Admin;
 using ByTescaro.ConstrutorApp.Infrastructure.Data;
+using ByTescaro.ConstrutorApp.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using System.Security.Claims;
 
 public class UsuarioLogadoService : IUsuarioLogadoService
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IServiceProvider _serviceProvider;
+    // Injeta a FACTORY, não a UnitOfWork
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-    public UsuarioLogadoService(IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider)
+    public UsuarioLogadoService(
+        IHttpContextAccessor httpContextAccessor,
+        IDbContextFactory<ApplicationDbContext> contextFactory)
     {
         _httpContextAccessor = httpContextAccessor;
-        _serviceProvider = serviceProvider;
+        _contextFactory = contextFactory;
     }
 
     public async Task<Usuario?> ObterUsuarioAtualAsync()
     {
         var email = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Email)?.Value;
-        if (string.IsNullOrEmpty(email)) return null;
+        if (string.IsNullOrEmpty(email))
+        {
+            return null;
+        }
 
-        using var scope = _serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        // Cria uma UnitOfWork nova e de curta duração para esta operação específica.
+        // O 'using' garante que o DbContext interno seja descartado ao final.
+        await using var unitOfWork = new UnitOfWork(_contextFactory);
 
-        return await context.Usuario
-            .Include(u => u.PerfilUsuario)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Email == email);
+        return await unitOfWork.UsuarioRepository.ObterPorEmailComPerfilAsync(email);
     }
 }
