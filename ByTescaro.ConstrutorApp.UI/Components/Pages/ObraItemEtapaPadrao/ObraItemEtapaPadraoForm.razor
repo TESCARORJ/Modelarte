@@ -42,14 +42,14 @@
 
                 <RadzenColumn Size="12">
                     <RadzenLabel Text="Etapa da Obra" />
-                    <RadzenDropDown @bind-Value="model.ObraEtapaId"
-                                    Name="ObraEtapaId"
+                    <RadzenDropDown @bind-Value="model.ObraEtapaPadraoId"
+                                    Name="ObraEtapaPadraoId"
                                     Data="@etapas"
                                     TextProperty="Nome"
                                     ValueProperty="Id"
                                     Placeholder="-- Selecione uma Etapa --"
                                     Style="width: 100%;" />
-                    <RadzenRequiredValidator Component="ObraEtapaId" Text="A etapa da obra é obrigatória" />
+                    <RadzenRequiredValidator Component="ObraEtapaPadraoId" Text="A etapa da obra é obrigatória" />
                 </RadzenColumn>
 
                 @if (model.IsDataPrazo)
@@ -147,7 +147,7 @@
         }
         else
         {
-            model = new ObraItemEtapaPadraoDto { Ordem = 1, ObraEtapaId = 0, Insumos = new() };
+            model = new ObraItemEtapaPadraoDto { Ordem = 1, ObraEtapaPadraoId = 0, Insumos = new() };
         }
     }
 

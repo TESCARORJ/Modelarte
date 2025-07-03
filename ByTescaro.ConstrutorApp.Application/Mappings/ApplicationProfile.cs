@@ -205,8 +205,8 @@ public class ApplicationProfile : Profile
         // ==== Etapas Padrão ====
 
         CreateMap<ObraItemEtapaPadrao, ObraItemEtapaPadraoDto>()
-            .ForMember(dest => dest.ObraEtapaId, opt => opt.MapFrom(src => src.ObraEtapaPadrao != null ? src.ObraEtapaPadrao.Id : src.ObraEtapaPadraoId))
-            .ForMember(dest => dest.ObraEtapaNome, opt => opt.MapFrom(src => src.ObraEtapaPadrao != null ? src.ObraEtapaPadrao.Nome : ""))
+            .ForMember(dest => dest.ObraEtapaPadraoId, opt => opt.MapFrom(src => src.ObraEtapaPadrao != null ? src.ObraEtapaPadrao.Id : src.ObraEtapaPadraoId))
+            .ForMember(dest => dest.ObraEtapaPadraoNome, opt => opt.MapFrom(src => src.ObraEtapaPadrao != null ? src.ObraEtapaPadrao.Nome : ""))
             .ReverseMap()
             .ForMember(dest => dest.ObraEtapaPadrao, opt => opt.Ignore());
 
@@ -256,8 +256,8 @@ public class ApplicationProfile : Profile
 
 
         CreateMap<ObraItemEtapaPadrao, ObraItemEtapaPadraoDto>()
-            .ForMember(dest => dest.ObraEtapaId, opt => opt.MapFrom(src => src.ObraEtapaPadrao != null ? src.ObraEtapaPadrao.Id : src.ObraEtapaPadraoId))
-            .ForMember(dest => dest.ObraEtapaNome, opt => opt.MapFrom(src => src.ObraEtapaPadrao != null ? src.ObraEtapaPadrao.Nome : ""))
+            .ForMember(dest => dest.ObraEtapaPadraoId, opt => opt.MapFrom(src => src.ObraEtapaPadrao != null ? src.ObraEtapaPadrao.Id : src.ObraEtapaPadraoId))
+            .ForMember(dest => dest.ObraEtapaPadraoNome, opt => opt.MapFrom(src => src.ObraEtapaPadrao != null ? src.ObraEtapaPadrao.Nome : ""))
             .ForMember(dest => dest.Insumos, opt => opt.MapFrom(src => src.Insumos))
             .ReverseMap()
             .ForMember(dest => dest.ObraEtapaPadrao, opt => opt.Ignore())
