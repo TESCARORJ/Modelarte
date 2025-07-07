@@ -8,25 +8,17 @@ using Microsoft.AspNetCore.Http;
 namespace ByTescaro.ConstrutorApp.Application.Services
 {
     public class ObraEquipamentoService : IObraEquipamentoService
-    {
-        private readonly IObraEquipamentoRepository _repo;
-        private readonly IObraRepository _obraRepository;
-        private readonly IEquipamentoRepository _equipamentoRepository;
-        private readonly IProjetoRepository _projetoRepository;
-        private readonly IClienteRepository _clienteRepository;
+    {        
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        public readonly IUnitOfWork _unitOfWork;
 
 
-        public ObraEquipamentoService(IObraEquipamentoRepository repo, IMapper mapper, IEquipamentoRepository equipamentoRepository, IObraRepository obraRepository, IProjetoRepository projetoRepository, IClienteRepository clienteRepository, IHttpContextAccessor httpContextAccessor)
+        public ObraEquipamentoService(IMapper mapper, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
         {
-            _repo = repo;
             _mapper = mapper;
-            _equipamentoRepository = equipamentoRepository;
-            _obraRepository = obraRepository;
-            _projetoRepository = projetoRepository;
-            _clienteRepository = clienteRepository;
             _httpContextAccessor = httpContextAccessor;
+            _unitOfWork = unitOfWork;
         }
 
 
@@ -35,7 +27,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task<List<ObraEquipamentoDto>> ObterPorObraIdAsync(long obraId)
         {
-            var list = await _repo.GetByObraIdAsync(obraId);
+            var list = await _unitOfWork.ObraEquipamentoRepository.GetByObraIdAsync(obraId);
             return _mapper.Map<List<ObraEquipamentoDto>>(list);
         }
 
@@ -44,29 +36,32 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var entity = _mapper.Map<ObraEquipamento>(dto);
             entity.DataHoraCadastro = DateTime.Now;
             entity.UsuarioCadastro = UsuarioLogado;
-            _repo.Add(entity);
+            _unitOfWork.ObraEquipamentoRepository.Add(entity);
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task AtualizarAsync(ObraEquipamentoDto dto)
         {
-            var entity = await _repo.GetByIdAsync(dto.Id);
+            var entity = await _unitOfWork.ObraEquipamentoRepository.GetByIdAsync(dto.Id);
             if (entity == null) return;
 
             _mapper.Map(dto, entity);
-            _repo.Update(entity);
+            _unitOfWork.ObraEquipamentoRepository.Update(entity);
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
         {
-            var entity = await _repo.GetByIdAsync(id);
+            var entity = await _unitOfWork.ObraEquipamentoRepository.GetByIdAsync(id);
             if (entity != null)
-                _repo.Remove(entity);
+                _unitOfWork.ObraEquipamentoRepository.Remove(entity);
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task<List<EquipamentoDto>> ObterEquipamentosDisponiveisAsync(long obraId)
         {
-            var todosEquipamentos = await _equipamentoRepository.GetAllAsync();
-            var equipamentosAlocados = await _repo.GetAllAsync(); // Todos alocados em qualquer obra
+            var todosEquipamentos = await _unitOfWork.EquipamentoRepository.GetAllAsync();
+            var equipamentosAlocados = await _unitOfWork.ObraEquipamentoRepository.GetAllAsync(); // Todos alocados em qualquer obra
 
             var idsAlocadosEmOutrasObras = equipamentosAlocados
                 .Where(f => f.ObraId != obraId)
@@ -82,8 +77,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task<List<EquipamentoDto>> ObterEquipamentosTotalDisponiveisAsync()
         {
-            var todosEquipamentos = await _equipamentoRepository.GetAllAsync();
-            var equipamentosAlocados = await _repo.GetAllAsync(); // Todos alocados em qualquer obra
+            var todosEquipamentos = await _unitOfWork.EquipamentoRepository.GetAllAsync();
+            var equipamentosAlocados = await _unitOfWork.ObraEquipamentoRepository.GetAllAsync(); // Todos alocados em qualquer obra
 
             var idsAlocadosEmOutrasObras = equipamentosAlocados
                 .Where(f => f.ObraId > 0)
@@ -101,11 +96,11 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         public async Task<List<EquipamentoDto>> ObterEquipamentosTotalAlocadosAsync()
         {
             // Busca todos os equipamentos alocados em alguma obra
-            var equipamentosAlocados = await _repo.GetAllAsync(); // ObraEquipamento
-            var obras = await _obraRepository.GetAllAsync();
-            var proejtos = await _projetoRepository.GetAllAsync();
-            var clientes = await _clienteRepository.GetAllAsync();
-            var equipamentos = await _equipamentoRepository.GetAllAsync();
+            var equipamentosAlocados = await _unitOfWork.ObraEquipamentoRepository.GetAllAsync(); // ObraEquipamento
+            var obras = await _unitOfWork.ObraRepository.GetAllAsync();
+            var proejtos = await _unitOfWork.ProjetoRepository.GetAllAsync();
+            var clientes = await _unitOfWork.ClienteRepository.GetAllAsync();
+            var equipamentos = await _unitOfWork.EquipamentoRepository.GetAllAsync();
 
             var resultado = equipamentosAlocados
                 .Select(eqAlocado =>

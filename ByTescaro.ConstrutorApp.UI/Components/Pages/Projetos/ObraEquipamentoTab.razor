@@ -12,7 +12,8 @@
     <RadzenDropDown Data="@EquipamentosDisponiveis" TextProperty="Nome" ValueProperty="Id"
                     Multiple="true" @bind-Value="_equipamentosSelecionados"
                     Placeholder="Selecionar Equipamentos" Style="width:100%"
-                    Class="rz-mb-2" />
+                    Class="rz-mb-2" 
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.StartsWith" AllowFiltering="true" />
 
     <RadzenRow Style="margin-bottom: 1rem; gap: 0.5rem">
         <RadzenColumn Size="12" SizeMD="6">
@@ -44,11 +45,11 @@
                         </Template>
                     </RadzenDataGridColumn>
 
-                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataInicioUso" Title="Início" FormatString="{0:dd/MM/yyyy}" />
-                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataFimUso" Title="Fim" FormatString="{0:dd/MM/yyyy}" />
-                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataHoraCadastro" Title="Data Cadastro" FormatString="{0:dd/MM/yyyy}" />
-                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="UsuarioCadastro" Title="Cadastrado por" />
-                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Title="">
+                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataInicioUso" Title="Início" FormatString="{0:dd/MM/yyyy}" Width="30px" />
+                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataFimUso" Title="Fim" FormatString="{0:dd/MM/yyyy}" Width="30px" />
+@*                     <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataHoraCadastro" Title="Data Cadastro" FormatString="{0:dd/MM/yyyy}" />
+                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="UsuarioCadastro" Title="Cadastrado por" /> *@
+                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Title="" Width="30px">
                         <Template Context="equip">
                             <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
                                           Click="@(() => ConfirmarRemocao(equip))" />
@@ -75,6 +76,8 @@
 
     private List<long> _equipamentosSelecionados = new();
     private RadzenDataGrid<ObraEquipamentoDto>? grid;
+    private bool isLoading = true;
+
 
     private void AdicionarEquipamentos()
     {
@@ -140,6 +143,24 @@
         }
     }
 
+
+    /// OnParametersSetAsync é usado para carregar os dados do checklist
+    /// sempre que os parâmetros do componente (como 'Obra') forem definidos.
+    /// </summary>
+    protected override async Task OnParametersSetAsync()
+    {
+        // Garante que o Obra.Id seja válido antes de buscar os dados
+        if (Obra != null && Obra.Id > 0)
+        {
+            isLoading = true;
+
+            // Chama o serviço para carregar o checklist associado a esta obra
+            Obra.Equipamentos = await ObraEquipamentoApiService.GetByObraIdAsync(Obra.Id);
+
+            isLoading = false;
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
         if (!EquipamentosDisponiveis.Any())
@@ -147,9 +168,12 @@
             EquipamentosDisponiveis = (await ObraEquipamentoApiService.GetEquipamentosDisponiveisAsync(Obra.Id)).ToList();
         }
 
-        _equipamentosOriginais = Obra.Equipamentos?
-            .Select(e => new ObraEquipamentoDto { Id = e.Id, EquipamentoId = e.EquipamentoId, ObraId = e.ObraId })
-            .ToList() ?? new();
+        // _equipamentosOriginais = Obra.Equipamentos?
+        //     .Select(e => new ObraEquipamentoDto { Id = e.Id, EquipamentoId = e.EquipamentoId, ObraId = e.ObraId })
+        //     .ToList() ?? new();
+
+        _equipamentosOriginais = await ObraEquipamentoApiService.GetByObraIdAsync(Obra.Id);
+
     }
 
     private async Task SalvarEquipamentosAsync()
