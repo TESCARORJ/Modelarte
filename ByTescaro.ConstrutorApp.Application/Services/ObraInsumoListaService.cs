@@ -3,6 +3,7 @@ using ByTescaro.ConstrutorApp.Application.DTOs;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
+using ByTescaro.ConstrutorApp.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -11,29 +12,29 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 {
     public class ObraInsumoListaService : IObraInsumoListaService
     {
-        private readonly IObraInsumoListaRepository _repo;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
 
 
-        public ObraInsumoListaService(IObraInsumoListaRepository repo, IMapper mapper, IHttpContextAccessor httpContextAccessor)
+        public ObraInsumoListaService(IMapper mapper, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
         {
-            _repo = repo;
             _mapper = mapper;
             _httpContextAccessor = httpContextAccessor;
+            _unitOfWork = unitOfWork;
         }
         private string UsuarioLogado => _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
 
         public async Task<List<ObraInsumoListaDto>> ObterPorObraIdAsync(long obraId)
         {
-            var listas = await _repo.GetByObraIdAsync(obraId);
+            var listas = await _unitOfWork.ObraInsumoListaRepository.GetByObraIdAsync(obraId);
             return _mapper.Map<List<ObraInsumoListaDto>>(listas);
         }
 
         public async Task<ObraInsumoListaDto?> ObterPorIdAsync(long id)
         {
-            var entity = await _repo.GetByIdWithItensAsync(id);
+            var entity = await _unitOfWork.ObraInsumoListaRepository.GetByIdWithItensAsync(id);
             return entity == null ? null : _mapper.Map<ObraInsumoListaDto>(entity);
         }
 
@@ -42,10 +43,11 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var entity = _mapper.Map<ObraInsumoLista>(dto);
             entity.DataHoraCadastro = DateTime.Now;
             entity.UsuarioCadastro = UsuarioLogado;
-            _repo.Add(entity);
+            _unitOfWork.ObraInsumoListaRepository.Add(entity);
 
-            // Recarrega com os relacionamentos (Responsável, Insumo)
-            var atualizado = await _repo.GetByIdWithItensAsync(entity.Id);
+            await _unitOfWork.CommitAsync();
+            
+            var atualizado = await _unitOfWork.ObraInsumoListaRepository.GetByIdWithItensAsync(entity.Id);
 
             return _mapper.Map<ObraInsumoListaDto>(atualizado);
         }
@@ -54,7 +56,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task AtualizarAsync(ObraInsumoListaDto dto)
         {
-            var entity = await _repo.GetByIdWithItensAsync(dto.Id);
+            var entity = await _unitOfWork.ObraInsumoListaRepository.GetByIdWithItensAsync(dto.Id);
             if (entity == null) return;
 
             // Atualiza os dados principais da lista
@@ -75,14 +77,17 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 });
             }
 
-            _repo.Update(entity);
+            _unitOfWork.ObraInsumoListaRepository.Update(entity);
+
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
         {
-            var entity = await _repo.GetByIdAsync(id);
+            var entity = await _unitOfWork.ObraInsumoListaRepository.GetByIdAsync(id);
             if (entity != null)
-                _repo.Remove(entity);
+                _unitOfWork.ObraInsumoListaRepository.Remove(entity);
+            await _unitOfWork.CommitAsync();
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿@using ByTescaro.ConstrutorApp.Application.DTOs
 @using ByTescaro.ConstrutorApp.UI.Services
 @inject NotificationService NotificationService
-@inject ObraApiService ObraApiService // Adicionar injeção do serviço da Obra
+@inject ObraApiService ObraApiService
 
 <RadzenMediaQuery Query="(max-width: 768px)" Change="OnMediaChanged" />
 
@@ -11,18 +11,18 @@
     <RadzenRow Class="rz-mb-2 rz-align-items-end" Style="gap: 0.5rem;">
         <RadzenColumn Size="12" SizeMD="6">
             <RadzenDropDown Data="@ResponsaveisDisponiveis"
-                            TextProperty="FuncionarioNome"
-                            ValueProperty="FuncionarioId"
-                            @bind-Value="ResponsavelSelecionadoId"
-                            Placeholder="Selecionar Responsável"
-                            Style="width: 100%;" />
+            TextProperty="FuncionarioNome"
+            ValueProperty="FuncionarioId"
+            @bind-Value="ResponsavelSelecionadoId"
+            Placeholder="Selecionar Responsável"
+            Style="width: 100%;" />
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="3">
             <RadzenButton Icon="add_circle_outline"
-                          Text="Nova Lista"
-                          Click="@NovaLista"
-                          Style="width: 100%;" />
+            Text="Nova Lista"
+            Click="@NovaLista"
+            Style="width: 100%;" />
         </RadzenColumn>
     </RadzenRow>
 
@@ -35,8 +35,8 @@
                     <RadzenAccordionItem Text="@($"{lista.NomeResponsavel} - Id: {lista.Id}")" Icon="list_alt">
                         @* Adicionar um EventCallback para recarregar a Obra quando uma lista for salva/excluída *@
                         <ObraInsumoListaEditor Lista="lista"
-                                               Obra="Obra"
-                                               OnListChanged="LoadObraData" /> @* Renomeado para clareza e ação específica *@
+                        Obra="Obra"
+                        OnListChanged="LoadObraData" /> @* Renomeado para clareza e ação específica *@
                     </RadzenAccordionItem>
                 }
             }
@@ -75,7 +75,8 @@
             if (obraCarregada != null)
             {
                 Obra = obraCarregada; // Atualiza a instância da Obra com os dados mais recentes do servidor
-                ResponsaveisDisponiveis = Obra.Funcionarios ?? new();
+                ResponsaveisDisponiveis = obraCarregada.Funcionarios;
+
                 StateHasChanged(); // Força a renderização do componente
             }
             else
