@@ -4,7 +4,6 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
 {
     public class ObraDocumento : EntidadeBase
     {
-        public bool Ativo { get; set; } = true;
         public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
         public string UsuarioCadastro { get; set; } = string.Empty;
         public long ObraId { get; set; }

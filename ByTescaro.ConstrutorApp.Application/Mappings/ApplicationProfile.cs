@@ -162,6 +162,14 @@ public class ApplicationProfile : Profile
 
         // ==== Projeto ==== 
         CreateMap<Projeto, ProjetoDto>()
+            .ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Logradouro : string.Empty))
+            .ForMember(dest => dest.Numero, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Numero : string.Empty))
+            .ForMember(dest => dest.Bairro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Bairro : string.Empty))
+            .ForMember(dest => dest.Cidade, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Cidade : string.Empty))
+            .ForMember(dest => dest.Estado, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Estado : string.Empty))
+            .ForMember(dest => dest.UF, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.UF : string.Empty))
+            .ForMember(dest => dest.CEP, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.CEP : string.Empty))
+            .ForMember(dest => dest.Complemento, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Complemento : string.Empty))
             .ForMember(dest => dest.DataInicio, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.DataInicio)))
             .ForMember(dest => dest.DataFim, opt => opt.MapFrom(src => src.DataFim.HasValue ? DateOnly.FromDateTime(src.DataFim.Value) : (DateOnly?)null))
             .ReverseMap()
@@ -176,7 +184,8 @@ public class ApplicationProfile : Profile
             .ReverseMap()
             .ForMember(dest => dest.DataInicio, opt => opt.MapFrom(src => src.DataInicio.HasValue ? src.DataInicio.Value.ToDateTime(TimeOnly.MinValue) : default))
             .ForMember(dest => dest.DataFim, opt => opt.MapFrom(src => src.DataFim.HasValue ? src.DataFim.Value.ToDateTime(TimeOnly.MinValue) : (DateTime?)null))
-            .ForMember(dest => dest.Obras, opt => opt.Ignore());
+            .ForMember(dest => dest.Obras, opt => opt.Ignore())
+            .ForMember(dest => dest.Endereco, opt => opt.Ignore());
 
         // ==== Obra ==== 
         CreateMap<Obra, ObraDto>()

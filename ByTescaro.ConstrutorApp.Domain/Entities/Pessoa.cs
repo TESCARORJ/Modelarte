@@ -17,7 +17,7 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public string? TelefoneWhatsApp { get; set; } = string.Empty;
         public string? Email { get; set; } = string.Empty;
 
-        public Endereco Endereco { get; set; } = new();
+        public Endereco? Endereco { get; set; } = new();
         public long? EnderecoId { get; set; }
 
  

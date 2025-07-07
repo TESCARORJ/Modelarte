@@ -21,6 +21,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 
 
         #region Private Repository Fields
+        private IEnderecoRepository? _enderecoRepository;
         private IClienteRepository? _clienteRepository;
         private IFuncionarioRepository? _funcionarioRepository;
         private IFornecedorRepository? _fornecedorRepository;
@@ -59,6 +60,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 
         // Implemente a propriedade pública para cada repositório
         #region Public Repository Properties
+        public IEnderecoRepository EnderecoRepository => _enderecoRepository ??= new EnderecoRepository(_context);
         public IClienteRepository ClienteRepository => _clienteRepository ??= new ClienteRepository(_context);
         public IFuncionarioRepository FuncionarioRepository => _funcionarioRepository ??= new FuncionarioRepository(_context);
         public IFornecedorRepository FornecedorRepository => _fornecedorRepository ??= new FornecedorRepository(_context);

@@ -10,6 +10,7 @@ namespace ByTescaro.ConstrutorApp.Domain.Interfaces
     public interface IUnitOfWork : IDisposable, IAsyncDisposable
     {
         Task<int> CommitAsync(CancellationToken cancellationToken = default);
+        IEnderecoRepository EnderecoRepository { get; }
         IClienteRepository ClienteRepository { get; }
         IEquipamentoRepository EquipamentoRepository { get; }
         IFornecedorInsumoRepository FornecedorInsumoRepository { get; }

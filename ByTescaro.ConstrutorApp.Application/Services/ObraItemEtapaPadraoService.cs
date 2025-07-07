@@ -9,48 +9,48 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 {
     public class ObraItemEtapaPadraoService : IObraItemEtapaPadraoService
     {
-        private readonly IObraItemEtapaPadraoRepository _repo;
         private readonly IObraEtapaPadraoRepository _obraEtapaPadraoRepository;
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IUnitOfWork _unitOfWork;
 
 
         public ObraItemEtapaPadraoService(
-            IObraItemEtapaPadraoRepository repo, 
-            IMapper mapper, 
-            IObraEtapaPadraoRepository obraEtapaPadraoRepository, 
-            IHttpContextAccessor httpContextAccessor)
+            IMapper mapper,
+            IObraEtapaPadraoRepository obraEtapaPadraoRepository,
+            IHttpContextAccessor httpContextAccessor,
+            IUnitOfWork unitOfWork)
         {
-            _repo = repo;
             _mapper = mapper;
             _obraEtapaPadraoRepository = obraEtapaPadraoRepository;
             _httpContextAccessor = httpContextAccessor;
+            _unitOfWork = unitOfWork;
         }
 
         private string UsuarioLogado => _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
 
         public async Task<ObraItemEtapaPadraoDto?> ObterPorIdAsync(long id)
-{
-    var entity = await _repo.GetByIdAsync(id);
-    return _mapper.Map<ObraItemEtapaPadraoDto>(entity);
-}
+        {
+            var entity = await _unitOfWork.ObraItemEtapaPadraoRepository.GetByIdAsync(id);
+            return _mapper.Map<ObraItemEtapaPadraoDto>(entity);
+        }
 
 
         public async Task<List<ObraItemEtapaPadraoDto>> ObterTodasAsync()
         {
-            var list = await _repo.GetAllAsync();
+            var list = await _unitOfWork.ObraItemEtapaPadraoRepository.FindAllWithIncludesAsync(x => x.Id > 0, x => x.ObraEtapaPadrao);
             return _mapper.Map<List<ObraItemEtapaPadraoDto>>(list);
         }
 
         public async Task<List<ObraItemEtapaPadraoDto>> ObterPorEtapaIdAsync(long etapaId)
         {
-            var itens = await _repo.GetByEtapaPadraoIdAsync(etapaId);
+            var itens = await _unitOfWork.ObraItemEtapaPadraoRepository.GetByEtapaPadraoIdAsync(etapaId);
             return _mapper.Map<List<ObraItemEtapaPadraoDto>>(itens);
         }
 
         public async Task AtualizarConclusaoAsync(long itemId, bool concluido)
         {
-            var item = await _repo.GetByIdAsync(itemId);
+            var item = await _unitOfWork.ObraItemEtapaPadraoRepository.GetByIdAsync(itemId);
             if (item == null) return;
 
             // Como este é um item padrão, normalmente ele não teria um campo "Concluido"
@@ -65,19 +65,21 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
 
             // VERIFICAÇÃO DE DUPLICIDADE
-            if (await _repo.JaExisteAsync(dto.Nome, dto.ObraEtapaPadraoId))
+            if (await _unitOfWork.ObraItemEtapaPadraoRepository.JaExisteAsync(dto.Nome, dto.ObraEtapaPadraoId))
             {
                 throw new DuplicateRecordException($"O item '{dto.Nome}' já existe para esta etapa padrão.");
 
             }
 
             var entity = _mapper.Map<ObraItemEtapaPadrao>(dto);
-            
+
 
             entity.DataHoraCadastro = DateTime.Now;
             entity.UsuarioCadastro = UsuarioLogado;
 
-            _repo.Add(entity); // O 'entity' agora terá o ID gerado após o SaveChanges interno do AddAsync
+            _unitOfWork.ObraItemEtapaPadraoRepository.Add(entity); // O 'entity' agora terá o ID gerado após o SaveChanges interno do AddAsync
+
+            await _unitOfWork.CommitAsync();
 
             // Mapeia a entidade atualizada de volta para um DTO e o retorna
             var createdDto = _mapper.Map<ObraItemEtapaPadraoDto>(entity);
@@ -88,24 +90,26 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         {
             dto.Nome = dto.Nome.Trim();
 
-            var entity = await _repo.GetByIdAsync(dto.Id);
+            var entity = await _unitOfWork.ObraItemEtapaPadraoRepository.GetByIdAsync(dto.Id);
             if (entity == null) return;
 
             // VERIFICAÇÃO DE DUPLICIDADE (ignorando o próprio ID)
-            if (await _repo.JaExisteAsync(dto.Nome, dto.ObraEtapaPadraoId, dto.Id))
+            if (await _unitOfWork.ObraItemEtapaPadraoRepository.JaExisteAsync(dto.Nome, dto.ObraEtapaPadraoId, dto.Id))
             {
                 throw new DuplicateRecordException($"O item '{dto.Nome}' já existe para esta etapa padrão.");
             }
 
             _mapper.Map(dto, entity);
-            _repo.Update(entity);
+            _unitOfWork.ObraItemEtapaPadraoRepository.Update(entity);
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
         {
-            var entity = await _repo.GetByIdAsync(id);
+            var entity = await _unitOfWork.ObraItemEtapaPadraoRepository.GetByIdAsync(id);
             if (entity != null)
-                _repo.Remove(entity);
+                _unitOfWork.ObraItemEtapaPadraoRepository.Remove(entity);
+            await _unitOfWork.CommitAsync();
         }
 
     }

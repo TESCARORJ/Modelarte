@@ -7,66 +7,69 @@ using ByTescaro.ConstrutorApp.Domain.Interfaces;
 
 public class ObraEtapaPadraoService : IObraEtapaPadraoService
 {
-    private readonly IObraEtapaPadraoRepository _repo;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
 
-    public ObraEtapaPadraoService(IObraEtapaPadraoRepository repo, IMapper mapper)
+    public ObraEtapaPadraoService(IMapper mapper, IUnitOfWork unitOfWork)
     {
-        _repo = repo;
         _mapper = mapper;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<List<ObraEtapaPadraoDto>> ObterTodasAsync()
     {
-        var list = await _repo.GetAllAsync();
+        var list = await _unitOfWork.ObraEtapaPadraoRepository.GetAllAsync();
         return _mapper.Map<List<ObraEtapaPadraoDto>>(list);
     }
 
     public async Task<ObraEtapaPadraoDto?> ObterPorIdAsync(long id)
     {
-        var entity = await _repo.GetByIdAsync(id);
+        var entity = await _unitOfWork.ObraEtapaPadraoRepository.GetByIdAsync(id);
         return _mapper.Map<ObraEtapaPadraoDto>(entity);
     }
 
     public async Task CriarAsync(ObraEtapaPadraoDto dto)
     {
         var entity = _mapper.Map<ObraEtapaPadrao>(dto);
-         _repo.Add(entity);
+        _unitOfWork.ObraEtapaPadraoRepository.Add(entity);
+        await _unitOfWork.CommitAsync();
     }
 
     public async Task AtualizarAsync(ObraEtapaPadraoDto dto)
     {
-        var entity = await _repo.GetByIdAsync(dto.Id);
+        var entity = await _unitOfWork.ObraEtapaPadraoRepository.GetByIdAsync(dto.Id);
         if (entity == null) return;
 
         _mapper.Map(dto, entity);
-        _repo.Update(entity);
+        _unitOfWork.ObraEtapaPadraoRepository.Update(entity);
+        await _unitOfWork.CommitAsync();
     }
 
     public async Task RemoverAsync(long id)
     {
-        var entity = await _repo.GetByIdAsync(id);
-        if (entity != null) _repo.Remove(entity);
+        var entity = await _unitOfWork.ObraEtapaPadraoRepository.GetByIdAsync(id);
+        if (entity != null) _unitOfWork.ObraEtapaPadraoRepository.Remove(entity);
+        await _unitOfWork.CommitAsync();
     }
 
     public async Task<List<ObraEtapaPadraoDto>> ObterPorObraIdAsync(long obraId)
     {
-        var result = await _repo.GetByObraIdAsync(obraId);
+        var result = await _unitOfWork.ObraEtapaPadraoRepository.GetByObraIdAsync(obraId);
         return _mapper.Map<List<ObraEtapaPadraoDto>>(result);
     }
 
     public async Task<ObraEtapaPadraoDto?> ObterComItensAsync(long etapaId)
     {
-        var etapa = await _repo.GetWithItensAsync(etapaId);
+        var etapa = await _unitOfWork.ObraEtapaPadraoRepository.GetWithItensAsync(etapaId);
         return _mapper.Map<ObraEtapaPadraoDto>(etapa);
     }
 
     public async Task AtualizarStatusAsync(long etapaId, StatusEtapa novoStatus)
     {
-        var etapa = await _repo.GetByIdAsync(etapaId);
+        var etapa = await _unitOfWork.ObraEtapaPadraoRepository.GetByIdAsync(etapaId);
         if (etapa == null) return;
 
         etapa.Status = novoStatus;
-        _repo.Update(etapa);
+        _unitOfWork.ObraEtapaPadraoRepository.Update(etapa);
     }
 }

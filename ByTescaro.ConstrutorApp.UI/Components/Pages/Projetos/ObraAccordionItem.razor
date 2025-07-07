@@ -1,10 +1,12 @@
 ﻿@using ByTescaro.ConstrutorApp.Application.DTOs
 @using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Components.Utils
 @using ByTescaro.ConstrutorApp.UI.Services
 @inject ObraFuncionarioApiService ObraFuncionarioApiService
 @inject FuncionarioApiService FuncionarioApiService
 @inject ObraApiService ObraApiService
 @inject NotificationService NotificationService
+@inject DialogService DialogService
 @inject IJSRuntime JS
 
 <style>
@@ -114,18 +116,19 @@
             <RadzenButton Text="Remover Obra"
                           Icon="delete"
                           ButtonStyle="ButtonStyle.Danger"
-                          Click="@(() => OnRemover.InvokeAsync(Obra))" 
-                          Disabled="@(isSaving|| Obra.Id == 0)" />
+                          Click="@(() => ConfirmarRemocaoObra(Obra.Id))"
+                          Disabled="@(isSaving || Obra.Id == 0)" />
         </RadzenColumn>
     </RadzenRow>
 </RadzenAccordionItem>
 
 @code {
     [Parameter] public ObraDto Obra { get; set; } = new();
-    [Parameter] public EventCallback<ObraDto> OnRemover { get; set; }
     [Parameter] public string TituloObra { get; set; } = string.Empty;
     [Parameter] public List<object> ResponsavelOptions { get; set; } = new();
     [Parameter] public List<object> StatusOptions { get; set; } = new();
+    [Parameter] public EventCallback<ObraDto> OnRemover { get; set; }
+
 
     private List<FuncionarioDto> todosFuncionariosComWhatsApp = new();
 
@@ -168,6 +171,30 @@
             return false;
         }
         return true;
+    }
+
+    private async Task ConfirmarRemocaoObra(long id)
+    {
+        if (await DialogHelper.ConfirmarAsync(DialogService, "Deseja realmente excluir esta obra?"))
+        {
+            await ExcluirConfirmado(id);
+        }
+    }
+
+
+    private async Task ExcluirConfirmado(long id)
+    {
+        try
+        {
+            await ObraApiService.DeleteAsync(id);
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Obra excluída com sucesso", Duration = 4000 });
+            await OnRemover.InvokeAsync(Obra);
+
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao excluir obra: {ex.Message}", Duration = 5000 });
+        }
     }
 
     private async Task SalvarObraAsync()

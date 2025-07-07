@@ -43,6 +43,18 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
             return await query.FirstOrDefaultAsync(predicate);
         }
 
+        public async Task<IEnumerable<T>> FindAllWithIncludesAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includeProperties)
+        {
+            IQueryable<T> query = _dbSet; 
+
+            foreach (var includeProperty in includeProperties)
+            {
+                query = query.Include(includeProperty);
+            }
+
+            return await query.Where(predicate).ToListAsync();
+        }
+
         public async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate) => await _dbSet.AnyAsync(predicate);
 
         public virtual void Add(T entity)

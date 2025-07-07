@@ -18,7 +18,6 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public decimal TotalEstimado { get; set; }
         public Obra? Obra { get; set; }
         public ICollection<OrcamentoItem> Itens { get; set; } = new List<OrcamentoItem>();
-        public bool Ativo { get; set; } = true;
         public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
         public string UsuarioCadastro { get; set; } = string.Empty;
     }

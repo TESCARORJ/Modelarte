@@ -12,186 +12,100 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 {
     public class ObraChecklistService : IObraChecklistService
     {
-        private readonly IObraEtapaRepository _etapaRepo;
-        private readonly IObraItemEtapaRepository _itemRepo;
-        private readonly IObraRepository _obraRepository;
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly INotificationService _notificationService;
         private readonly ILogger<ObraChecklistService> _logger;
-        private readonly IFuncionarioRepository funcionarioRepository;
+        private readonly IUnitOfWork _unitOfWork;
 
 
-        public ObraChecklistService(IObraEtapaRepository etapaRepo, IObraItemEtapaRepository itemRepo, IMapper mapper, IHttpContextAccessor httpContextAccessor, INotificationService notificationService, IObraRepository obraRepository, ILogger<ObraChecklistService> logger, IFuncionarioRepository funcionarioRepository)
+
+        public ObraChecklistService(IMapper mapper, IHttpContextAccessor httpContextAccessor, INotificationService notificationService, ILogger<ObraChecklistService> logger,  IUnitOfWork unitOfWork)
         {
-            _etapaRepo = etapaRepo;
-            _itemRepo = itemRepo;
             _mapper = mapper;
             _httpContextAccessor = httpContextAccessor;
             _notificationService = notificationService;
-            _obraRepository = obraRepository;
             _logger = logger;
-            this.funcionarioRepository = funcionarioRepository;
+            _unitOfWork = unitOfWork;
         }
 
         private string UsuarioLogado => _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
 
         public async Task<List<ObraEtapaDto>> ObterChecklistAsync(long obraId)
         {
-            var etapas = await _etapaRepo.GetByObraIdAsync(obraId);
-            foreach (var etapa in etapas)
-                etapa.Itens = await _itemRepo.GetByEtapaIdAsync(etapa.Id);
+            var etapasComItens = await _unitOfWork.ObraEtapaRepository.GetByObraIdAsync(obraId);
 
-            return _mapper.Map<List<ObraEtapaDto>>(etapas);
+            return _mapper.Map<List<ObraEtapaDto>>(etapasComItens);
         }
 
-        //public async Task SalvarChecklistAsync(long obraId, List<ObraEtapaDto> etapasDto)
-        //{
-        //    var etapasAtuais = await _etapaRepo.GetByObraIdAsync(obraId);
-
-        //    // Remoção
-        //    var removidas = etapasAtuais.Where(e => !etapasDto.Any(dto => dto.Id == e.Id)).ToList();
-        //    foreach (var etapa in removidas)
-        //        await _etapaRepo.RemoveAsync(etapa);
-
-        //    // Adição/Atualização
-        //    foreach (var etapaDto in etapasDto)
-        //    {
-        //        if (etapaDto.Id == 0)
-        //        {
-        //            var novaEtapa = _mapper.Map<ObraEtapa>(etapaDto);
-        //            novaEtapa.ObraId = obraId;
-        //            novaEtapa.Itens = new List<ObraItemEtapa>(); // evita duplicação automática
-
-        //            await _etapaRepo.AddAsync(novaEtapa);
-
-        //            foreach (var itemDto in etapaDto.Itens)
-        //            {
-        //                var novoItem = _mapper.Map<ObraItemEtapa>(itemDto);
-        //                novoItem.ObraEtapaId = novaEtapa.Id;
-        //                await _itemRepo.AddAsync(novoItem);
-        //            }
-        //        }
-
-        //        else
-        //        {
-        //            var etapaExistente = etapasAtuais.FirstOrDefault(e => e.Id == etapaDto.Id);
-        //            if (etapaExistente is null) continue;
-
-        //            etapaExistente.Nome = etapaDto.Nome;
-        //            etapaExistente.Ordem = etapaDto.Ordem;
-        //            etapaExistente.Status = etapaDto.Status;
-        //            etapaExistente.DataInicio = etapaDto.DataInicio;
-        //            etapaExistente.DataConclusao = etapaDto.DataConclusao;
-
-        //            await _etapaRepo.UpdateAsync(etapaExistente);
-
-        //            var itensAtuais = await _itemRepo.GetByEtapaIdAsync(etapaExistente.Id);
-
-        //            var itensRemovidos = itensAtuais
-        //                .Where(i => !etapaDto.Itens.Any(dto => dto.Id == i.Id)).ToList();
-
-        //            foreach (var item in itensRemovidos)
-        //                await _itemRepo.RemoveAsync(item);
-
-        //            foreach (var itemDto in etapaDto.Itens)
-        //            {
-        //                if (itemDto.Id == 0)
-        //                {
-        //                    var novo = _mapper.Map<ObraItemEtapa>(itemDto);
-        //                    novo.ObraEtapaId = etapaExistente.Id;
-        //                    await _itemRepo.AddAsync(novo);
-        //                }
-        //                else
-        //                {
-        //                    var existente = itensAtuais.FirstOrDefault(i => i.Id == itemDto.Id);
-        //                    if (existente != null)
-        //                    {
-        //                        existente.Nome = itemDto.Nome;
-        //                        existente.Ordem = itemDto.Ordem;
-        //                        existente.Concluido = itemDto.Concluido;
-        //                        existente.IsDataPrazo = itemDto.IsDataPrazo;
-        //                        existente.DiasPrazo = itemDto.DiasPrazo;
-        //                        existente.PrazoAtivo = itemDto.PrazoAtivo;
-        //                        existente.DataConclusao = itemDto.DataConclusao;
-        //                        await _itemRepo.UpdateAsync(existente);
-        //                    }
-        //                }
-        //            }
-        //        }
-        //    }
-        //}
 
         /// <summary>
         /// Sincroniza o checklist de uma obra, atualizando, adicionando ou removendo etapas e itens
         /// conforme o estado recebido. Envia notificações para o cliente quando um item é marcado como concluído.
         /// </summary>
-        /// <param name="obraId">O ID da obra que está sendo atualizada.</param>
-        /// <param name="etapasDto">A lista de etapas e itens que representa o estado final desejado para o checklist.</param>
         public async Task SalvarChecklistAsync(long obraId, List<ObraEtapaDto> etapasDto)
         {
-            // 1. OTIMIZAÇÃO: Carregar dados para notificação uma única vez
-            // Buscamos a obra com todos os relacionamentos necessários (Projeto e Cliente)
-            // antes de iniciar os loops para evitar consultas repetitivas ao banco.
-            var obraParaNotificacao = await _obraRepository.GetByIdAsync(obraId);
-           
-
-            // Se não for possível carregar a obra ou cliente, apenas logamos um aviso.
-            // O processo de salvar o checklist continua, mas sem enviar notificações.
+            var obraParaNotificacao = await _unitOfWork.ObraRepository.FindOneWithIncludesAsync(x => x.Id == obraId, x => x.Projeto);
+            var projeto = _unitOfWork.ProjetoRepository.FindOneWithIncludesAsync(x => x.Id == obraParaNotificacao.ProjetoId, x => x.Cliente).Result;
+            obraParaNotificacao.Projeto.Cliente = projeto.Cliente;
             if (obraParaNotificacao?.Projeto?.Cliente == null)
             {
-                // Exemplo de log (requer injeção de ILogger)
-                // _logger.LogWarning("Dados da obra {ObraId} ou cliente associado não encontrados. Nenhuma notificação será enviada.", obraId);
+                _logger.LogWarning("Dados da obra {ObraId} ou cliente associado não encontrados. Nenhuma notificação será enviada.", obraId);
             }
 
-            // 2. SINCRONIZAÇÃO: Buscar o estado atual do checklist no banco de dados
-            var etapasAtuais = await _etapaRepo.GetByObraIdAsync(obraId);
+            // A consulta GetByObraIdAsync já deve trazer os Itens via .Include()
+            var etapasAtuais = await _unitOfWork.ObraEtapaRepository.GetByObraIdAsync(obraId);
 
-            // 3. SINCRONIZAÇÃO (REMOÇÃO): Remover etapas que não vieram no DTO
-            var etapasRemovidas = etapasAtuais.Where(e => !etapasDto.Any(dto => dto.Id == e.Id)).ToList();
-            foreach (var etapa in etapasRemovidas)
+            // REMOÇÃO de etapas
+            var idsEtapasDto = etapasDto.Select(dto => dto.Id).ToHashSet();
+            var etapasParaRemover = etapasAtuais.Where(e => !idsEtapasDto.Contains(e.Id)).ToList();
+            foreach (var etapa in etapasParaRemover)
             {
-                // O repositório deve cuidar da remoção em cascata dos itens ou isso deve ser feito manualmente.
-                // Assumindo que o repositório ou o banco de dados lida com isso.
-                _etapaRepo.Remove(etapa);
+                _unitOfWork.ObraEtapaRepository.Remove(etapa);
             }
 
-            // 4. SINCRONIZAÇÃO (ADIÇÃO/ATUALIZAÇÃO): Processar cada etapa do DTO
+            // ADIÇÃO/ATUALIZAÇÃO de etapas
             foreach (var etapaDto in etapasDto)
             {
-                if (etapaDto.Id == 0) // É uma nova etapa
+                if (etapaDto.Id == 0) // Nova etapa
                 {
                     var novaEtapa = _mapper.Map<ObraEtapa>(etapaDto);
                     novaEtapa.ObraId = obraId;
-                    novaEtapa.Itens = new List<ObraItemEtapa>(); // Prevenir problemas com AutoMapper
+                    novaEtapa.Itens = new List<ObraItemEtapa>();
+                    _unitOfWork.ObraEtapaRepository.Add(novaEtapa);
 
-                    _etapaRepo.Add(novaEtapa);
-
-                    // Adicionar os itens desta nova etapa
                     foreach (var itemDto in etapaDto.Itens)
                     {
                         var novoItem = _mapper.Map<ObraItemEtapa>(itemDto);
-                        novoItem.ObraEtapaId = novaEtapa.Id; // Lincar com o ID da etapa recém-criada
-                        _itemRepo.Add(novoItem);
+                        novoItem.ObraEtapa = novaEtapa;
+                        _unitOfWork.ObraItemEtapaRepository.Add(novoItem);
                     }
                 }
-                else // É uma etapa existente
+                else // Etapa existente
                 {
                     var etapaExistente = etapasAtuais.FirstOrDefault(e => e.Id == etapaDto.Id);
-                    if (etapaExistente == null) continue; // Etapa não encontrada, pular
+                    if (etapaExistente == null) continue;
 
-                    // Atualizar os dados da etapa
-                    _mapper.Map(etapaDto, etapaExistente);
-                    _etapaRepo.Update(etapaExistente);
+                    // Atualize apenas as propriedades da Etapa, não a coleção de Itens.
+                    // Isso evita que o AutoMapper substitua a coleção rastreada.
+                    etapaExistente.Nome = etapaDto.Nome;
+                    etapaExistente.Ordem = etapaDto.Ordem;
+                    etapaExistente.Status = etapaDto.Status;
+                    etapaExistente.DataInicio = etapaDto.DataInicio;
+                    etapaExistente.DataConclusao = etapaDto.DataConclusao;
 
-                    // Sincronizar os itens desta etapa
-                    var itensAtuaisDaEtapa = await _itemRepo.GetByEtapaIdAsync(etapaExistente.Id);
+                    _unitOfWork.ObraEtapaRepository.Update(etapaExistente);
+
+                    // Use a coleção de itens que já está em memória e sendo rastreada.
+                    // Não consulte o banco de dados novamente aqui.
+                    var itensAtuaisDaEtapa = etapaExistente.Itens.ToList();
+                    var idsItensDto = etapaDto.Itens.Select(dto => dto.Id).ToHashSet();
 
                     // Remover itens que não vieram no DTO
-                    var itensRemovidos = itensAtuaisDaEtapa.Where(i => !etapaDto.Itens.Any(dto => dto.Id == i.Id)).ToList();
-                    foreach (var item in itensRemovidos)
+                    var itensParaRemover = itensAtuaisDaEtapa.Where(i => !idsItensDto.Contains(i.Id)).ToList();
+                    foreach (var item in itensParaRemover)
                     {
-                        _itemRepo.Remove(item);
+                        _unitOfWork.ObraItemEtapaRepository.Remove(item);
                     }
 
                     // Adicionar ou atualizar itens
@@ -200,26 +114,28 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                         if (itemDto.Id == 0) // Novo item
                         {
                             var novoItem = _mapper.Map<ObraItemEtapa>(itemDto);
-                            novoItem.ObraEtapaId = etapaExistente.Id;
-                            _itemRepo.Add(novoItem);
+                            novoItem.ObraEtapa = etapaExistente;
+                            _unitOfWork.ObraItemEtapaRepository.Add(novoItem);
+
+                            bool foiConcluidoAgora = novoItem.Concluido;
+                            if (foiConcluidoAgora && obraParaNotificacao?.Projeto?.ClienteId != null)
+                            {
+                                _ = EnviarNotificacaoDeConclusaoAsync(novoItem, etapaExistente.Nome, obraParaNotificacao);
+                            }
                         }
                         else // Item existente
                         {
+                            // Busca o item na coleção JÁ CARREGADA e rastreada.
                             var itemExistente = itensAtuaisDaEtapa.FirstOrDefault(i => i.Id == itemDto.Id);
                             if (itemExistente != null)
                             {
-                                // LÓGICA DE NOTIFICAÇÃO
                                 bool eraConcluido = itemExistente.Concluido;
-
-                                _mapper.Map(itemDto, itemExistente);
-                                _itemRepo.Update(itemExistente);
+                                _mapper.Map(itemDto, itemExistente); // Mapeia para o item existente e rastreado
+                                _unitOfWork.ObraItemEtapaRepository.Update(itemExistente);
 
                                 bool foiConcluidoAgora = itemExistente.Concluido && !eraConcluido;
-
-                                // Se o item foi concluído nesta transação e temos os dados da obra, notificar.
                                 if (foiConcluidoAgora && obraParaNotificacao?.Projeto?.Cliente != null)
                                 {
-                                    // Dispara a notificação em "fire-and-forget" para não bloquear a resposta da API
                                     _ = EnviarNotificacaoDeConclusaoAsync(itemExistente, etapaExistente.Nome, obraParaNotificacao);
                                 }
                             }
@@ -227,9 +143,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     }
                 }
             }
+
+            await _unitOfWork.CommitAsync();
         }
-
-
         /// <summary>
         /// Método auxiliar otimizado que monta e envia a notificação via WhatsApp.
         /// Ele recebe os objetos já carregados para evitar novas consultas ao banco.
@@ -243,7 +159,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 _logger.LogWarning("Não foi possível encontrar o cliente para a obra {ObraId} para enviar a notificação.", obra.Id);
                 return;
             }
-            var responsavelObra = funcionarioRepository.GetByIdAsync(obra.ResponsavelObraId ?? 0).Result;
+            var responsavelObra = _unitOfWork.FuncionarioRepository.GetByIdAsync(obra.ResponsavelObraId ?? 0).Result;
             var telefone = responsavelObra.TelefoneWhatsApp;
 
             if (string.IsNullOrWhiteSpace(telefone)) return;

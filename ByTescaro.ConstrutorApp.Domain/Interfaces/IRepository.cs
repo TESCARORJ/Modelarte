@@ -13,6 +13,7 @@ namespace ByTescaro.ConstrutorApp.Domain.Interfaces
         //Task<List<T>> GetActivesAsync();
         Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
         Task<T?> FindOneWithIncludesAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includeProperties);
+        Task<IEnumerable<T>> FindAllWithIncludesAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includeProperties);
 
 
         // Métodos de escrita são síncronos e não retornam Task.

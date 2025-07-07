@@ -12,7 +12,6 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public bool IsDataPrazo { get; set; }
         public int? DiasPrazo { get; set; }
         public ICollection<ObraItemEtapaPadraoInsumo> Insumos { get; set; } = new List<ObraItemEtapaPadraoInsumo>();
-        public bool Ativo { get; set; } = true;
         public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
         public string UsuarioCadastro { get; set; } = string.Empty;
 

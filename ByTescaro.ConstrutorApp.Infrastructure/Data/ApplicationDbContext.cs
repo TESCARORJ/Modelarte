@@ -70,13 +70,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     {
         base.OnModelCreating(modelBuilder);
 
+        // O comportamento de exclusão será definida em cada classe.
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 
-        foreach (var relationship in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))
-        {
-            if (relationship.IsOwnership) continue;
-            relationship.DeleteBehavior = DeleteBehavior.Restrict;
-        }
     }
 
     #region Configurações de Entidades
@@ -191,8 +187,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             builder.HasOne(p => p.Endereco)
                    .WithMany()
-                   .HasForeignKey(p => p.EnderecoId);
-            // O DeleteBehavior.Restrict é o padrão, o que é bom aqui.
+                   .HasForeignKey(p => p.EnderecoId)
+                   .OnDelete(DeleteBehavior.Cascade);
         }
     }
 

@@ -116,10 +116,29 @@
     private long etapaSelecionadaId = 0;
     private Dictionary<long, long> itemSelecionadoIds = new();
 
+    private bool isLoading = true;
+
     private List<ObraEtapaDto> Etapas
     {
         get => Obra.Etapas;
         set => Obra.Etapas = value;
+    }
+
+    /// OnParametersSetAsync é usado para carregar os dados do checklist
+    /// sempre que os parâmetros do componente (como 'Obra') forem definidos.
+    /// </summary>
+    protected override async Task OnParametersSetAsync()
+    {
+        // Garante que o Obra.Id seja válido antes de buscar os dados
+        if (Obra != null && Obra.Id > 0)
+        {
+            isLoading = true;
+
+            // Chama o serviço para carregar o checklist associado a esta obra
+            Etapas = await ChecklistService.GetEtapasAsync(Obra.Id);
+
+            isLoading = false;
+        }
     }
 
     protected override async Task OnInitializedAsync()
