@@ -37,6 +37,7 @@
     private string Titulo => Id == 0 ? "Nova Função" : "Editar Função";
 
     private FuncaoDto funcao = new();
+    private FuncaoDto _originalFuncaoDto = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -44,12 +45,67 @@
         {
             var existente = await FuncaoApiService.GetByIdAsync(Id);
             if (existente is not null)
+            {
                 funcao = existente;
+                _originalFuncaoDto = funcao.Clone(); // Faz uma cópia rasa do DTO original
+            }
         }
     }
 
+    private async Task<List<string>> ValidateFuncaoForm(FuncaoDto model)
+    {
+        var errors = new List<string>();
+
+        // 1. Validação de Duplicidade do Nome da Função
+        if (!string.IsNullOrWhiteSpace(model.Nome))
+        {
+            // Compara o nome atual com o original (se estiver em modo de edição)
+            string originalNome = _originalFuncaoDto?.Nome ?? string.Empty;
+
+            // Verifica se o nome foi realmente alterado OU se é um novo registro.
+            bool nomeChanged = (model.Id == 0) || (model.Nome != originalNome);
+
+            if (nomeChanged)
+            {
+                long? ignoreId = model.Id != 0 ? model.Id : (long?)null;
+                bool nomeAlreadyExists = await FuncaoApiService.NomeExistsAsync(model.Nome, ignoreId);
+
+                if (nomeAlreadyExists)
+                {
+                    errors.Add("Já existe uma função com este nome.");
+                }
+            }
+        }
+        else
+        {
+            // Se o nome está vazio, o RadzenRequiredValidator já vai lidar com isso.
+            // Esta condição é um fallback, se necessário.
+            // errors.Add("O nome da função é obrigatório."); // Descomente se quiser uma mensagem extra aqui.
+        }
+
+        return errors;
+    }
+
+
     private async Task Salvar(FuncaoDto model)
     {
+        // Limpar o nome se necessário (ex: remover espaços extras) - opcional
+        model.Nome = model.Nome?.Trim() ?? string.Empty;
+
+        // 1. Executa todas as validações customizadas
+        var validationErrors = await ValidateFuncaoForm(model);
+
+        if (validationErrors.Any())
+        {
+            foreach (var error in validationErrors)
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro de Validação", Detail = error, Duration = 5000 });
+            }
+            return; // Impede a submissão se houver erros de validação
+        }
+
+        // Se todas as validações manuais passaram, tente salvar.
+
         try
         {
             if (model.Id == 0)

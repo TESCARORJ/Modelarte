@@ -9,6 +9,9 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
 {
     public class ObraInsumoLista : EntidadeBase
     {
+        public bool Ativo { get; set; } = true;
+        public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
+        public string UsuarioCadastro { get; set; } = string.Empty;
         public long ObraId { get; set; }
         public long ResponsavelId { get; set; }
         public DateTime Data { get; set; }

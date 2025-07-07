@@ -57,6 +57,21 @@ public class ServicoApiService
         if (!response.IsSuccessStatusCode)
             throw new Exception($"Erro ao excluir servico: {response.StatusCode}");
     }
+
+    public async Task<bool> NomeExistsAsync(string nome, long? ignoreId = null)
+    {
+        if (string.IsNullOrWhiteSpace(nome)) return false;
+        string requestUrl = $"api/servico/NomeExists?nome={Uri.EscapeDataString(nome)}";
+        if (ignoreId.HasValue && ignoreId.Value > 0) requestUrl += $"&ignoreId={ignoreId.Value}";
+
+        var response = await _http.GetAsync(requestUrl);
+        if (response.IsSuccessStatusCode) return await response.Content.ReadFromJsonAsync<bool>();
+
+        var errorContent = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"Erro ao verificar nome do Serviço: {response.StatusCode} - {errorContent}");
+        return false;
+    }
 }
+
 
 

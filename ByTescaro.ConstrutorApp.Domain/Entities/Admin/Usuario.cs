@@ -8,5 +8,8 @@
 
         public long PerfilUsuarioId { get; set; }
         public PerfilUsuario PerfilUsuario { get; set; } = null!;
+        public bool Ativo { get; set; } = true;
+        public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
+        public string UsuarioCadastro { get; set; } = string.Empty;
     }
 }

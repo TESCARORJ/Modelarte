@@ -10,4 +10,6 @@ public interface IFuncaoService
     Task CriarAsync(FuncaoDto dto);
     Task AtualizarAsync(FuncaoDto dto);
     Task RemoverAsync(long id);
+    Task<bool> NomeExistsAsync(string nome, long? ignoreId = null);
+
 }

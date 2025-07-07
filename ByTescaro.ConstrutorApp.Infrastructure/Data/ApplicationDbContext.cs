@@ -103,10 +103,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             // Relacionamento com Endereco (One-to-One opcional)
             builder.HasOne(p => p.Endereco)
-                   .WithMany()
-                   .HasForeignKey(p => p.EnderecoId)
-                   .OnDelete(DeleteBehavior.SetNull); // Se deletar o endereço, o campo na pessoa fica nulo
+              .WithMany() // ou WithOne() se for 1:1, mas exige HasForeignKey(e => e.PessoaId) em Endereco
+              .HasForeignKey(p => p.EnderecoId) // EnderecoId é a FK em Pessoa
+              .IsRequired(false) // Permite que EnderecoId seja NULL
+              .OnDelete(DeleteBehavior.SetNull); // Se o Endereco for deletado, a FK em Pessoa vira NULL
         }
+    }
     }
 
     public class EnderecoConfiguration : IEntityTypeConfiguration<Endereco>
@@ -530,4 +532,3 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
 
     #endregion
-}

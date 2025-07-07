@@ -12,10 +12,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         {
         }
 
-      
-
-
-
 
         public async Task<List<Funcionario>> ObterAtivosAsync()
         {
@@ -51,6 +47,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
                 query = query.Include(include);
             }
             return await query.ToListAsync();
+        }
+
+        public async Task<Funcionario?> GetByIdWithEnderecoAsync(long id)
+        {
+            return await _dbSet
+                .Include(c => c.Endereco)
+                .FirstOrDefaultAsync(c => c.Id == id);
         }
 
 

@@ -9,40 +9,40 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 {
     public class FornecedorServicoService : IFornecedorServicoService
     {
-        private readonly IFornecedorServicoRepository _repo;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _http;
 
-        public FornecedorServicoService(IFornecedorServicoRepository repo, IMapper mapper, IHttpContextAccessor http)
-        {
-            _repo = repo;
+        public FornecedorServicoService(IMapper mapper, IHttpContextAccessor http, IUnitOfWork unitOfWork)
+        {            
             _mapper = mapper;
             _http = http;
+            _unitOfWork = unitOfWork;
         }
 
         private string Usuario => _http.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
 
         public async Task<List<FornecedorServicoDto>> ObterTodosAsync()
         {
-            var lista = await _repo.GetAllAsync();
+            var lista = await _unitOfWork.FornecedorServicoRepository.GetAllAsync();
             return _mapper.Map<List<FornecedorServicoDto>>(lista);
         }
 
         public async Task<FornecedorServicoDto?> ObterPorIdAsync(long id)
         {
-            var entidade = await _repo.GetByIdAsync(id);
+            var entidade = await _unitOfWork.FornecedorServicoRepository.GetByIdAsync(id);
             return entidade == null ? null : _mapper.Map<FornecedorServicoDto>(entidade);
         }
 
         public async Task<List<FornecedorServicoDto>> ObterPorFornecedorAsync(long fornecedorId)
         {
-            var lista = await _repo.ObterPorFornecedorIdAsync(fornecedorId);
+            var lista = await _unitOfWork.FornecedorServicoRepository.ObterPorFornecedorIdAsync(fornecedorId);
             return _mapper.Map<List<FornecedorServicoDto>>(lista);
         }
 
         public async Task<List<FornecedorServicoDto>> ObterPorServicoAsync(long servicoId)
         {
-            var lista = await _repo.ObterPorServicoIdAsync(servicoId);
+            var lista = await _unitOfWork.FornecedorServicoRepository.ObterPorServicoIdAsync(servicoId);
             return _mapper.Map<List<FornecedorServicoDto>>(lista);
         }
 
@@ -51,21 +51,24 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var entidade = _mapper.Map<FornecedorServico>(dto);
             entidade.DataHoraCadastro = DateTime.Now;
             entidade.UsuarioCadastro = Usuario;
-            _repo.Add(entidade);
+            _unitOfWork.FornecedorServicoRepository.Add(entidade);
+            await _unitOfWork.CommitAsync();
             return entidade.Id;
         }
 
         public async Task AtualizarAsync(FornecedorServicoDto dto)
         {
             var entidade = _mapper.Map<FornecedorServico>(dto);
-            _repo.Update(entidade);
+            _unitOfWork.FornecedorServicoRepository.Update(entidade);
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
         {
-            var entidade = await _repo.GetByIdAsync(id);
+            var entidade = await _unitOfWork.FornecedorServicoRepository.GetByIdAsync(id);
             if (entidade != null)
-                _repo.Add(entidade);
+                _unitOfWork.FornecedorServicoRepository.Add(entidade);
+            await _unitOfWork.CommitAsync();
         }
     }
 

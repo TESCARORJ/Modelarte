@@ -14,6 +14,9 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public int? DiasPrazo { get; set; }
         public bool PrazoAtivo { get; set; }
         public DateTime? DataConclusao { get; set; }
+        public bool Ativo { get; set; } = true;
+        public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
+        public string UsuarioCadastro { get; set; } = string.Empty;
     }
 
 }

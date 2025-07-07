@@ -1,12 +1,13 @@
 ﻿@page "/fornecedor/detalhes/{Id:long}"
 
 @using ByTescaro.ConstrutorApp.Application.DTOs
-@using ByTescaro.ConstrutorApp.Application.Utils
-@using ByTescaro.ConstrutorApp.UI.Services
+@using ByTescaro.ConstrutorApp.Application.Utils 
 @using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Components.Pages
+@using ByTescaro.ConstrutorApp.UI.Services
 @using Microsoft.AspNetCore.Authorization
-@using ByTescaro.ConstrutorApp.UI.Components.Pages.FornecedorInsumo
-@using ByTescaro.ConstrutorApp.UI.Components.Pages.FornecedorServico
+@using Radzen 
+@using Radzen.Blazor 
 @inject FornecedorApiService FornecedorApiService
 @inject FornecedorInsumoApiService FornecedorInsumoApiService
 @inject FornecedorServicoApiService FornecedorServicoApiService
@@ -16,55 +17,71 @@
 <PageTitle>Detalhes do Fornecedor</PageTitle>
 
 <RadzenCard Class="rz-mt-5 rz-p-4 rz-shadow-md rz-rounded-md rz-mx-auto" Style="max-width: 1300px; width: 100%;">
-    <RadzenHeading Size="H5" Text="Detalhes do Fornecedor" />
+    <RadzenHeading Size="H4" Text="@Titulo" Class="rz-mb-3" /> @* Título dinâmico *@
 
     @if (fornecedor is null)
     {
-        <RadzenText Text="Fornecedor não encontrado." Style="color: red; padding: 1rem;" />
+        <RadzenText Text="Carregando detalhes do fornecedor ou fornecedor não encontrado." Style="color: gray; padding: 1rem;" />
+        <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" Style="margin-top: 10px;" />
     }
     else
     {
-        <RadzenRow Class="rz-p-4" Style="row-gap: 1rem;">
-            <RadzenColumn Size="12" SizeMD="6">
-                <RadzenLabel Text="Nome" />
-                <RadzenTextBox Value="@fornecedor.Nome" ReadOnly Style="width:100%" />
-            </RadzenColumn>
+        <RadzenFieldset Text="Dados do Fornecedor" Style="margin-bottom: 1.5rem">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="Nome" />
+                    <RadzenTextBox Value="@fornecedor.Nome" ReadOnly Style="width:100%" />
+                </RadzenColumn>
 
-            <RadzenColumn Size="12" SizeMD="3">
-                <RadzenLabel Text="Tipo de Fornecedor" />
-                <RadzenTextBox Value= "@EnumHelper.ObterDescricaoEnum(fornecedor.Tipo)" ReadOnly Style="width:100%" />
-            </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenLabel Text="Tipo de Fornecedor" />
+                    @* Exibe o texto amigável do enum, se disponível *@
+                    <RadzenTextBox Value="@(fornecedor.Tipo.HasValue ? EnumHelper.ObterDescricaoEnum(fornecedor.Tipo.Value) : string.Empty)" ReadOnly Style="width:100%" />
+                </RadzenColumn>
 
-            <RadzenColumn Size="12" SizeMD="3">
-                <RadzenLabel Text="CNPJ ou CPF" />
-                <RadzenTextBox Value="@fornecedor.CpfCnpj" ReadOnly Style="width:100%" />
-            </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenLabel Text="Tipo de Pessoa" />
+                    @* Exibe o texto amigável do enum, se disponível *@
+                    <RadzenTextBox Value="@(fornecedor.TipoPessoa.HasValue ? EnumHelper.ObterDescricaoEnum(fornecedor.TipoPessoa.Value) : string.Empty)" ReadOnly Style="width:100%" />
+                </RadzenColumn>
 
-            <RadzenColumn Size="12" SizeMD="4">
-                <RadzenLabel Text="Telefone Principal" />
-                <RadzenTextBox Value="@fornecedor.TelefonePrincipal" ReadOnly Style="width:100%" />
-            </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenLabel Text="CPF/CNPJ" />
+                    @* Para RadzenMask, não tem ReadOnly direto. Usamos RadzenTextBox.
+                       Para formatar, você precisaria de uma lógica de formatação em C# ou no DTO. *@
+                    <RadzenTextBox Value="@fornecedor.CpfCnpj" ReadOnly Style="width:100%" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
 
-            <RadzenColumn Size="12" SizeMD="4">
-                <RadzenLabel Text="WhatsApp" />
-                <RadzenTextBox Value="@fornecedor.TelefoneWhatsApp" ReadOnly Style="width:100%" />
-            </RadzenColumn>
+        <RadzenFieldset Text="Contato" Style="margin-bottom: 1.5rem">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="Telefone Principal" />
+                    <RadzenTextBox Value="@fornecedor.TelefonePrincipal" ReadOnly Style="width:100%" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="WhatsApp" />
+                    <RadzenTextBox Value="@fornecedor.TelefoneWhatsApp" ReadOnly Style="width:100%" />
+                </RadzenColumn>
 
-            <RadzenColumn Size="12" SizeMD="4">
-                <RadzenLabel Text="Email" />
-                <RadzenTextBox Value="@fornecedor.Email" ReadOnly Style="width:100%" />
-            </RadzenColumn>
-        </RadzenRow>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenLabel Text="Email" />
+                    <RadzenTextBox Value="@fornecedor.Email" ReadOnly Style="width:100%" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
 
-        <!-- Grid de Insumos fornecidos -->        
+        
 
-        @if (fornecedor.Tipo == TipoFornecedor.Material || fornecedor.Tipo == TipoFornecedor.Misto)
+
+        @* Grid de Insumos fornecidos *@        
+        @if (fornecedor.Tipo.HasValue && (fornecedor.Tipo.Value == TipoFornecedor.Material || fornecedor.Tipo.Value == TipoFornecedor.Misto))
         {
             <FornecedorInsumoGrid @ref="insumoGrid" FornecedorId="@fornecedor.Id" OnInsumosCarregados="HandleInsumosCarregados" />
 
             <RadzenCard Style="margin-top: 2rem;">
-                <RadzenHeading Size="H6" Text="Resumo" />
-
+                <RadzenHeading Size="H6" Text="Resumo de Insumos" />
                 <RadzenRow Class="rz-p-2">
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Total de Insumos:" />
@@ -74,14 +91,14 @@
             </RadzenCard>
         }
 
-        @if (fornecedor.Tipo == TipoFornecedor.Servico || fornecedor.Tipo == TipoFornecedor.Misto)
+        @* Grid de Serviços fornecidos *@
+        @if (fornecedor.Tipo.HasValue && (fornecedor.Tipo.Value == TipoFornecedor.Servico || fornecedor.Tipo.Value == TipoFornecedor.Misto))
         {
-            <FornecedorServicoGrid @ref="servicoGrid" FornecedorId="@fornecedor.Id" OnServicosCarregados="HandleServicosCarregados" />
+            <FornecedorServicoGrid @ref="servicoGrid" FornecedorId="@fornecedor.Id" OnServicosCarregados="HandleServicosCarregados"  />
 
             <RadzenCard Style="margin-top: 2rem;">
-                <RadzenHeading Size="H6" Text="Resumo" />
-
-                <RadzenRow Class="rz-p-2">                   
+                <RadzenHeading Size="H6" Text="Resumo de Serviços" />
+                <RadzenRow Class="rz-p-2">                    
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Total de Serviços:" />
                         <RadzenText Text="@($"{qtdeServicos} itens - R$ {totalServicos:N2}")" Style="font-weight: bold;" />
@@ -90,30 +107,32 @@
             </RadzenCard>
         }
 
+        <RadzenDivider Style="margin: 2rem 0;" />
 
-        <br />
-
-        <RadzenRow Class="rz-px-4 rz-mb-2" JustifyContent="JustifyContent.End" Style="gap: 1rem;">
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-3">
             <RadzenButton Text="Voltar"
-            Click="@(() => Navigation.NavigateTo("/fornecedores"))"
-            ButtonStyle="ButtonStyle.Light" />
+                          Click="@(() => Navigation.NavigateTo("/fornecedores"))"
+                          ButtonStyle="ButtonStyle.Light" />
 
             <RadzenButton Text="Editar"
-            Icon="edit"
-            Click="@(() => Navigation.NavigateTo($"/fornecedor/editar/{fornecedor.Id}"))"
-            ButtonStyle="ButtonStyle.Primary" />
-        </RadzenRow>
+                          Icon="edit"
+                          Click="@(() => Navigation.NavigateTo($"/fornecedor/editar/{fornecedor.Id}"))"
+                          ButtonStyle="ButtonStyle.Primary" />
+        </RadzenStack>
     }
 </RadzenCard>
 
 @code {
     [Parameter] public long Id { get; set; }
-    private List<EnumOption<TipoFornecedor>> tipoFornecedorOptions = EnumHelper.ListarOpcoes<TipoFornecedor>(incluirNulo: true);
+    
+    private FornecedorDto? fornecedor;
+    private string Titulo => $"Detalhes do Fornecedor: {fornecedor?.Nome ?? "Carregando..."}";
+
     private int qtdeInsumos;
     private decimal totalInsumos = 0;
     private int qtdeServicos;
     private decimal totalServicos = 0;
-    private FornecedorDto? fornecedor;
+
     FornecedorInsumoGrid? insumoGrid;
     FornecedorServicoGrid? servicoGrid;
 
@@ -135,5 +154,4 @@
         totalServicos = servicos.Sum(s => s.PrecoUnitario);
         StateHasChanged();
     }
-
 }

@@ -64,6 +64,34 @@ public class EquipamentoApiService
     //    return (response?.Alocados ?? 0, response?.NaoAlocados ?? 0);
     //}
 
+    public async Task<bool> NomeExistsAsync(string nome, long? ignoreId = null)
+    {
+        if (string.IsNullOrWhiteSpace(nome)) return false;
+        string requestUrl = $"api/equipamento/NomeExists?nome={Uri.EscapeDataString(nome)}";
+        if (ignoreId.HasValue && ignoreId.Value > 0) requestUrl += $"&ignoreId={ignoreId.Value}";
+
+        var response = await _http.GetAsync(requestUrl);
+        if (response.IsSuccessStatusCode) return await response.Content.ReadFromJsonAsync<bool>();
+
+        var errorContent = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"Erro ao verificar nome do Equipamento: {response.StatusCode} - {errorContent}");
+        return false;
+    }
+
+    public async Task<bool> PatrimonioExistsAsync(string patrimonio, long? ignoreId = null)
+    {
+        if (string.IsNullOrWhiteSpace(patrimonio)) return false;
+        string requestUrl = $"api/equipamento/PatrimonioExists?patrimonio={Uri.EscapeDataString(patrimonio)}";
+        if (ignoreId.HasValue && ignoreId.Value > 0) requestUrl += $"&ignoreId={ignoreId.Value}";
+
+        var response = await _http.GetAsync(requestUrl);
+        if (response.IsSuccessStatusCode) return await response.Content.ReadFromJsonAsync<bool>();
+
+        var errorContent = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"Erro ao verificar patrimônio do Equipamento: {response.StatusCode} - {errorContent}");
+        return false;
+    }
 }
+
 
 

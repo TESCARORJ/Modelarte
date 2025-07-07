@@ -10,8 +10,10 @@ namespace ByTescaro.ConstrutorApp.Domain.Interfaces
         Task<List<T>> GetAllAsync();
         Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate);
         Task<T?> FindOneAsync(Expression<Func<T, bool>> predicate);
-        Task<List<T>> GetActivesAsync();
+        //Task<List<T>> GetActivesAsync();
         Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
+        Task<T?> FindOneWithIncludesAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includeProperties);
+
 
         // Métodos de escrita são síncronos e não retornam Task.
         // A responsabilidade de salvar (Commit) é da Unit of Work.

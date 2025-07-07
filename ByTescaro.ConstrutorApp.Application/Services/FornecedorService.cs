@@ -2,9 +2,10 @@
 using ByTescaro.ConstrutorApp.Application.DTOs;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Entities;
+using ByTescaro.ConstrutorApp.Domain.Enums;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
-using System.Text.Json;
 using Microsoft.AspNetCore.Http;
+using System.Text.Json;
 
 namespace ByTescaro.ConstrutorApp.Application.Services
 {
@@ -12,34 +13,35 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
     public class FornecedorService : IFornecedorService
     {
-        private readonly IFornecedorRepository _repo;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly ILogAuditoriaRepository _logRepo;
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
+
         public FornecedorService(
-            IFornecedorRepository repo,
             ILogAuditoriaRepository logRepo,
             IMapper mapper,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IUnitOfWork unitOfWork)
         {
-            _repo = repo;
             _logRepo = logRepo;
             _mapper = mapper;
             _httpContextAccessor = httpContextAccessor;
+            _unitOfWork = unitOfWork;
         }
 
         private string UsuarioLogado => _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
 
         public async Task<IEnumerable<FornecedorDto>> ObterTodosAsync()
         {
-            var fornecedores = await _repo.GetAllAsync();
+            var fornecedores = await _unitOfWork.FornecedorRepository.GetAllAsync();
             return _mapper.Map<IEnumerable<FornecedorDto>>(fornecedores);
         }
 
         public async Task<FornecedorDto?> ObterPorIdAsync(long id)
         {
-            var fornecedor = await _repo.GetByIdAsync(id);
+            var fornecedor = await _unitOfWork.FornecedorRepository.GetByIdAsync(id);
             return fornecedor == null ? null : _mapper.Map<FornecedorDto>(fornecedor);
         }
 
@@ -49,7 +51,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entity.DataHoraCadastro = DateTime.Now;
             entity.UsuarioCadastro = UsuarioLogado;
 
-            _repo.Add(entity);
+            entity.TipoEntidade = TipoEntidadePessoa.Fornecedor;
+            _unitOfWork.FornecedorRepository.Add(entity);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
@@ -59,18 +62,22 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 Descricao = $"Fornecedor '{entity.Nome}' criado",
                 DadosAtuais = JsonSerializer.Serialize(entity)
             });
+
+            await _unitOfWork.CommitAsync();
+
         }
 
         public async Task AtualizarAsync(FornecedorDto dto)
         {
-            var entityAntigo = await _repo.GetByIdAsync(dto.Id);
+            var entityAntigo = await _unitOfWork.FornecedorRepository.GetByIdAsync(dto.Id);
             if (entityAntigo == null) return;
 
             var entityNovo = _mapper.Map<Fornecedor>(dto);
             entityNovo.UsuarioCadastro = entityAntigo.UsuarioCadastro;
             entityNovo.DataHoraCadastro = entityAntigo.DataHoraCadastro;
 
-            _repo.Update(entityNovo);
+            entityNovo.TipoEntidade = TipoEntidadePessoa.Fornecedor;
+            _unitOfWork.FornecedorRepository.Update(entityNovo);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
@@ -81,14 +88,17 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 DadosAnteriores = JsonSerializer.Serialize(entityAntigo),
                 DadosAtuais = JsonSerializer.Serialize(entityNovo)
             });
+
+            await _unitOfWork.CommitAsync();
+
         }
 
         public async Task RemoverAsync(long id)
         {
-            var entity = await _repo.GetByIdAsync(id);
+            var entity = await _unitOfWork.FornecedorRepository.GetByIdAsync(id);
             if (entity == null) return;
 
-            _repo.Remove(entity);
+            _unitOfWork.FornecedorRepository.Remove(entity);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
@@ -98,6 +108,44 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 Descricao = $"Fornecedor '{entity.Nome}' removido",
                 DadosAnteriores = JsonSerializer.Serialize(entity)
             });
+
+            await _unitOfWork.CommitAsync();
+
+        }
+
+        public async Task<bool> CpfCnpjExistsAsync(string cpfCnpj, long? ignoreId = null)
+        {
+            if (string.IsNullOrWhiteSpace(cpfCnpj))
+            {
+                return false;
+            }
+
+            return await _unitOfWork.FornecedorRepository.ExistsAsync(f => f.TipoEntidade ==TipoEntidadePessoa.Fornecedor &&
+                f.CpfCnpj == cpfCnpj && (ignoreId == null || f.Id != ignoreId.Value));
+        }
+
+        public async Task<bool> TelefonePrincipalExistsAsync(string telefonePrincipal, long? ignoreId = null)
+        {
+            if (string.IsNullOrWhiteSpace(telefonePrincipal)) return false;
+
+            return await _unitOfWork.FornecedorRepository.ExistsAsync(c => c.TipoEntidade == TipoEntidadePessoa.Fornecedor &&
+                c.TelefonePrincipal == telefonePrincipal && (ignoreId == null || c.Id != ignoreId.Value));
+        }
+
+        public async Task<bool> TelefoneWhatsAppExistsAsync(string telefoneWhatsApp, long? ignoreId = null)
+        {
+            if (string.IsNullOrWhiteSpace(telefoneWhatsApp)) return false;
+
+
+            return await _unitOfWork.FornecedorRepository.ExistsAsync(c => c.TipoEntidade == TipoEntidadePessoa.Fornecedor &&
+                c.TelefoneWhatsApp == telefoneWhatsApp && (ignoreId == null || c.Id != ignoreId.Value));
+        }
+
+        public async Task<bool> EmailExistsAsync(string email, long? ignoreId = null)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return false;
+            return await _unitOfWork.FornecedorRepository.ExistsAsync(c => c.TipoEntidade == TipoEntidadePessoa.Fornecedor &&
+                c.Email == email && (ignoreId == null || c.Id != ignoreId.Value));
         }
     }
 

@@ -10,5 +10,6 @@ public interface IFuncionarioRepository : IRepository<Funcionario>
 
     //Task<(int Alocados, int NaoAlocados)> ObterResumoAlocacaoAsync();
     Task<List<Funcionario>> GetAllIncludingAsync(params Expression<Func<Funcionario, object>>[] includes);
+    Task<Funcionario?> GetByIdWithEnderecoAsync(long id);
 
 }

@@ -30,4 +30,16 @@ public class ClienteDto
     //Relacionamento
     public List<long> ProjetoIds { get; set; } = new();
 
+    /// <summary>
+    /// Cria uma cópia superficial (shallow copy) da instância atual do ClienteDto.
+    /// Este método é útil para preservar o estado original do DTO em operações de edição.
+    /// </summary>
+    /// <returns>Uma nova instância de ClienteDto com os mesmos valores de propriedade.</returns>
+    public ClienteDto Clone()
+    {
+        // MemberwiseClone é um método protegido, só pode ser chamado de dentro da própria classe ou derivado.
+        // O tipo de retorno é object, então precisamos de um cast.
+        return (ClienteDto)this.MemberwiseClone();
+    }
+
 }

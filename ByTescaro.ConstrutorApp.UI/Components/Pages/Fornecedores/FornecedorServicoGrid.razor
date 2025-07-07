@@ -1,8 +1,11 @@
-﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+﻿@* Exemplo de FornecedorServicoGrid.razor *@
+@using ByTescaro.ConstrutorApp.Application.DTOs
 @using ByTescaro.ConstrutorApp.UI.Services
 @inject FornecedorServicoApiService FornecedorServicoApiService
 @inject ServicoApiService ServicoApiService
 @inject NotificationService NotificationService
+@using System.Globalization @* Adicionado para formatar moeda *@
+
 
 @if (FornecedorId == 0)
 {
@@ -21,61 +24,84 @@ else
                         Style="margin-bottom: 1rem">
 
             <Columns>
-                <RadzenDataGridColumn TItem="FornecedorServicoDto" Property="ServicoNome" Title="Servico">
+                <RadzenDataGridColumn TItem="FornecedorServicoDto" Property="ServicoNome" Title="Serviço">
                     <EditTemplate Context="item">
+                        @* Adicionar Disabled="@ReadOnly" *@
                         <RadzenDropDown @bind-Value="item.ServicoId"
                                         Data="@servicosDisponiveis"
                                         TextProperty="Nome"
                                         ValueProperty="Id"
-                                        Style="width:100%" />
+                                        Style="width:100%"
+                                        Disabled="@ReadOnly" />
                     </EditTemplate>
+                    <Template Context="item">
+                        @item.ServicoNome
+                    </Template>
                 </RadzenDataGridColumn>
 
                 <RadzenDataGridColumn TItem="FornecedorServicoDto" Property="PrecoUnitario" Title="Preço Unitário (R$)">
                     <EditTemplate Context="item">
-                        <RadzenNumeric TValue="decimal" @bind-Value="item.PrecoUnitario" Style="width:100%" />
+                        @* Adicionar Disabled="@ReadOnly" *@
+                        <RadzenNumeric TValue="decimal" @bind-Value="item.PrecoUnitario" Style="width:100%" Disabled="@ReadOnly" />
                     </EditTemplate>
+                    <Template Context="item">
+                        @item.PrecoUnitario.ToString("C", CultureInfo.CurrentCulture) @* Formatação de moeda *@
+                    </Template>
                 </RadzenDataGridColumn>
 
                 <RadzenDataGridColumn TItem="FornecedorServicoDto" Property="PrazoEntregaDias" Title="Prazo (dias)">
                     <EditTemplate Context="item">
-                        <RadzenNumeric TValue="int" @bind-Value="item.PrazoEntregaDias" Style="width:100%" />
+                        @* Adicionar Disabled="@ReadOnly" *@
+                        <RadzenNumeric TValue="int" @bind-Value="item.PrazoEntregaDias" Style="width:100%" Disabled="@ReadOnly" />
                     </EditTemplate>
                 </RadzenDataGridColumn>
 
                 <RadzenDataGridColumn TItem="FornecedorServicoDto" Property="Observacao" Title="Observação">
                     <EditTemplate Context="item">
-                        <RadzenTextBox @bind-Value="item.Observacao" Style="width:100%" />
+                        @* Adicionar Disabled="@ReadOnly" *@
+                        <RadzenTextBox @bind-Value="item.Observacao" Style="width:100%" Disabled="@ReadOnly" />
                     </EditTemplate>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="FornecedorServicoDto" Context="item">
+                <RadzenDataGridColumn TItem="FornecedorServicoDto" Context="item" Title="Ações" Width="100px">
                     <Template Context="item">
-                        <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="() => grid.EditRow(item)" />
-                        <RadzenButton Icon="delete" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger" Click="@(async () => await Excluir(item))" />
+                        @if (!ReadOnly) @* Condição para exibir botões de ação *@
+                        {
+                            <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="() => grid.EditRow(item)" />
+                            <RadzenButton Icon="delete" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger" Click="@(async () => await Excluir(item))" />
+                        }
                     </Template>
                     <EditTemplate Context="item">
-                        <RadzenButton Icon="check" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Success" Click="() => grid.UpdateRow(item)" />
-                        <RadzenButton Icon="close" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light" Click="() => grid.CancelEditRow(item)" />
+                        @if (!ReadOnly) @* Condição para exibir botões de edição *@
+                        {
+                            <RadzenButton Icon="check" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Success" Click="() => grid.UpdateRow(item)" />
+                            <RadzenButton Icon="close" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light" Click="() => grid.CancelEditRow(item)" />
+                        }
                     </EditTemplate>
                 </RadzenDataGridColumn>
             </Columns>
         </RadzenDataGrid>
 
-        <RadzenButton Text="Adicionar Novo Serviço"
-                      Icon="add"
-                      ButtonStyle="ButtonStyle.Primary"
-                      Click="@AdicionarNovo"
-                      Style="margin-top: 1rem;" />
+        @if (!ReadOnly) @* Condição para exibir botão "Adicionar Novo Serviço" *@
+        {
+            <RadzenButton Text="Adicionar Novo Serviço"
+                          Icon="add"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Click="@AdicionarNovo"
+                          Style="margin-top: 1rem;" />
+        }
     </RadzenCard>
 }
 
 @code {
     [Parameter] public long FornecedorId { get; set; }
 
+    // ADICIONE ESTA PROPRIEDADE
+    [Parameter] public bool ReadOnly { get; set; } = false;
+
     private List<FornecedorServicoDto> servicosFornecedor = new();
     private List<ServicoDto> servicosDisponiveis = new();
-    private RadzenDataGrid<FornecedorServicoDto>? grid; 
+    private RadzenDataGrid<FornecedorServicoDto>? grid;
     [Parameter] public EventCallback<List<FornecedorServicoDto>> OnServicosCarregados { get; set; }
     public List<FornecedorServicoDto> Servicos => servicosFornecedor;
 
@@ -85,14 +111,35 @@ else
         {
             servicosFornecedor = await FornecedorServicoApiService.GetByFornecedorAsync(FornecedorId);
             servicosDisponiveis = await ServicoApiService.GetAllAsync();
-            await OnServicosCarregados.InvokeAsync(servicosFornecedor); 
+            await OnServicosCarregados.InvokeAsync(servicosFornecedor);
         }
     }
 
+    // Os métodos SalvarEdicao, CriarNovo e Excluir PRECISAM ter a condição !ReadOnly
+    // para que não sejam chamados se o grid estiver em modo ReadOnly
     private async Task SalvarEdicao(FornecedorServicoDto item)
     {
+        if (ReadOnly) return; // Adicione esta linha para garantir
         try
         {
+            if (item.ServicoId == 0)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "Selecione um serviço.");
+                return;
+            }
+
+            if (item.PrecoUnitario <= 0)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "Informe um preço válido.");
+                return;
+            }
+
+            if (item.PrazoEntregaDias <= 0)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "Informe o prazo de entrega.");
+                return;
+            }
+
             if (item.Id == 0)
             {
                 item.FornecedorId = FornecedorId;
@@ -115,6 +162,7 @@ else
 
     private async Task CriarNovo(FornecedorServicoDto item)
     {
+        // if (ReadOnly) return; // Adicione esta linha para garantir
         item.FornecedorId = FornecedorId;
         await FornecedorServicoApiService.CreateAsync(item);
         await Recarregar();
@@ -122,6 +170,7 @@ else
 
     private async Task Excluir(FornecedorServicoDto item)
     {
+        // if (ReadOnly) return; // Adicione esta linha para garantir
         await FornecedorServicoApiService.DeleteAsync(item.Id);
         await Recarregar();
     }
@@ -134,6 +183,7 @@ else
 
     private void AdicionarNovo()
     {
+        // if (ReadOnly) return; // Adicione esta linha para garantir
         var novo = new FornecedorServicoDto
             {
                 FornecedorId = FornecedorId,

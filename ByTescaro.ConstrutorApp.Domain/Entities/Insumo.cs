@@ -9,6 +9,9 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public string Nome { get; set; } = string.Empty;
         public string Descricao { get; set; } = string.Empty;
         public UnidadeMedida UnidadeMedida { get; set; }
+        public bool Ativo { get; set; } = true;
+        public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
+        public string UsuarioCadastro { get; set; } = string.Empty;
     }
 }
 

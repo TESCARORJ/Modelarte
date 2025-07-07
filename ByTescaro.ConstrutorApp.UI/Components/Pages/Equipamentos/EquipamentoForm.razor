@@ -61,6 +61,7 @@
     [Parameter] public long Id { get; set; }
 
     private EquipamentoDto equipamento = new();
+    private EquipamentoDto _originalEquipamentoDto = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -68,12 +69,75 @@
         {
             var existente = await EquipamentoApiService.GetByIdAsync(Id);
             if (existente is not null)
+            {
                 equipamento = existente;
+                _originalEquipamentoDto = existente.Clone();
+            }
         }
+    }
+
+    private async Task<List<string>> ValidateEquipamentoForm(EquipamentoDto model)
+    {
+        var errors = new List<string>();
+
+        // 1. Validação de Duplicidade do Nome
+        if (!string.IsNullOrWhiteSpace(model.Nome))
+        {
+            string originalNome = _originalEquipamentoDto?.Nome ?? string.Empty;
+            bool nomeChanged = (model.Id == 0) || (model.Nome != originalNome);
+
+            if (nomeChanged)
+            {
+                long? ignoreId = model.Id != 0 ? model.Id : (long?)null;
+                bool nomeAlreadyExists = await EquipamentoApiService.NomeExistsAsync(model.Nome, ignoreId);
+                if (nomeAlreadyExists)
+                {
+                    errors.Add("Já existe um equipamento com este nome.");
+                }
+            }
+        }
+
+        // 2. Validação de Duplicidade do Patrimônio
+        if (!string.IsNullOrWhiteSpace(model.Patrimonio))
+        {
+            string originalPatrimonio = _originalEquipamentoDto?.Patrimonio ?? string.Empty;
+            bool patrimonioChanged = (model.Id == 0) || (model.Patrimonio != originalPatrimonio);
+
+            if (patrimonioChanged)
+            {
+                long? ignoreId = model.Id != 0 ? model.Id : (long?)null;
+                bool patrimonioAlreadyExists = await EquipamentoApiService.PatrimonioExistsAsync(model.Patrimonio, ignoreId);
+                if (patrimonioAlreadyExists)
+                {
+                    errors.Add("Já existe um equipamento com este número de patrimônio.");
+                }
+            }
+        }
+
+        return errors;
     }
 
     private async Task Salvar(EquipamentoDto model)
     {
+        // Limpar strings (trim) se necessário, antes da validação
+        model.Nome = model.Nome?.Trim() ?? string.Empty;
+        model.Patrimonio = model.Patrimonio?.Trim() ?? string.Empty;
+        model.Descricao = model.Descricao?.Trim() ?? string.Empty;
+
+
+        // 1. Executa todas as validações customizadas
+        var validationErrors = await ValidateEquipamentoForm(model);
+
+        if (validationErrors.Any())
+        {
+            foreach (var error in validationErrors)
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro de Validação", Detail = error, Duration = 5000 });
+            }
+            return; // Impede a submissão se houver erros de validação
+        }
+
+        // Se todas as validações manuais passaram, tente salvar.
         try
         {
             if (model.Id == 0)

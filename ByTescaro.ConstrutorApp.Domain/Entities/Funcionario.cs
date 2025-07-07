@@ -2,6 +2,7 @@
 {
     public class Funcionario : Pessoa
     {
+
         public decimal Salario { get; set; }
         public DateTime DataAdmissao { get; set; }
         public DateTime? DataDemissao { get; set; }

@@ -42,7 +42,7 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
             //    Telefone = dto.Telefone,
             //    Ativo = dto.Ativo,
             //    UsuarioCadastro = "admin",
-            //    DataHoraCadastro = DateTime.UtcNow,
+            //    DataHoraCadastro = DateTime.Now,
             //    PerfilUsuarioId = dto.PerfilUsuarioId
             //};
 

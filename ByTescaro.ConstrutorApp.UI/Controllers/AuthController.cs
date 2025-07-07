@@ -64,7 +64,7 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
                 new AuthenticationProperties
                 {
                     IsPersistent = model.RememberMe,
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddDays(1)
+                    ExpiresUtc = DateTimeOffset.Now.AddDays(1)
                 });
 
             // Registro de log

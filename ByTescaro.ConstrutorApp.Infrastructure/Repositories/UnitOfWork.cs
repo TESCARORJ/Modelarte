@@ -55,7 +55,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         private IFornecedorServicoRepository? _fornecedorServicoRepository;
         #endregion
 
-  
+
 
         // Implemente a propriedade pública para cada repositório
         #region Public Repository Properties

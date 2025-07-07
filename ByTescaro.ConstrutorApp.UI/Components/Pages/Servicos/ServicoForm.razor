@@ -52,6 +52,7 @@
 
     private ServicoDto servico = new();
     private readonly CultureInfo _br = CultureInfo.GetCultureInfo("pt-BR");
+    private ServicoDto _originalServicoDto = new();
 
     public class UnidadeMedidaOption
     {
@@ -82,12 +83,59 @@
         {
             var existente = await ServicoApiService.GetByIdAsync(Id);
             if (existente is not null)
+            {
                 servico = existente;
+                _originalServicoDto = existente.Clone();
+            }
         }
     }
 
+    private async Task<List<string>> ValidateServicoForm(ServicoDto model)
+    {
+        var errors = new List<string>();
+
+        // 1. Validação de Duplicidade do Nome
+        if (!string.IsNullOrWhiteSpace(model.Nome))
+        {
+            string originalNome = _originalServicoDto?.Nome ?? string.Empty;
+            bool nomeChanged = (model.Id == 0) || (model.Nome != originalNome);
+
+            if (nomeChanged)
+            {
+                long? ignoreId = model.Id != 0 ? model.Id : (long?)null;
+                bool nomeAlreadyExists = await ServicoApiService.NomeExistsAsync(model.Nome, ignoreId);
+
+                if (nomeAlreadyExists)
+                {
+                    errors.Add("Já existe um serviço com este nome.");
+                }
+            }
+        }
+        
+
+        return errors;
+    }
+
+
     private async Task Salvar(ServicoDto model)
     {
+        // Limpar strings (trim) se necessário, antes da validação
+        model.Nome = model.Nome?.Trim() ?? string.Empty;
+        model.Descricao = model.Descricao?.Trim() ?? string.Empty;
+
+        // 1. Executa todas as validações customizadas
+        var validationErrors = await ValidateServicoForm(model);
+
+        if (validationErrors.Any())
+        {
+            foreach (var error in validationErrors)
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro de Validação", Detail = error, Duration = 5000 });
+            }
+            return; // Impede a submissão se houver erros de validação
+        }
+
+        // Se todas as validações manuais passaram, tente salvar.
         try
         {
             if (model.Id == 0)

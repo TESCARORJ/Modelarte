@@ -2,9 +2,8 @@
 
 namespace ByTescaro.ConstrutorApp.Domain.Entities
 {
-    public class Endereco
+    public class Endereco : EntidadeBase
     {
-        public long Id { get; set; }
         public string? Logradouro { get; set; } = string.Empty;
         public string? Numero { get; set; } = string.Empty;
         public string? Bairro { get; set; } = string.Empty;

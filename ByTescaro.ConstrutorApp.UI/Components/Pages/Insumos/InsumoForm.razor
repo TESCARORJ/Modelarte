@@ -62,25 +62,13 @@
 
     private InsumoDto insumo = new();
     private readonly CultureInfo _br = CultureInfo.GetCultureInfo("pt-BR");
+    private InsumoDto _originalInsumoDto = new();
 
     public class UnidadeMedidaOption
     {
         public UnidadeMedida? Value { get; set; }
         public string Label { get; set; } = string.Empty;
     }
-
-    // private List<UnidadeMedidaOption> UnidadeMedidaOptions = new()
-    // {
-    //     new() { Value = (UnidadeMedida?)null, Label = "-- Selecione --" },
-    //     new() { Value = UnidadeMedida.Unidade, Label = "Unidade" },
-    //     new() { Value = UnidadeMedida.Metro, Label = "Metro" },
-    //     new() { Value = UnidadeMedida.MetroQuadrado, Label = "Metro Quadrado" },
-    //     new() { Value = UnidadeMedida.MetroCubico, Label = "Metro Cúbico" },
-    //     new() { Value = UnidadeMedida.Quilograma, Label = "Quilograma" },
-    //     new() { Value = UnidadeMedida.Tonelada, Label = "Tonelada" },
-    //     new() { Value = UnidadeMedida.Peca, Label = "Peça" },
-    //     new() { Value = UnidadeMedida.Caixa, Label = "Caixa" }
-    // };
 
     private List<UnidadeMedidaOption> UnidadeMedidaOptions =>
     Enum.GetValues(typeof(UnidadeMedida))
@@ -104,12 +92,69 @@
         {
             var existente = await InsumoApiService.GetByIdAsync(Id);
             if (existente is not null)
+            {
                 insumo = existente;
+                _originalInsumoDto = existente.Clone(); 
+            }
         }
     }
 
+    private async Task<List<string>> ValidateInsumoForm(InsumoDto model)
+    {
+        var errors = new List<string>();
+
+        // 1. Validação de Duplicidade do Nome
+        if (!string.IsNullOrWhiteSpace(model.Nome))
+        {
+            string originalNome = _originalInsumoDto?.Nome ?? string.Empty;
+            bool nomeChanged = (model.Id == 0) || (model.Nome != originalNome);
+
+            if (nomeChanged)
+            {
+                long? ignoreId = model.Id != 0 ? model.Id : (long?)null;
+                bool nomeAlreadyExists = await InsumoApiService.NomeExistsAsync(model.Nome, ignoreId);
+
+                if (nomeAlreadyExists)
+                {
+                    errors.Add("Já existe um insumo com este nome.");
+                }
+            }
+        }
+        else
+        {
+            // RadzenRequiredValidator lida com nome obrigatório.
+            // errors.Add("O nome do insumo é obrigatório."); // Descomente se quiser uma mensagem extra aqui.
+        }
+
+        // 2. Validação da Unidade de Medida
+        if (!model.UnidadeMedida.HasValue)
+        {
+            errors.Add("A Unidade de Medida é obrigatória.");
+        }
+
+        return errors;
+    }
+
+
     private async Task Salvar(InsumoDto model)
     {
+        // Limpar strings (trim) se necessário, antes da validação
+        model.Nome = model.Nome?.Trim() ?? string.Empty;
+        model.Descricao = model.Descricao?.Trim() ?? string.Empty;
+
+        // 1. Executa todas as validações customizadas
+        var validationErrors = await ValidateInsumoForm(model);
+
+        if (validationErrors.Any())
+        {
+            foreach (var error in validationErrors)
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro de Validação", Detail = error, Duration = 5000 });
+            }
+            return; // Impede a submissão se houver erros de validação
+        }
+
+        // Se todas as validações manuais passaram, tente salvar.
         try
         {
             if (model.Id == 0)

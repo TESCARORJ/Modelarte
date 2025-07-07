@@ -51,7 +51,7 @@
                 <RadzenColumn Size="12" SizeMD="4">
                     <RadzenLabel Text="CPF/CNPJ" />
                     <RadzenMask @bind-Value="funcionario.CpfCnpj"
-                                Mask="@(funcionario.TipoPessoa == TipoPessoa.Fisica ? "***.***.***-**" : "**.***.***/***-**")"
+                                Mask="@(funcionario.TipoPessoa == TipoPessoa.Fisica ? "***.***.***-**" : "**.***.***/****-**")"
                                 CharacterPattern="[0-9]"
                                 Placeholder="CPF ou CNPJ"
                                 Name="CpfCnpj"
@@ -154,6 +154,8 @@
     [Parameter] public long Id { get; set; }
 
     private FuncionarioDto funcionario = new();
+    private FuncionarioDto _originalFuncionarioDto = new();
+
     private List<FuncaoDto> funcoes = new();
     private string Titulo => Id == 0 ? "Novo Funcionário" : "Editar Funcionário";
 
@@ -179,7 +181,11 @@
         {
             var existente = await FuncionarioApiService.GetByIdAsync(Id);
             if (existente is not null)
+            {
                 funcionario = existente;
+                _originalFuncionarioDto = existente.Clone();
+
+            }
         }
     }
 
@@ -199,6 +205,20 @@
 
     private async Task Salvar(FuncionarioDto model)
     {
+        // 1. Executa todas as validações customizadas
+        var validationErrors = await ValidateFuncionarioForm(model);
+
+
+        if (validationErrors.Any())
+        {
+            foreach (var error in validationErrors)
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro de Validação", Detail = error, Duration = 5000 });
+            }
+            return; // Impede a submissão se houver erros de validação
+        }
+
+        // 2. Chama o serviço para persistir os dados
         try
         {
             if (model.Id == 0)
@@ -219,6 +239,119 @@
             NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao salvar funcionário: {ex.Message}", Duration = 5000 });
         }
     }
+
+    // Método auxiliar para consolidar todas as validações personalizadas
+    private async Task<List<string>> ValidateFuncionarioForm(FuncionarioDto model)
+    {
+        var errors = new List<string>();
+
+        // 1. Validação do Tipo de Pessoa
+        if (!model.TipoPessoa.HasValue)
+        {
+            errors.Add("Tipo de Pessoa é obrigatório.");
+        }
+
+        // Limpa os campos de contato para validação de duplicidade, se necessário
+        // Se o DTO já está recebendo eles limpos da UI, pode pular
+        model.TelefonePrincipal = model.TelefonePrincipal != null ? new string(model.TelefonePrincipal.Where(char.IsDigit).ToArray()) : string.Empty;
+        model.TelefoneWhatsApp = model.TelefoneWhatsApp != null ? new string(model.TelefoneWhatsApp.Where(char.IsDigit).ToArray()) : string.Empty;
+
+        // 2. Validação de Formato e Algoritmo do CPF/CNPJ
+        if (!string.IsNullOrWhiteSpace(model.CpfCnpj) && model.TipoPessoa.HasValue)
+        {
+            string? CpfCnpj = model.CpfCnpj;
+            // model.CpfCnpj = model.CpfCnpj != null ? new string(model.CpfCnpj.Where(char.IsDigit).ToArray()) : string.Empty;
+
+            if (!CpfCnpjValidator.IsCpfCnpjValid(model.CpfCnpj, model.TipoPessoa))
+            {
+                errors.Add("CPF/CNPJ inválido para o tipo de pessoa selecionado.");
+            }
+
+            model.CpfCnpj = CpfCnpj;
+
+        }
+        // else if (string.IsNullOrWhiteSpace(model.CpfCnpj)) { /* O RadzenRequiredValidator lida com isso */ }
+
+        // Obter o ID a ignorar para validações de duplicidade (para o próprio registro em edição)
+        long? ignoreId = model.Id != 0 ? model.Id : (long?)null;
+
+        // 3. Validação de Duplicidade do CPF/CNPJ
+        // Só verifica duplicidade se o CPF/CNPJ está preenchido e se não houver erros de formato prévios.
+        if (!string.IsNullOrWhiteSpace(model.CpfCnpj))
+        {
+            string originalCpfCnpj = _originalFuncionarioDto != null && !string.IsNullOrWhiteSpace(_originalFuncionarioDto.CpfCnpj)
+                                            ? _originalFuncionarioDto.CpfCnpj
+                                            : string.Empty;
+
+            bool cpfCnpjChanged = (model.Id == 0) || (model.CpfCnpj != originalCpfCnpj);
+
+            if (cpfCnpjChanged)
+            {
+                bool cpfCnpjAlreadyExists = await FuncionarioApiService.CpfCnpjExistsAsync(model.CpfCnpj, ignoreId);
+                if (cpfCnpjAlreadyExists)
+                {
+                    errors.Add("CPF/CNPJ já cadastrado para outro funcionário.");
+                }
+            }
+        }
+
+        // 4. Validação de Duplicidade de Telefone Principal
+        if (!string.IsNullOrWhiteSpace(model.TelefonePrincipal))
+        {
+            string originalTelefonePrincipal = _originalFuncionarioDto != null && !string.IsNullOrWhiteSpace(_originalFuncionarioDto.TelefonePrincipal)
+                                                        ? _originalFuncionarioDto.TelefonePrincipal
+                                                        : string.Empty;
+
+            bool telefonePrincipalChanged = (model.Id == 0) || (model.TelefonePrincipal != originalTelefonePrincipal);
+
+            if (telefonePrincipalChanged)
+            {
+                bool telefonePrincipalAlreadyExists = await FuncionarioApiService.TelefonePrincipalExistsAsync(model.TelefonePrincipal, ignoreId);
+                if (telefonePrincipalAlreadyExists)
+                {
+                    errors.Add("Telefone Principal já cadastrado para outro funcionário.");
+                }
+            }
+        }
+
+        // 5. Validação de Duplicidade de Telefone WhatsApp
+        if (!string.IsNullOrWhiteSpace(model.TelefoneWhatsApp))
+        {
+            string originalTelefoneWhatsApp = _originalFuncionarioDto != null && !string.IsNullOrWhiteSpace(_originalFuncionarioDto.TelefoneWhatsApp)
+                                                        ? _originalFuncionarioDto.TelefoneWhatsApp
+                                                        : string.Empty;
+
+            bool telefoneWhatsAppChanged = (model.Id == 0) || (model.TelefoneWhatsApp != originalTelefoneWhatsApp);
+
+            if (telefoneWhatsAppChanged)
+            {
+                bool telefoneWhatsAppAlreadyExists = await FuncionarioApiService.TelefoneWhatsAppExistsAsync(model.TelefoneWhatsApp, ignoreId);
+                if (telefoneWhatsAppAlreadyExists)
+                {
+                    errors.Add("WhatsApp já cadastrado para outro funcionário.");
+                }
+            }
+        }
+
+        // 6. Validação de Duplicidade de Email
+        if (!string.IsNullOrWhiteSpace(model.Email))
+        {
+            string originalEmail = _originalFuncionarioDto?.Email ?? string.Empty;
+            bool emailChanged = (model.Id == 0) || (model.Email != originalEmail);
+
+            if (emailChanged)
+            {
+                bool emailAlreadyExists = await FuncionarioApiService.EmailExistsAsync(model.Email, ignoreId);
+                if (emailAlreadyExists)
+                {
+                    errors.Add("Email já cadastrado para outro funcionário.");
+                }
+            }
+        }
+
+        return errors;
+    }
+
 
     private void ExibirErros()
     {

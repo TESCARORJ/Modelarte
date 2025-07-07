@@ -65,6 +65,114 @@ public class FuncionarioApiService
     //}
 
 
+    public async Task<bool> CpfCnpjExistsAsync(string cpfCnpj, long? ignoreId = null)
+    {
+        string requestUrl = $"api/funcionario/CpfCnpjExists?cpfCnpj={cpfCnpj}";
+        if (ignoreId.HasValue && ignoreId.Value > 0)
+        {
+            requestUrl += $"&ignoreId={ignoreId.Value}";
+        }
+
+        var response = await _http.GetAsync(requestUrl);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<bool>();
+        }
+        else
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Erro ao verificar CPF/CNPJ: {response.StatusCode} - {errorContent}");
+            return false;
+        }
+    }
+
+    public async Task<bool> TelefonePrincipalExistsAsync(string telefonePrincipal, long? ignoreId = null)
+    {
+        if (string.IsNullOrWhiteSpace(telefonePrincipal))
+        {
+            return false;
+        }
+
+        string requestUrl = $"api/funcionario/TelefonePrincipalExists?telefonePrincipal={telefonePrincipal}";
+
+        if (ignoreId.HasValue && ignoreId.Value > 0)
+        {
+            requestUrl += $"&ignoreId={ignoreId.Value}";
+        }
+
+        var response = await _http.GetAsync(requestUrl);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<bool>();
+        }
+        else
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Erro ao verificar Telefone Principal: {response.StatusCode} - {errorContent}");
+            return false;
+        }
+    }
+
+    public async Task<bool> TelefoneWhatsAppExistsAsync(string telefoneWhatsApp, long? ignoreId = null)
+    {
+        if (string.IsNullOrWhiteSpace(telefoneWhatsApp))
+        {
+            return false;
+        }
+
+        string requestUrl = $"api/funcionario/TelefoneWhatsAppExists?telefoneWhatsApp={telefoneWhatsApp}";
+
+        if (ignoreId.HasValue && ignoreId.Value > 0)
+        {
+            requestUrl += $"&ignoreId={ignoreId.Value}";
+        }
+
+        var response = await _http.GetAsync(requestUrl);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<bool>();
+        }
+        else
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Erro ao verificar Telefone WhatsApp: {response.StatusCode} - {errorContent}");
+            return false;
+        }
+    }
+
+    public async Task<bool> EmailExistsAsync(string email, long? ignoreId = null)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return false;
+        }
+
+        string requestUrl = $"api/funcionario/EmailExists?email={email}";
+
+        if (ignoreId.HasValue && ignoreId.Value > 0)
+        {
+            requestUrl += $"&ignoreId={ignoreId.Value}";
+        }
+
+        var response = await _http.GetAsync(requestUrl);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<bool>();
+        }
+        else
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Erro ao verificar Email: {response.StatusCode} - {errorContent}");
+            return false;
+        }
+    }
 }
+
+
+
 
 

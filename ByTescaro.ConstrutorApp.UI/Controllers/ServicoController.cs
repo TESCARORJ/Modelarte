@@ -1,5 +1,6 @@
 ﻿using ByTescaro.ConstrutorApp.Application.DTOs;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
+using ByTescaro.ConstrutorApp.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -48,6 +49,17 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
         {
             await _service.RemoverAsync(id);
             return Ok();
+        }
+
+        [HttpGet("NomeExists")]
+        public async Task<IActionResult> NomeExists(string nome, long? ignoreId = null)
+        {
+            if (string.IsNullOrWhiteSpace(nome))
+            {
+                return BadRequest("O nome do serviço não pode ser vazio.");
+            }
+            bool exists = await _service.NomeExistsAsync(nome, ignoreId);
+            return Ok(exists);
         }
     }
 

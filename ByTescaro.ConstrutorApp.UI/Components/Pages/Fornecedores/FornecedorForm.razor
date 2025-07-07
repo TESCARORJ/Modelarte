@@ -19,7 +19,7 @@
 
         <RadzenFieldset Text="Dados do Fornecedor" Style="margin-bottom: 1.5rem">
             <RadzenRow>
-                <RadzenColumn Size="12" SizeMD="6">
+                <RadzenColumn Size="12" SizeMD="4">
                     <RadzenLabel Text="Nome *" />
                     <RadzenTextBox @bind-Value="fornecedor.Nome" Name="Nome" Style="width: 100%;" />
                     <RadzenRequiredValidator Component="Nome" Text="Nome obrigatório" />
@@ -35,6 +35,18 @@
                                     Name="Tipo"
                                     Style="width: 100%;" />
                     <RadzenRequiredValidator Component="Tipo" Text="Obrigatório" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenLabel Text="Tipo de Pessoa *" />
+                    <RadzenDropDown @bind-Value="fornecedor.TipoPessoa"
+                                    TValue="TipoPessoa?"
+                                    Data="@tipoPessoaOptions"
+                                    TextProperty="Label"
+                                    ValueProperty="Value"
+                                    Name="TipoPessoa"
+                                    Style="width: 100%;" />
+                    <RadzenRequiredValidator Component="TipoPessoa" Text="Obrigatório" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="3">
@@ -89,6 +101,9 @@
     [Parameter] public long Id { get; set; }
 
     private FornecedorDto fornecedor = new();
+    private FornecedorDto _originalFornecedorDto = new();
+
+    private List<EnumOption<TipoPessoa>> tipoPessoaOptions = EnumHelper.ListarOpcoes<TipoPessoa>(incluirNulo: true);
 
     private List<EnumOption<TipoFornecedor>> tipoFornecedorOptions = EnumHelper.ListarOpcoes<TipoFornecedor>(incluirNulo: true);
 
@@ -98,48 +113,28 @@
         {
             var existente = await FornecedorApiService.GetByIdAsync(Id);
             if (existente is not null)
+            {
                 fornecedor = existente;
+                _originalFornecedorDto = fornecedor.Clone();
+            }
         }
     }
 
     private async Task Salvar(FornecedorDto model)
-    {
-        // === VALIDAÇÃO MANUAL DO CPF/CNPJ E TIPO DE PESSOA ===
-        bool isFormValid = true; // Flag para controlar se o formulário é válido.
+    {// 1. Executa todas as validações customizadas
+        var validationErrors = await ValidateFornecedorForm(model);
 
-        // 1. Validação do Tipo de Pessoa (já que é obrigatório)
-        if (!model.TipoPessoa.HasValue)
-        {
-            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro de Validação", Detail = "Tipo de Pessoa é obrigatório.", Duration = 5000 });
-            isFormValid = false;
-        }
 
-        // 2. Validação do CPF/CNPJ (apenas se o campo CpfCnpj não estiver vazio e o TipoPessoa estiver definido)
-        if (isFormValid && !string.IsNullOrWhiteSpace(model.CpfCnpj) && model.TipoPessoa.HasValue)
+        if (validationErrors.Any())
         {
-            if (!CpfCnpjValidator.IsCpfCnpjValid(model.CpfCnpj, model.TipoPessoa))
+            foreach (var error in validationErrors)
             {
-                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro de Validação", Detail = "CPF/CNPJ inválido para o tipo de pessoa selecionado.", Duration = 5000 });
-                isFormValid = false;
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro de Validação", Detail = error, Duration = 5000 });
             }
-        }
-        else if (isFormValid && string.IsNullOrWhiteSpace(model.CpfCnpj))
-        {
-            // Se CpfCnpj estiver vazio, e for obrigatório (como indicado pelo RadzenRequiredValidator),
-            // a validação do RadzenTemplateForm já irá capturar isso.
-            // Não precisamos de uma notificação extra aqui.
-            // isFormValid permanecerá true se apenas o campo CpfCnpj estiver vazio e não houver outros erros.
+            return; // Impede a submissão se houver erros de validação
         }
 
-        // Se alguma validação manual falhou, interrompa a execução
-        if (!isFormValid)
-        {
-            // O RadzenTemplateForm já exibirá os erros dos RequiredValidators.
-            // Para erros de CustomValidator, a notificação já foi enviada.
-            return;
-        }
-
-
+        // 2. Chama o serviço para persistir os dados
         try
         {
             if (model.Id == 0)
@@ -159,6 +154,118 @@
         {
             NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao salvar fornecedor: {ex.Message}", Duration = 5000 });
         }
+    }
+
+    // Método auxiliar para consolidar todas as validações personalizadas
+    private async Task<List<string>> ValidateFornecedorForm(FornecedorDto model)
+    {
+        var errors = new List<string>();
+
+        // 1. Validação do Tipo de Pessoa
+        if (!model.TipoPessoa.HasValue)
+        {
+            errors.Add("Tipo de Pessoa é obrigatório.");
+        }
+
+        // Limpa os campos de contato para validação de duplicidade, se necessário
+        // Se o DTO já está recebendo eles limpos da UI, pode pular
+        model.TelefonePrincipal = model.TelefonePrincipal != null ? new string(model.TelefonePrincipal.Where(char.IsDigit).ToArray()) : string.Empty;
+        model.TelefoneWhatsApp = model.TelefoneWhatsApp != null ? new string(model.TelefoneWhatsApp.Where(char.IsDigit).ToArray()) : string.Empty;
+
+        // 2. Validação de Formato e Algoritmo do CPF/CNPJ
+        if (!string.IsNullOrWhiteSpace(model.CpfCnpj) && model.TipoPessoa.HasValue)
+        {
+            string? CpfCnpj = model.CpfCnpj;
+            // model.CpfCnpj = model.CpfCnpj != null ? new string(model.CpfCnpj.Where(char.IsDigit).ToArray()) : string.Empty;
+
+            if (!CpfCnpjValidator.IsCpfCnpjValid(model.CpfCnpj, model.TipoPessoa))
+            {
+                errors.Add("CPF/CNPJ inválido para o tipo de pessoa selecionado.");
+            }
+
+            model.CpfCnpj = CpfCnpj;
+
+        }
+        // else if (string.IsNullOrWhiteSpace(model.CpfCnpj)) { /* O RadzenRequiredValidator lida com isso */ }
+
+        // Obter o ID a ignorar para validações de duplicidade (para o próprio registro em edição)
+        long? ignoreId = model.Id != 0 ? model.Id : (long?)null;
+
+        // 3. Validação de Duplicidade do CPF/CNPJ
+        // Só verifica duplicidade se o CPF/CNPJ está preenchido e se não houver erros de formato prévios.
+        if (!string.IsNullOrWhiteSpace(model.CpfCnpj))
+        {
+            string originalCpfCnpj = _originalFornecedorDto != null && !string.IsNullOrWhiteSpace(_originalFornecedorDto.CpfCnpj)
+                                            ? _originalFornecedorDto.CpfCnpj
+                                            : string.Empty;
+
+            bool cpfCnpjChanged = (model.Id == 0) || (model.CpfCnpj != originalCpfCnpj);
+
+            if (cpfCnpjChanged)
+            {
+                bool cpfCnpjAlreadyExists = await FornecedorApiService.CpfCnpjExistsAsync(model.CpfCnpj, ignoreId);
+                if (cpfCnpjAlreadyExists)
+                {
+                    errors.Add("CPF/CNPJ já cadastrado para outro fornecedor.");
+                }
+            }
+        }
+
+        // 4. Validação de Duplicidade de Telefone Principal
+        if (!string.IsNullOrWhiteSpace(model.TelefonePrincipal))
+        {
+            string originalTelefonePrincipal = _originalFornecedorDto != null && !string.IsNullOrWhiteSpace(_originalFornecedorDto.TelefonePrincipal)
+                                                        ? _originalFornecedorDto.TelefonePrincipal
+                                                        : string.Empty;
+
+            bool telefonePrincipalChanged = (model.Id == 0) || (model.TelefonePrincipal != originalTelefonePrincipal);
+
+            if (telefonePrincipalChanged)
+            {
+                bool telefonePrincipalAlreadyExists = await FornecedorApiService.TelefonePrincipalExistsAsync(model.TelefonePrincipal, ignoreId);
+                if (telefonePrincipalAlreadyExists)
+                {
+                    errors.Add("Telefone Principal já cadastrado para outro fornecedor.");
+                }
+            }
+        }
+
+        // 5. Validação de Duplicidade de Telefone WhatsApp
+        if (!string.IsNullOrWhiteSpace(model.TelefoneWhatsApp))
+        {
+            string originalTelefoneWhatsApp = _originalFornecedorDto != null && !string.IsNullOrWhiteSpace(_originalFornecedorDto.TelefoneWhatsApp)
+                                                        ? _originalFornecedorDto.TelefoneWhatsApp
+                                                        : string.Empty;
+
+            bool telefoneWhatsAppChanged = (model.Id == 0) || (model.TelefoneWhatsApp != originalTelefoneWhatsApp);
+
+            if (telefoneWhatsAppChanged)
+            {
+                bool telefoneWhatsAppAlreadyExists = await FornecedorApiService.TelefoneWhatsAppExistsAsync(model.TelefoneWhatsApp, ignoreId);
+                if (telefoneWhatsAppAlreadyExists)
+                {
+                    errors.Add("WhatsApp já cadastrado para outro fornecedor.");
+                }
+            }
+        }
+
+        // 6. Validação de Duplicidade de Email
+        if (!string.IsNullOrWhiteSpace(model.Email))
+        {
+            string originalEmail = _originalFornecedorDto?.Email ?? string.Empty;
+            bool emailChanged = (model.Id == 0) || (model.Email != originalEmail);
+
+            if (emailChanged)
+            {
+                bool emailAlreadyExists = await FornecedorApiService.EmailExistsAsync(model.Email, ignoreId);
+                if (emailAlreadyExists)
+                {
+                    errors.Add("Email já cadastrado para outro fornecedor.");
+                }
+            }
+        }
+
+        return errors;
     }
 
     private void ExibirErros()

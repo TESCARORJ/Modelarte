@@ -69,7 +69,7 @@ namespace ByTescaro.ConstrutorApp.UI.Authentication
                 new AuthenticationProperties
                 {
                     IsPersistent = true,
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddDays(1)
+                    ExpiresUtc = DateTimeOffset.Now.AddDays(1)
                 });
 
 

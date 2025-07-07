@@ -3,53 +3,79 @@
 @using ByTescaro.ConstrutorApp.Application.DTOs
 @using ByTescaro.ConstrutorApp.Domain.Enums
 @using ByTescaro.ConstrutorApp.UI.Services
+@using System.Globalization
+@using System.Reflection
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authorization
+@using Radzen
+@using Radzen.Blazor
 @inject EquipamentoApiService EquipamentoApiService
 @inject NavigationManager Navigation
-@using Microsoft.AspNetCore.Authorization
+@inject NotificationService NotificationService
 @attribute [Authorize]
 
 <PageTitle>Detalhes do Equipamento</PageTitle>
 
-<RadzenCard Class="rz-mt-4 rz-pa-4">
-    <RadzenHeading Size="H5" Text="Detalhes do Equipamento" />
+<RadzenCard Class="rz-mt-5 rz-p-4 rz-shadow-md rz-rounded-md rz-mx-auto" Style="max-width: 1300px; width: 100%;">
+    <RadzenHeading Size="H4" Text="@Titulo" Class="rz-mb-3" /> @* Título dinâmico *@
 
     @if (equipamento is null)
     {
-        <RadzenText Text="Equipamento não encontrado." Style="color:red" />
+        <RadzenText Text="Carregando detalhes do equipamento ou equipamento não encontrado." Style="color: gray; padding: 1rem;" />
+        <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" Style="margin-top: 10px;" />
     }
     else
     {
-        <RadzenFieldset>
-            <RadzenTemplateForm Data="@equipamento">
-                <RadzenRow>
-                    <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenTextBox Name="Nome" Value="@equipamento.Nome" Style="width:100%" ReadOnly />
-                        <RadzenLabel Text="Nome" Component="Nome" />
-                    </RadzenColumn>
-                    <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenTextBox Name="Patrimonio" Value="@equipamento.Patrimonio" Style="width:100%" ReadOnly />
-                        <RadzenLabel Text="Patrimônio" Component="Patrimonio" />
-                    </RadzenColumn>
-                    <RadzenColumn Size="12">
-                        <RadzenTextBox Name="Descricao" Value="@equipamento.Descricao" Style="width:100%" ReadOnly />
-                        <RadzenLabel Text="Descrição" Component="Descricao" />
-                    </RadzenColumn>
-                    <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenTextBox Name="Custo" Value="@equipamento.CustoLocacaoDiaria?.ToString("C")" Style="width:100%" ReadOnly />
-                        <RadzenLabel Text="Custo de Locação Diária" Component="Custo" />
-                    </RadzenColumn>
-                    <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenTextBox Name="Status" Value="@equipamento.Status.ToString()" Style="width:100%" ReadOnly />
-                        <RadzenLabel Text="Status" Component="Status" />
-                    </RadzenColumn>
-                </RadzenRow>
-            </RadzenTemplateForm>
+        <RadzenFieldset Text="Dados do Equipamento" Style="margin-bottom: 1.5rem;">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Nome" />
+                    <RadzenTextBox Value="@equipamento.Nome" ReadOnly Style="width: 100%;" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Patrimônio" />
+                    <RadzenTextBox Value="@equipamento.Patrimonio" ReadOnly Style="width: 100%;" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12">
+                    <RadzenLabel Text="Descrição" />
+                    <RadzenTextBox Value="@equipamento.Descricao" ReadOnly Multiline="true" Rows="3" Style="width: 100%;" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Custo de Locação Diária (R$)" />
+                    @* Para formatar como moeda, use ToString("C") *@
+                    <RadzenTextBox Value="@equipamento.CustoLocacaoDiaria?.ToString("C", CultureInfo.CurrentCulture)" ReadOnly Style="width: 100%;" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Status" />
+                    @* Exibe o nome do enum (ex: Ativo, Inativo) *@
+                    <RadzenTextBox Value="@equipamento.Status.ToString()" ReadOnly Style="width: 100%;" />
+                </RadzenColumn>
+            </RadzenRow>
         </RadzenFieldset>
 
-        <div class="rz-my-4 rz-text-align-end">
-            <RadzenButton Text="Voltar" ButtonStyle="ButtonStyle.Light" Click="@(() => Navigation.NavigateTo("/equipamentos"))" Style="margin-right: 1rem" />
+        @* Você pode adicionar mais Fieldsets para dados de auditoria, se existirem no DTO *@
+        <RadzenFieldset Text="Dados de Auditoria" Style="margin-bottom: 1.5rem;">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Usuário Cadastro" />
+                    <RadzenTextBox Value="@equipamento.UsuarioCadastro" ReadOnly Style="width: 100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Data/Hora Cadastro" />
+                    <RadzenTextBox Value="@equipamento.DataHoraCadastro.ToString("dd/MM/yyyy HH:mm:ss")" ReadOnly Style="width: 100%;" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
+
+
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-3">
+            <RadzenButton Text="Voltar" ButtonStyle="ButtonStyle.Light" Click="@(() => Navigation.NavigateTo("/equipamentos"))" />
             <RadzenButton Text="Editar" Icon="edit" ButtonStyle="ButtonStyle.Primary" Click="@(() => Navigation.NavigateTo($"/equipamentos/editar/{equipamento.Id}"))" />
-        </div>
+        </RadzenStack>
     }
 </RadzenCard>
 
@@ -57,9 +83,12 @@
     [Parameter] public long Id { get; set; }
 
     private EquipamentoDto? equipamento;
+    private string Titulo => $"Detalhes do Equipamento: {equipamento?.Nome ?? "Carregando..."}";
 
     protected override async Task OnInitializedAsync()
     {
         equipamento = await EquipamentoApiService.GetByIdAsync(Id);
     }
+
+    
 }

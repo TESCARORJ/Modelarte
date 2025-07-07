@@ -24,7 +24,7 @@ namespace ByTescaro.ConstrutorApp.UI.Properties
                     Ativo = true,
                     PerfilUsuarioId = 1,
                     UsuarioCadastro = "sa",
-                    DataHoraCadastro = DateTime.UtcNow
+                    DataHoraCadastro = DateTime.Now
                 };
 
                 await usuarioService.CriarAsync(usuario);

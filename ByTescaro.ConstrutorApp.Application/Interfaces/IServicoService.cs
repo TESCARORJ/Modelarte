@@ -9,4 +9,6 @@ public interface IServicoService
     Task CriarAsync(ServicoDto dto);
     Task AtualizarAsync(ServicoDto dto);
     Task RemoverAsync(long id);
+    Task<bool> NomeExistsAsync(string nome, long? ignoreId = null);
+
 }

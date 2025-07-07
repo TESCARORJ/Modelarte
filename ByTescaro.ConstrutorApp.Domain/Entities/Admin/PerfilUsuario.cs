@@ -11,6 +11,9 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities.Admin
     public class PerfilUsuario : EntidadeBase
     {
         public string Nome { get; set; } = string.Empty;
+        public bool Ativo { get; set; } = true;
+        public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
+        public string UsuarioCadastro { get; set; } = string.Empty;
 
         public ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();
     }

@@ -9,4 +9,6 @@ public interface IInsumoService
     Task CriarAsync(InsumoDto dto);
     Task AtualizarAsync(InsumoDto dto);
     Task RemoverAsync(long id);
+    Task<bool> NomeExistsAsync(string nome, long? ignoreId = null);
+
 }

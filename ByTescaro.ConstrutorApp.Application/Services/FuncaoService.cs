@@ -3,6 +3,7 @@ using ByTescaro.ConstrutorApp.Application.DTOs;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
+using ByTescaro.ConstrutorApp.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json;
 
@@ -12,17 +13,18 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
     public class FuncaoService : IFuncaoService
     {
-        private readonly IFuncaoRepository _repo;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly ILogAuditoriaRepository _logRepo;
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public FuncaoService(IFuncaoRepository repo, ILogAuditoriaRepository logRepo, IMapper mapper, IHttpContextAccessor httpContextAccessor)
+        public FuncaoService(ILogAuditoriaRepository logRepo, IMapper mapper, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
         {
-            _repo = repo;
+            
             _logRepo = logRepo;
             _mapper = mapper;
             _httpContextAccessor = httpContextAccessor;
+            _unitOfWork = unitOfWork;
         }
 
         private string UsuarioLogado =>
@@ -30,26 +32,26 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task<IEnumerable<FuncaoDto>> ObterTodasAsync()
         {
-            var funcoes = await _repo.ObterTodasAsync();
+            var funcoes = await _unitOfWork.FuncaoRepository.ObterTodasAsync();
             return _mapper.Map<IEnumerable<FuncaoDto>>(funcoes);
         }
 
         public async Task<FuncaoDto?> ObterPorIdAsync(long id)
         {
-            var funcao = await _repo.GetByIdAsync(id);
+            var funcao = await _unitOfWork.FuncaoRepository.GetByIdAsync(id);
             return funcao == null ? null : _mapper.Map<FuncaoDto>(funcao);
         }
 
         public async Task<FuncaoDto?> ObterPorNomeAsync(string nome)
         {
-            var funcao = await _repo.ObterPorNomeAsync(nome);
+            var funcao = await _unitOfWork.FuncaoRepository.ObterPorNomeAsync(nome);
             return funcao == null ? null : _mapper.Map<FuncaoDto>(funcao);
         }
 
         public async Task CriarAsync(FuncaoDto dto)
         {
             var entity = _mapper.Map<Funcao>(dto);
-            _repo.Add(entity);
+            _unitOfWork.FuncaoRepository.Add(entity);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
@@ -59,16 +61,18 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 Descricao = $"Função '{entity.Nome}' criada",
                 DadosAtuais = JsonSerializer.Serialize(entity)
             });
+
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task AtualizarAsync(FuncaoDto dto)
         {
-            var antiga = await _repo.GetByIdAsync(dto.Id);
+            var antiga = await _unitOfWork.FuncaoRepository.GetByIdAsync(dto.Id);
             if (antiga == null) return;
 
             var nova = _mapper.Map<Funcao>(dto);
 
-            _repo.Update(nova);
+            _unitOfWork.FuncaoRepository.Update(nova);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
@@ -79,14 +83,16 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 DadosAnteriores = JsonSerializer.Serialize(antiga),
                 DadosAtuais = JsonSerializer.Serialize(nova)
             });
+
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
         {
-            var entity = await _repo.GetByIdAsync(id);
+            var entity = await _unitOfWork.FuncaoRepository.GetByIdAsync(id);
             if (entity == null) return;
 
-            _repo.Remove(entity);
+            _unitOfWork.FuncaoRepository.Remove(entity);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
@@ -96,6 +102,18 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 Descricao = $"Função '{entity.Nome}' removida",
                 DadosAnteriores = JsonSerializer.Serialize(entity)
             });
+
+            await _unitOfWork.CommitAsync();
+        }
+
+        public async Task<bool> NomeExistsAsync(string nome, long? ignoreId = null)
+        {
+            if (string.IsNullOrWhiteSpace(nome))
+            {
+                return false; // Nome vazio não é considerado duplicado
+            }
+            return await _unitOfWork.FuncaoRepository.ExistsAsync(f =>
+                f.Nome == nome && (ignoreId == null || f.Id != ignoreId.Value));
         }
     }
 

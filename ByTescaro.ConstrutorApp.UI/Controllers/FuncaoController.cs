@@ -55,6 +55,18 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
             await _service.RemoverAsync(id);
             return Ok();
         }
+
+        [HttpGet("NomeExists")]
+        public async Task<IActionResult> NomeExists(string nome, long? ignoreId = null)
+        {
+            if (string.IsNullOrWhiteSpace(nome))
+            {
+                return BadRequest("O nome da função não pode ser vazio.");
+            }
+
+            bool exists = await _service.NomeExistsAsync(nome, ignoreId);
+            return Ok(exists);
+        }
     }
 
 }

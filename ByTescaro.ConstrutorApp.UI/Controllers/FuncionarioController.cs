@@ -1,5 +1,6 @@
 ﻿using ByTescaro.ConstrutorApp.Application.DTOs;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
+using ByTescaro.ConstrutorApp.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -67,6 +68,47 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
 
         //    return Ok(dto);
         //}
+
+        [HttpGet("CpfCnpjExists")]
+        public async Task<IActionResult> CpfCnpjExists(string cpfCnpj, long? ignoreId = null)
+        {
+            if (string.IsNullOrWhiteSpace(cpfCnpj))
+            {
+                return BadRequest("CPF/CNPJ não pode ser vazio.");
+            }
+
+            //string cleanedCpfCnpj = new string(cpfCnpj.Where(char.IsDigit).ToArray());
+
+            // A consulta real dependerá do seu repositório ou serviço de domínio.
+            // Aqui, apenas um exemplo lógico.
+            bool exists = await _funcionarioService.CpfCnpjExistsAsync(cpfCnpj);
+
+            return Ok(exists);
+        }
+
+        [HttpGet("TelefonePrincipalExists")]
+        public async Task<IActionResult> TelefonePrincipalExists(string telefonePrincipal, long? ignoreId = null)
+        {
+            if (string.IsNullOrWhiteSpace(telefonePrincipal)) return BadRequest("Telefone Principal não pode ser vazio.");
+            bool exists = await _funcionarioService.TelefonePrincipalExistsAsync(telefonePrincipal, ignoreId);
+            return Ok(exists);
+        }
+
+        [HttpGet("TelefoneWhatsAppExists")]
+        public async Task<IActionResult> TelefoneWhatsAppExists(string telefoneWhatsApp, long? ignoreId = null)
+        {
+            if (string.IsNullOrWhiteSpace(telefoneWhatsApp)) return BadRequest("WhatsApp não pode ser vazio.");
+            bool exists = await _funcionarioService.TelefoneWhatsAppExistsAsync(telefoneWhatsApp, ignoreId);
+            return Ok(exists);
+        }
+
+        [HttpGet("EmailExists")]
+        public async Task<IActionResult> EmailExists(string email, long? ignoreId = null)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return BadRequest("Email não pode ser vazio.");
+            bool exists = await _funcionarioService.EmailExistsAsync(email, ignoreId);
+            return Ok(exists);
+        }
     }
 
 }

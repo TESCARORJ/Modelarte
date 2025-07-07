@@ -7,6 +7,9 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
     public class Equipamento : EntidadeBase
     {
         public string Nome { get; set; } = string.Empty;
+        public bool Ativo { get; set; } = true;
+        public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
+        public string UsuarioCadastro { get; set; } = string.Empty;
         public string Descricao { get; set; } = string.Empty;
         public string Patrimonio { get; set; } = string.Empty;
         public StatusEquipamento Status { get; set; } = StatusEquipamento.Disponivel;

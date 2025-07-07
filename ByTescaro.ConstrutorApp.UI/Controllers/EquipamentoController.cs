@@ -1,5 +1,6 @@
 ﻿using ByTescaro.ConstrutorApp.Application.DTOs;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
+using ByTescaro.ConstrutorApp.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -63,6 +64,28 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
 
         //    return Ok(dto);
         //}
+
+        [HttpGet("NomeExists")]
+        public async Task<IActionResult> NomeExists(string nome, long? ignoreId = null)
+        {
+            if (string.IsNullOrWhiteSpace(nome))
+            {
+                return BadRequest("O nome do equipamento não pode ser vazio.");
+            }
+            bool exists = await _service.NomeExistsAsync(nome, ignoreId);
+            return Ok(exists);
+        }
+
+        [HttpGet("PatrimonioExists")]
+        public async Task<IActionResult> PatrimonioExists(string patrimonio, long? ignoreId = null)
+        {
+            if (string.IsNullOrWhiteSpace(patrimonio))
+            {
+                return BadRequest("O patrimônio do equipamento não pode ser vazio.");
+            }
+            bool exists = await _service.PatrimonioExistsAsync(patrimonio, ignoreId);
+            return Ok(exists);
+        }
     }
 
 }

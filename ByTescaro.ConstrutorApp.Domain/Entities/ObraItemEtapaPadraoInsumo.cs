@@ -12,5 +12,8 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public Insumo Insumo { get; set; } = default!;
 
         public decimal QuantidadeSugerida { get; set; }
+        public bool Ativo { get; set; } = true;
+        public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
+        public string UsuarioCadastro { get; set; } = string.Empty;
     }
 }

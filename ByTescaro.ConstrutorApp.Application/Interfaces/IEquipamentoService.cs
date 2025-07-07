@@ -11,4 +11,8 @@ public interface IEquipamentoService
     Task RemoverAsync(long id);
     //Task<(int Alocados, int NaoAlocados)> ObterResumoAlocacaoAsync();
 
+    Task<bool> NomeExistsAsync(string nome, long? ignoreId = null);
+    Task<bool> PatrimonioExistsAsync(string patrimonio, long? ignoreId = null);
+
+
 }
