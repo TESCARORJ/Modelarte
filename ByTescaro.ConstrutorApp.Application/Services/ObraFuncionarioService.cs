@@ -9,32 +9,22 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 {
     public class ObraFuncionarioService : IObraFuncionarioService
     {
-        private readonly IObraFuncionarioRepository _repo;
-        private readonly IFuncionarioRepository _funcionarioRepository;
-        private readonly IObraRepository _obraRepository;
-        private readonly IProjetoRepository _projetoRepository;
-        private readonly IClienteRepository _clienteRepository;
-        private readonly IFuncaoRepository _funcaoRepository;
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IUnitOfWork _unitOfWork;
 
         private string UsuarioLogado => _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
 
-        public ObraFuncionarioService(IObraFuncionarioRepository repo, IMapper mapper, IFuncionarioRepository funcionarioRepository, IObraRepository obraRepository, IProjetoRepository projetoRepository, IClienteRepository clienteRepository, IFuncaoRepository funcaoRepository, IHttpContextAccessor httpContextAccessor)
+        public ObraFuncionarioService(IMapper mapper, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
         {
-            _repo = repo;
-            _mapper = mapper;
-            _funcionarioRepository = funcionarioRepository;
-            _obraRepository = obraRepository;
-            _projetoRepository = projetoRepository;
-            _clienteRepository = clienteRepository;
-            _funcaoRepository = funcaoRepository;
+            _mapper = mapper;            
             _httpContextAccessor = httpContextAccessor;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<List<ObraFuncionarioDto>> ObterPorObraIdAsync(long obraId)
         {
-            var list = await _repo.GetByObraIdAsync(obraId);
+            var list = await _unitOfWork.ObraFuncionarioRepository.FindAllWithIncludesAsync(x => x.ObraId == obraId);
             return _mapper.Map<List<ObraFuncionarioDto>>(list);
         }
 
@@ -43,29 +33,32 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var entity = _mapper.Map<ObraFuncionario>(dto);
             entity.DataHoraCadastro = DateTime.Now;
             entity.UsuarioCadastro = UsuarioLogado;
-            _repo.Add(entity);
+            _unitOfWork.ObraFuncionarioRepository.Add(entity);
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task AtualizarAsync(ObraFuncionarioDto dto)
         {
-            var entity = await _repo.GetByIdAsync(dto.Id);
+            var entity = await _unitOfWork.ObraFuncionarioRepository.GetByIdAsync(dto.Id);
             if (entity == null) return;
 
             _mapper.Map(dto, entity);
-            _repo.Update(entity);
+            _unitOfWork.ObraFuncionarioRepository.Update(entity);
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
         {
-            var entity = await _repo.GetByIdAsync(id);
+            var entity = await _unitOfWork.ObraFuncionarioRepository.GetByIdAsync(id);
             if (entity != null)
-                _repo.Remove(entity);
+                _unitOfWork.ObraFuncionarioRepository.Remove(entity);
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task<List<FuncionarioDto>> ObterFuncionariosDisponiveisAsync(long obraId)
         {
-            var todosFuncionarios = await _funcionarioRepository.GetAllAsync();
-            var funcionariosAlocados = await _repo.GetAllAsync(); // Todos alocados em qualquer obra
+            var todosFuncionarios = await _unitOfWork.FuncionarioRepository.GetAllAsync();
+            var funcionariosAlocados = await _unitOfWork.ObraFuncionarioRepository.GetAllAsync(); // Todos alocados em qualquer obra
 
             var idsAlocadosEmOutrasObras = funcionariosAlocados
                 .Where(f => f.ObraId != obraId)
@@ -82,7 +75,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task<List<FuncionarioDto>> ObterFuncionariosTotalDisponiveisAsync()
         {
-            var todosFuncionarios = await _funcionarioRepository
+            var todosFuncionarios = await _unitOfWork.FuncionarioRepository
                 .GetAllIncludingAsync(f => f.Funcao); 
 
             var disponiveis = todosFuncionarios.ToList();
@@ -94,12 +87,12 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         public async Task<List<FuncionarioDto>> ObterFuncionariosTotalAlocadosAsync()
         {
             // Busca todos os funcionarios alocados em alguma obra
-            var funcionariosAlocados = await _repo.GetAllAsync(); // ObraFuncionario
-            var obras = await _obraRepository.GetAllAsync();
-            var proejtos = await _projetoRepository.GetAllAsync();
-            var clientes = await _clienteRepository.GetAllAsync();
-            var funcionarios = await _funcionarioRepository.GetAllAsync();
-            var funcoes = await _funcaoRepository.GetAllAsync();
+            var funcionariosAlocados = await _unitOfWork.ObraFuncionarioRepository.GetAllAsync(); // ObraFuncionario
+            var obras = await _unitOfWork.ObraRepository.GetAllAsync();
+            var proejtos = await _unitOfWork.ProjetoRepository.GetAllAsync();
+            var clientes = await _unitOfWork.ClienteRepository.GetAllAsync();
+            var funcionarios = await _unitOfWork.FuncionarioRepository.GetAllAsync();
+            var funcoes = await _unitOfWork.FuncaoRepository.GetAllAsync();
 
             var resultado = funcionariosAlocados
                 .Select(eqAlocado =>

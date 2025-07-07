@@ -15,7 +15,7 @@
     Multiple="true"
     SelectAllText="Selecionar Todos"
     Style="width: 100%;"
-    @bind-Value="_funcionariosSelecionados" />
+    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.StartsWith" AllowFiltering="true" @bind-Value="_funcionariosSelecionados" />
 
     <RadzenButton Text="Adicionar Selecionados"
     Style="margin-top: 1rem; margin-bottom: 1rem;"
@@ -61,9 +61,9 @@
     [Parameter] public List<FuncionarioDto> FuncionariosDisponiveis { get; set; } = new();
     private bool IsBotaoSalvarDesabilitado => Obra.Funcionarios == null || !Obra.Funcionarios.Any();
     private List<ObraFuncionarioDto> _funcionariosOriginais = new();
-
-
     private List<long> _funcionariosSelecionados = new();
+    private bool isLoading = true;
+
 
 
     private void AdicionarFuncionarios()
@@ -119,6 +119,24 @@
         }
     }
 
+    /// OnParametersSetAsync é usado para carregar os dados do checklist
+    /// sempre que os parâmetros do componente (como 'Obra') forem definidos.
+    /// </summary>
+    protected override async Task OnParametersSetAsync()
+    {
+        // Garante que o Obra.Id seja válido antes de buscar os dados
+        if (Obra != null && Obra.Id > 0)
+        {
+            isLoading = true;
+
+            // Chama o serviço para carregar o checklist associado a esta obra
+            Obra.Funcionarios = await ObraFuncionarioApiService.GetByObraIdAsync(Obra.Id);
+
+            isLoading = false;
+        }
+    }
+
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -128,12 +146,15 @@
         }
 
         // Clona os funcionários atuais para controle de remoções
-        _funcionariosOriginais = Obra.Funcionarios?.Select(f => new ObraFuncionarioDto
-            {
-                Id = f.Id,
-                FuncionarioId = f.FuncionarioId,
-                ObraId = f.ObraId
-            }).ToList() ?? new();
+        // _funcionariosOriginais = Obra.Funcionarios?.Select(f => new ObraFuncionarioDto
+        //     {
+        //         Id = f.Id,
+        //         FuncionarioId = f.FuncionarioId,
+        //         ObraId = f.ObraId
+        //     }).ToList() ?? new();
+
+        _funcionariosOriginais = await ObraFuncionarioApiService.GetByObraIdAsync(Obra.Id);
+
     }
 
 
