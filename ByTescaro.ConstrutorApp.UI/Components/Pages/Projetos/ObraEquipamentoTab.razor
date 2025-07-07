@@ -35,7 +35,7 @@
             <RadzenDataGrid @ref="grid" Data="@Obra.Equipamentos" TItem="ObraEquipamentoDto" ShowPagingSummary="false" AllowPaging="false" AllowColumnResize="true" AllowSorting="true" PagerHorizontalAlign="HorizontalAlign.Left" ColumnWidth="300px">
                 <Columns>
                     <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="EquipamentoNome" Title="Nome"/>
-                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Title="Patrimônio">
+                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Title="Patrimônio" Width="60px">
                         <Template Context="equip">
                             @{
                                 var patrimonio = EquipamentosDisponiveis
@@ -45,8 +45,8 @@
                         </Template>
                     </RadzenDataGridColumn>
 
-                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataInicioUso" Title="Início" FormatString="{0:dd/MM/yyyy}" Width="30px" />
-                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataFimUso" Title="Fim" FormatString="{0:dd/MM/yyyy}" Width="30px" />
+                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataInicioUso" Title="Início" FormatString="{0:dd/MM/yyyy}" Width="60px" />
+                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataFimUso" Title="Fim" FormatString="{0:dd/MM/yyyy}" Width="60px" />
 @*                     <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataHoraCadastro" Title="Data Cadastro" FormatString="{0:dd/MM/yyyy}" />
                     <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="UsuarioCadastro" Title="Cadastrado por" /> *@
                     <RadzenDataGridColumn TItem="ObraEquipamentoDto" Title="" Width="30px">
