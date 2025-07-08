@@ -8,6 +8,9 @@ namespace ByTescaro.ConstrutorApp.UI.Services
         private readonly HttpClient _http;
         public ObraPendenciaApiService(HttpClient http) => _http = http;
 
+        public async Task<List<ObraPendenciaDto>> GetByObraIdAsync(long obraId) =>
+           await _http.GetFromJsonAsync<List<ObraPendenciaDto>>($"api/obrapendencia/{obraId}") ?? new();
+
         public async Task<List<ObraPendenciaDto>> GetAllAsync() =>
             await _http.GetFromJsonAsync<List<ObraPendenciaDto>>("api/obrapendencia") ?? new();
 

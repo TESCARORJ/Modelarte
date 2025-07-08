@@ -76,9 +76,26 @@
 
 @code {
     [Parameter] public ObraDto Obra { get; set; } = new();
+    private bool isLoading = true;
+
 
     private List<FuncionarioDto> Funcionarios = new();
     private List<EnumOption<StatusRetrabalho>> statusList = EnumHelper.ListarOpcoes<StatusRetrabalho>(incluirNulo: true);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Garante que o Obra.Id seja válido antes de buscar os dados
+        if (Obra != null && Obra.Id > 0)
+        {
+            isLoading = true;
+
+            // Chama o serviço para carregar o checklist associado a esta obra
+            Obra.Retrabalhos = await ObraRetrabalhoApiService.GetByObraIdAsync(Obra.Id);
+
+            isLoading = false;
+        }
+    }
+
 
     protected override async Task OnInitializedAsync()
     {

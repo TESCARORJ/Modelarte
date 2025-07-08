@@ -8,6 +8,9 @@ namespace ByTescaro.ConstrutorApp.UI.Services
         private readonly HttpClient _http;
         public ObraRetrabalhoApiService(HttpClient http) => _http = http;
 
+
+        public async Task<List<ObraRetrabalhoDto>> GetByObraIdAsync(long obraId) =>
+           await _http.GetFromJsonAsync<List<ObraRetrabalhoDto>>($"api/obraretrabalho/{obraId}") ?? new();
         public async Task<List<ObraRetrabalhoDto>> GetAllAsync() =>
             await _http.GetFromJsonAsync<List<ObraRetrabalhoDto>>("api/obraretrabalho") ?? new();
 
@@ -16,7 +19,7 @@ namespace ByTescaro.ConstrutorApp.UI.Services
 
 
         public async Task CreateAsync(ObraRetrabalhoDto dto) =>
-            await _http.PostAsJsonAsync("api/obraretrabalho", dto);
+            await _http.PostAsJsonAsync("api/ObraRetrabalho", dto);
 
         public async Task UpdateAsync(ObraRetrabalhoDto dto) =>
             await _http.PutAsJsonAsync($"api/obraretrabalho/{dto.Id}", dto);

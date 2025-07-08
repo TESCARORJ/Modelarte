@@ -11,19 +11,20 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 {
     public class ObraPendenciaService : IObraPendenciaService
     {
-        private readonly IObraPendenciaRepository _repo;
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogAuditoriaRepository _logRepo;
+        private readonly IUnitOfWork _unitOfWork;
 
 
 
-        public ObraPendenciaService(IObraPendenciaRepository repo, IMapper mapper, IHttpContextAccessor httpContextAccessor, ILogAuditoriaRepository logRepo)
+
+        public ObraPendenciaService(IMapper mapper, IHttpContextAccessor httpContextAccessor, ILogAuditoriaRepository logRepo, IUnitOfWork unitOfWork)
         {
-            _repo = repo;
             _mapper = mapper;
             _httpContextAccessor = httpContextAccessor;
             _logRepo = logRepo;
+            _unitOfWork = unitOfWork;
         }
 
         private string UsuarioLogado => _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
@@ -31,7 +32,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task<List<ObraPendenciaDto>> ObterPorObraIdAsync(long obraId)
         {
-            var list = await _repo.GetByObraIdAsync(obraId);
+            var list = await _unitOfWork.ObraPendenciaRepository.GetByObraIdAsync(obraId);
             return _mapper.Map<List<ObraPendenciaDto>>(list);
         }
 
@@ -41,7 +42,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entity.DataHoraCadastro = DateTime.Now;
             entity.UsuarioCadastro = UsuarioLogado;
 
-            _repo.Add(entity);
+            _unitOfWork.ObraPendenciaRepository.Add(entity);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
@@ -51,18 +52,21 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 Descricao = $"Pendência '{entity.Descricao}' criado",
                 DadosAtuais = JsonSerializer.Serialize(entity)
             });
+
+            await _unitOfWork.CommitAsync();
+
         }
 
         public async Task AtualizarAsync(ObraPendenciaDto dto)
         {
-            var entityAntigo = await _repo.GetByIdAsync(dto.Id);
+            var entityAntigo = await _unitOfWork.ObraPendenciaRepository.GetByIdAsync(dto.Id);
             if (entityAntigo == null) return;
 
             var entityNovo = _mapper.Map<ObraPendencia>(dto);
             entityNovo.UsuarioCadastro = entityAntigo.UsuarioCadastro;
             entityNovo.DataHoraCadastro = entityAntigo.DataHoraCadastro;
 
-            _repo.Remove(entityNovo);
+            _unitOfWork.ObraPendenciaRepository.Remove(entityNovo);
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
@@ -73,13 +77,19 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 DadosAnteriores = JsonSerializer.Serialize(entityAntigo),
                 DadosAtuais = JsonSerializer.Serialize(entityNovo)
             });
+
+            await _unitOfWork.CommitAsync();
+
         }
 
         public async Task RemoverAsync(long id)
         {
-            var entity = await _repo.GetByIdAsync(id);
+            var entity = await _unitOfWork.ObraPendenciaRepository.GetByIdAsync(id);
             if (entity != null)
-                _repo.Remove(entity);
+                _unitOfWork.ObraPendenciaRepository.Remove(entity);
+
+            await _unitOfWork.CommitAsync();
+
         }
     }
 }

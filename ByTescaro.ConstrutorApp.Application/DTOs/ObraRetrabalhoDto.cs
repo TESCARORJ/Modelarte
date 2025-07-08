@@ -11,13 +11,10 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
     {
         public long Id { get; set; }
         public long ObraId { get; set; }
-        public string Titulo { get; set; } = string.Empty;
         public string Descricao { get; set; } = string.Empty;
         public StatusRetrabalho Status { get; set; }
         public long ResponsavelId { get; set; }
-        public string NomeResponsavel { get; set; } = default!;
-        public DateTime? DataInicio { get; set; }
-        public DateTime? DataConclusao { get; set; }
+        public string NomeResponsavel { get; set; } = string.Empty;
         public DateTime DataHoraCadastro { get; set; }
         public string UsuarioCadastro { get; set; } = string.Empty;
     }
