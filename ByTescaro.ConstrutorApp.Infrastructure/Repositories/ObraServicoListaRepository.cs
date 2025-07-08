@@ -14,12 +14,14 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 
         public async Task<ObraServicoLista?> GetByIdWithItensAsync(long id)
         {
-            return await _dbSet 
-                .Include(l => l.Responsavel)
-                .Include(l => l.Itens)
-                    .ThenInclude(i => i.Servico)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(l => l.Id == id);
+            return await _dbSet
+            .Where(lista => lista.Id == id)
+            // Inclui a entidade relacionada "Responsavel"
+            .Include(lista => lista.Responsavel)
+            // Inclui a coleção de "Itens" e, para cada item, inclui a entidade "Servico"
+            .Include(lista => lista.Itens)
+                .ThenInclude(item => item.Servico)
+            .FirstOrDefaultAsync();
         }
 
         public async Task<List<ObraServicoLista>> GetByObraIdAsync(long obraId)

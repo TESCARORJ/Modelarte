@@ -57,8 +57,6 @@
     [Parameter] public ObraDto Obra { get; set; } = new();
     private List<ObraFuncionarioDto> ResponsaveisDisponiveis = new();
     private long? ResponsavelSelecionadoId;
-
-    // Adicione um parâmetro para o Id da Obra para poder recarregá-la
     [Parameter] public long ObraId { get; set; }
 
     protected override async Task OnInitializedAsync()

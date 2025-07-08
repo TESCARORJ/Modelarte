@@ -1,4 +1,5 @@
 ﻿using ByTescaro.ConstrutorApp.Application.DTOs;
+using ByTescaro.ConstrutorApp.Domain.Entities;
 
 namespace ByTescaro.ConstrutorApp.Application.Interfaces
 {
@@ -9,5 +10,6 @@ namespace ByTescaro.ConstrutorApp.Application.Interfaces
         Task<ObraServicoListaDto> CriarAsync(ObraServicoListaDto dto);
         Task AtualizarAsync(ObraServicoListaDto dto);
         Task RemoverAsync(long id);
+
     }
 }

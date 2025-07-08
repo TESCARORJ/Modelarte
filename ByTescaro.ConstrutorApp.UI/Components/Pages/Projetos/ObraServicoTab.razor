@@ -1,19 +1,20 @@
 ﻿@using ByTescaro.ConstrutorApp.Application.DTOs
 @using ByTescaro.ConstrutorApp.UI.Services
 @inject NotificationService NotificationService
+@inject ObraApiService ObraApiService
 
 <RadzenMediaQuery Query="(max-width: 768px)" Change="OnMediaChanged" />
 
 <RadzenCard Class="rz-p-4">
-    <RadzenHeading Size="H6" Text="Listas de Serviços da Obra" />
+    <RadzenHeading Size="H6" Text="Listas de Servicos da Obra" />
 
     <RadzenRow Class="rz-mb-2 rz-align-items-end" Style="gap: 0.5rem;">
         <RadzenColumn Size="12" SizeMD="6">
             <RadzenDropDown Data="@ResponsaveisDisponiveis"
-                            TextProperty="FornecedorNome"
-                            ValueProperty="FornecedorId"
+                            TextProperty="FuncionarioNome"
+                            ValueProperty="FuncionarioId"
                             @bind-Value="ResponsavelSelecionadoId"
-                            Placeholder="Selecionar Fornecedor"
+                            Placeholder="Selecionar Responsável"
                             Style="width: 100%;" />
         </RadzenColumn>
 
@@ -32,16 +33,17 @@
                 foreach (var lista in Obra.ListasServico)
                 {
                     <RadzenAccordionItem Text="@($"{lista.NomeResponsavel} - Id: {lista.Id}")" Icon="list_alt">
+                        @* Adicionar um EventCallback para recarregar a Obra quando uma lista for salva/excluída *@
                         <ObraServicoListaEditor Lista="lista"
                                                Obra="Obra"
-                                               OnChanged="StateHasChanged" />
+                                               OnListChanged="LoadObraData" /> @* Renomeado para clareza e ação específica *@
                     </RadzenAccordionItem>
                 }
             }
             else
             {
                 <RadzenAccordionItem Text="Nenhuma lista cadastrada" Icon="info" Disabled="true">
-                    <p style="padding: 1rem;">Nenhuma lista de serviços foi adicionada a esta obra.</p>
+                    <p style="padding: 1rem;">Nenhuma lista de servicos foi adicionada a esta obra.</p>
                 </RadzenAccordionItem>
             }
         </Items>
@@ -53,13 +55,33 @@
     private void OnMediaChanged(bool matches) => isMobile = matches;
 
     [Parameter] public ObraDto Obra { get; set; } = new();
-    private List<ObraFornecedorDto> ResponsaveisDisponiveis = new();
+    private List<ObraFuncionarioDto> ResponsaveisDisponiveis = new();
     private long? ResponsavelSelecionadoId;
+    [Parameter] public long ObraId { get; set; }
 
-    protected override Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
-        ResponsaveisDisponiveis = Obra.Fornecedores ?? new();
-        return Task.CompletedTask;
+        // Ao inicializar, recarregue os dados completos da obra
+        await LoadObraData();
+    }
+
+    private async Task LoadObraData()
+    {
+        if (Obra.Id > 0)
+        {
+            var obraCarregada = await ObraApiService.GetByIdAsync(Obra.Id);
+            if (obraCarregada != null)
+            {
+                Obra = obraCarregada; // Atualiza a instância da Obra com os dados mais recentes do servidor
+                ResponsaveisDisponiveis = obraCarregada.Funcionarios;
+
+                StateHasChanged(); // Força a renderização do componente
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Erro", "Não foi possível carregar os dados da obra.");
+            }
+        }
     }
 
     private Task NovaLista()
@@ -70,8 +92,8 @@
             return Task.CompletedTask;
         }
 
-        var fornecedor = Obra.Fornecedores.FirstOrDefault(f => f.FornecedorId == ResponsavelSelecionadoId);
-        if (fornecedor == null)
+        var funcionario = Obra.Funcionarios.FirstOrDefault(f => f.FuncionarioId == ResponsavelSelecionadoId);
+        if (funcionario == null)
         {
             NotificationService.Notify(NotificationSeverity.Error, "Erro", "Funcionário não encontrado.");
             return Task.CompletedTask;
@@ -80,8 +102,8 @@
         var nova = new ObraServicoListaDto
             {
                 ObraId = Obra.Id,
-                ResponsavelId = fornecedor.FornecedorId,
-                NomeResponsavel = fornecedor.FornecedorNome,
+                ResponsavelId = funcionario.FuncionarioId,
+                NomeResponsavel = funcionario.FuncionarioNome,
                 Data = DateOnly.FromDateTime(DateTime.Today),
                 Itens = new()
             };

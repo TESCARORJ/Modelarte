@@ -9,71 +9,91 @@
 @inject DialogService DialogService
 
 <RadzenCard Style="padding: 1rem; margin-bottom: 1rem">
-    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" Style="margin-bottom: 1rem;">
-        <div>
-            <RadzenLabel Text="Data de Envio" />
-            <RadzenDatePicker @bind-Value="Lista.Data" Style="width: 200px;" />
-        </div>
+    <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="1rem" Class="rz-mb-4">
+        <RadzenColumn Size="12" SizeMD="6" Class="rz-mb-2 rz-mb-md-0">
+            <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem">
+                <RadzenLabel Text="Data de Envio" />
+                <RadzenDatePicker @bind-Value="Lista.Data" Style="width: 100%;" DateFormat="dd/MM/yyyy" />
+            </RadzenStack>
+        </RadzenColumn>
 
-        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
-            <RadzenButton Icon="save"
-                          Text="Salvar Alterações"
-                          ButtonStyle="ButtonStyle.Primary"
-                          Size="ButtonSize.Small"
-                          Click="SalvarLista" />
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" JustifyContent="JustifyContent.End" Wrap="FlexWrap.Wrap">
+                <RadzenButton Icon="save"
+                              Text="Salvar Alterações"
+                              ButtonStyle="ButtonStyle.Primary"
+                              Size="ButtonSize.Small"
+                              Click="SalvarLista" />
 
-            <RadzenButton Icon="delete"
-                          Text="Excluir Lista"
-                          ButtonStyle="ButtonStyle.Danger"
-                          Size="ButtonSize.Small"
-                          Click="ConfirmarRemocaoLista" />
-        </RadzenStack>
+                <RadzenButton Icon="delete"
+                              Text="Excluir Lista"
+                              ButtonStyle="ButtonStyle.Danger"
+                              Size="ButtonSize.Small"
+                              Click="ConfirmarRemocaoLista" />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow Gap="1rem" Class="rz-mb-2">
+        <RadzenColumn Size="12" SizeLG="10">
+            <RadzenDropDown Data="@ServicosDisponiveis"
+                            TextProperty="Nome"
+                            ValueProperty="Id"
+                            Multiple="true"
+                            @bind-Value="_servicosSelecionados"
+                            Placeholder="Servicos Disponíveis"
+                            Style="width: 100%;" />
+        </RadzenColumn>
+
+
+        <RadzenColumn Size="12" SizeLG="2">
+            <RadzenNumeric @bind-Value="QuantidadeSelecionada"
+                           TValue="decimal"
+                           Style="width: 100%;"
+                           Min="0.1m"
+                           Step="1"
+                           Placeholder="Qtd."
+                           ShowUpDown="true" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenStack JustifyContent="JustifyContent.Start" Class="rz-mb-4">
+        <RadzenButton Text="Atualizar Itens da Lista"
+                      Icon="sync"
+                      Disabled="@(!_servicosSelecionados.Any() && !_servicosRelacionadosSelecionados.Any())"
+                      Click="@AdicionarServicos" />
     </RadzenStack>
 
-    <!-- Input de Servicos -->
-    <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Style="margin-bottom: 1rem;">
-        <RadzenDropDown Data="@ServicosDisponiveis"
-                        TextProperty="Nome"
-                        ValueProperty="Id"
-                        Multiple="true"
-                        @bind-Value="_servicosSelecionados"
-                        Placeholder="Selecionar Servicos"
-                        Style="width: 100%;" />
-
-        <RadzenNumeric @bind-Value="QuantidadeSelecionada"
-                       TValue="decimal"
-                       Style="width: 120px;"
-                       Min="0.1m"
-                       Step="1"
-                       Placeholder="Qtd."
-                       ShowUpDown="true" />
-    </RadzenStack>
-
-    <RadzenButton Text="Adicionar Selecionados" Icon="add_circle_outline"
-                  Disabled="@(!_servicosSelecionados.Any())"
-                  Click="@AdicionarServicos" />
-
-    <!-- Grid -->
-    <RadzenDataGrid TItem="ObraServicoDto" Data="@Lista.Itens" ShowPagingSummary="false" AllowPaging="false" llowColumnResize="true" AllowSorting="true" PagerHorizontalAlign="HorizontalAlign.Left" ColumnWidth="300px"
-                    Editable="true" EditMode="DataGridEditMode.Single" AutoGenerateColumns="false" Class="rz-mt-2">
+    <RadzenDataGrid TItem="ObraServicoDto" Data="@Lista.Itens"
+                    Responsive="true"
+                    ShowPagingSummary="false" AllowPaging="false" AllowColumnResize="true"
+                    AllowSorting="true" PagerHorizontalAlign="HorizontalAlign.Left"
+                    ColumnWidth="200px"
+                    Editable="true" EditMode="DataGridEditMode.Single"
+                    AutoGenerateColumns="false" Class="rz-mt-2">
         <Columns>
             <RadzenDataGridColumn TItem="ObraServicoDto" Property="ServicoNome" Title="Servico" />
+
             <RadzenDataGridColumn TItem="ObraServicoDto" Property="Quantidade" Title="Quantidade">
                 <EditTemplate Context="item">
                     <RadzenNumeric TValue="decimal" @bind-Value="item.Quantidade" Style="width:100%;" />
                 </EditTemplate>
             </RadzenDataGridColumn>
-           
-@*             <RadzenDataGridColumn TItem="ObraServicoDto" Property="DataHoraCadastro" Title="Data Cadastro" FormatString="{0:dd/MM/yyyy}" />
-            <RadzenDataGridColumn TItem="ObraServicoDto" Property="UsuarioCadastro" Title="Cadastrador por" /> *@
 
-            <RadzenDataGridColumn TItem="ObraServicoDto" Title="">
+
+            <RadzenDataGridColumn TItem="ObraServicoDto" Title="" Width="60px" Sortable="false" TextAlign="TextAlign.Center">
                 <Template Context="item">
                     <RadzenButton Icon="delete"
                                   ButtonStyle="ButtonStyle.Danger"
                                   Size="ButtonSize.Small"
                                   Click="@(() => ConfirmarRemocaoItem(item))" />
                 </Template>
+                <EditTemplate Context="item">
+                    <RadzenButton Icon="delete"
+                                  ButtonStyle="ButtonStyle.Danger"
+                                  Size="ButtonSize.Small"
+                                  Click="@(() => ConfirmarRemocaoItem(item))" />
+                </EditTemplate>
             </RadzenDataGridColumn>
         </Columns>
     </RadzenDataGrid>
@@ -82,16 +102,51 @@
 @code {
     [Parameter] public ObraServicoListaDto? Lista { get; set; }
     [Parameter] public ObraDto Obra { get; set; } = new();
-    [Parameter] public EventCallback OnChanged { get; set; }
+
+    // Renomeado para melhor clareza. Indica que uma mudança na lista ocorreu.
+    [Parameter] public EventCallback OnListChanged { get; set; }
 
     private List<ServicoDto> ServicosDisponiveis = new();
+    private List<ServicoDto> ServicosRelacionadosEtapa = new();
+
     private List<long> _servicosSelecionados = new();
+    private List<long> _servicosRelacionadosSelecionados = new();
+
     private decimal QuantidadeSelecionada { get; set; } = 1;
+
+    private List<ObraServicoDto> _servicosOriginais = new();
+    private List<long> _servicosRemovidos = new();
 
     protected override async Task OnInitializedAsync()
     {
+        // Se Lista for nula, inicialize-a para evitar NullReferenceException
+        Lista ??= new ObraServicoListaDto
+            {
+                ObraId = Obra.Id,
+                Data = DateOnly.FromDateTime(DateTime.Today),
+                Itens = new List<ObraServicoDto>()
+            };
+
+        await LoadServicosData();
+
+        if (Lista.Itens != null)
+        {
+            _servicosOriginais = Lista.Itens.Select(i => new ObraServicoDto
+                {
+                    Id = i.Id,
+                    ObraServicoListaId = i.ObraServicoListaId,
+                    ServicoId = i.ServicoId,
+                    ServicoNome = i.ServicoNome,
+                    Quantidade = i.Quantidade
+                }).ToList();
+        }
+    }
+
+    private async Task LoadServicosData()
+    {
         ServicosDisponiveis = await ServicoService.GetServicosDisponiveisAsync(Obra.Id);
-        Lista ??= new ObraServicoListaDto { ObraId = Obra.Id, Data = DateOnly.FromDateTime(DateTime.Today) };
+
+        
     }
 
     private async Task SalvarLista()
@@ -109,21 +164,26 @@
                 var novaLista = await ListaService.CreateAsync(Lista);
                 if (novaLista is not null)
                 {
-                    var index = Obra.ListasServico.FindIndex(l => l == Lista);
-                    if (index >= 0)
-                        Obra.ListasServico[index] = novaLista;
-
-                    Lista = novaLista; // Atualiza com novos IDs
+                    // A substituição da lista no Obra.ListasServico deve ser feita no componente pai
+                    // ou o pai deve recarregar a Obra completa.
+                    Lista = novaLista; // Atualiza a instância local do Lista
+                    NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Nova lista de servicos criada com sucesso.");
+                }
+                else
+                {
+                    NotificationService.Notify(NotificationSeverity.Error, "Erro", "Falha ao criar nova lista.");
+                    return;
                 }
             }
             else
             {
                 await ListaService.UpdateAsync(Lista);
+                NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Lista de servicos atualizada com sucesso.");
             }
 
-            NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Lista de serviços salva com sucesso.");
-            await OnChanged.InvokeAsync();
-            StateHasChanged();
+            // Notificar o componente pai que uma mudança na lista ocorreu, para que ele recarregue a Obra.
+            await OnListChanged.InvokeAsync();
+            StateHasChanged(); // Renderiza este componente para refletir o ID, se aplicável
         }
         catch (Exception ex)
         {
@@ -131,12 +191,12 @@
         }
     }
 
-
     private async Task ConfirmarRemocaoItem(ObraServicoDto item)
     {
-        bool? confirm = await DialogService.Confirm($"Remover o serviço '{item.ServicoNome}'?", "Confirmação");
+        bool? confirm = await DialogService.Confirm($"Remover o servico '{item.ServicoNome}'?", "Confirmação");
         if (confirm == true)
         {
+            _servicosRemovidos.Add(item.ServicoId);
             Lista!.Itens = Lista.Itens.Where(i => i.ServicoId != item.ServicoId).ToList();
             StateHasChanged();
         }
@@ -148,37 +208,88 @@
         if (confirm == true)
         {
             if (Lista.Id > 0)
+            {
                 await ListaService.DeleteAsync(Lista.Id);
+                NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Lista de servicos excluída com sucesso.");
+            }
+            else
+            {
+                // Se a lista ainda não foi salva (Id == 0), apenas remova-a localmente
+                // (a ação de remover do Obra.ListasServico será feita no pai ao recarregar a Obra)
+            }
 
-            Obra.ListasServico?.Remove(Lista);
-            await OnChanged.InvokeAsync();
+            // Notificar o componente pai para recarregar a Obra após a exclusão da lista.
+            await OnListChanged.InvokeAsync();
         }
     }
 
     private async Task AdicionarServicos()
     {
         Lista!.Itens ??= new();
-        foreach (var id in _servicosSelecionados)
-        {
-            if (Lista.Itens.Any(i => i.ServicoId == id)) continue;
 
-            var servico = ServicosDisponiveis.FirstOrDefault(i => i.Id == id);
-            if (servico is not null)
+        var todosSelecionados = _servicosSelecionados
+          .Concat(_servicosRelacionadosSelecionados)
+          .Distinct()
+          .ToList();
+
+        var baseAtualizada = Lista.Itens
+          .Where(i => !_servicosRemovidos.Contains(i.ServicoId)) // Considera itens já removidos
+          .ToList();
+
+        foreach (var id in todosSelecionados)
+        {
+            if (!baseAtualizada.Any(i => i.ServicoId == id))
             {
-                Lista.Itens.Add(new ObraServicoDto
-                    {
-                        ObraServicoListaId = Lista.Id,
-                        ServicoId = servico.Id,
-                        ServicoNome = servico.Nome,
-                        Quantidade = QuantidadeSelecionada
-                    });
+                var servico = ServicosDisponiveis.Concat(ServicosRelacionadosEtapa)
+                  .FirstOrDefault(i => i.Id == id);
+
+                if (servico is not null)
+                {
+                    baseAtualizada.Add(new ObraServicoDto
+                        {
+                            ObraServicoListaId = Lista.Id,
+                            ServicoId = servico.Id,
+                            ServicoNome = servico.Nome,
+                            Quantidade = QuantidadeSelecionada
+                        });
+                }
             }
         }
+
+        Lista.Itens = baseAtualizada;
+
+        // Limpa as seleções após adicionar
         _servicosSelecionados.Clear();
+        _servicosRelacionadosSelecionados.Clear();
         QuantidadeSelecionada = 1;
-        Lista.Itens = Lista.Itens.ToList();
+
+        // Se a lista já tem um ID, salva as alterações dos itens imediatamente
+        // Caso contrário, eles serão salvos quando a lista principal for salva
+        if (Lista.Id > 0)
+        {
+            try
+            {
+                await ListaService.UpdateAsync(Lista); // Salva as alterações dos itens
+                NotificationService.Notify(NotificationSeverity.Success, "Atualizado", "Itens adicionados e salvos com sucesso.");
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Erro ao atualizar itens da lista: {ex.Message}");
+            }
+        }
+        else
+        {
+            NotificationService.Notify(NotificationSeverity.Info, "Itens Adicionados", "Itens adicionados à nova lista. Salve a lista para persistir.");
+        }
+
         StateHasChanged();
     }
 
-    
+    private static string ObterNomeUnidade(UnidadeMedida? unidade)
+    {
+        if (unidade is null) return "";
+        var member = unidade.Value.GetType().GetMember(unidade.ToString() ?? "").FirstOrDefault();
+        var display = member?.GetCustomAttribute<DisplayAttribute>();
+        return display?.Name ?? unidade.ToString();
+    }
 }

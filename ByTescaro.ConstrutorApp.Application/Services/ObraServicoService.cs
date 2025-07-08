@@ -9,15 +9,15 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 {
     public class ObraServicoService : IObraServicoService
     {
-        private readonly IObraServicoRepository _repo;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IMapper _mapper;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public ObraServicoService(IObraServicoRepository repo, IMapper mapper, IHttpContextAccessor httpContextAccessor)
+        public ObraServicoService(IMapper mapper, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
         {
-            _repo = repo;
             _mapper = mapper;
             _httpContextAccessor = httpContextAccessor;
+            _unitOfWork = unitOfWork;
         }
 
         private string UsuarioLogado => _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
@@ -25,7 +25,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task<List<ObraServicoDto>> ObterPorListaIdAsync(long listaId)
         {
-            var itens = await _repo.GetByListaIdAsync(listaId);
+            var itens = await _unitOfWork.ObraServicoRepository.GetByListaIdAsync(listaId);
             return _mapper.Map<List<ObraServicoDto>>(itens);
         }
 
@@ -34,28 +34,31 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             dto.DataHoraCadastro = DateTime.Now;
             dto.UsuarioCadastro = UsuarioLogado;
             var entity = _mapper.Map<ObraServico>(dto);
-            _repo.Add(entity);
+            _unitOfWork.ObraServicoRepository.Add(entity);
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task AtualizarAsync(ObraServicoDto dto)
         {
-            var entity = await _repo.GetByIdAsync(dto.Id);
+            var entity = await _unitOfWork.ObraServicoRepository.GetByIdAsync(dto.Id);
             if (entity == null) return;
 
             _mapper.Map(dto, entity);
-            _repo.Remove(entity);
+            _unitOfWork.ObraServicoRepository.Update(entity);
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
         {
-            var entity = await _repo.GetByIdAsync(id);
+            var entity = await _unitOfWork.ObraServicoRepository.GetByIdAsync(id);
             if (entity != null)
-                _repo.Remove(entity);
+                _unitOfWork.ObraServicoRepository.Remove(entity);
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task<List<ServicoDto>> ObterServicosDisponiveisAsync(long obraId)
         {
-            var entidades = await _repo.GetServicosDisponiveisAsync(obraId);
+            var entidades = await _unitOfWork.ObraServicoRepository.GetServicosDisponiveisAsync(obraId);
             return _mapper.Map<List<ServicoDto>>(entidades);
         }
 
