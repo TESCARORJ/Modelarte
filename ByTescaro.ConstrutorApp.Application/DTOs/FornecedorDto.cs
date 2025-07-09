@@ -10,7 +10,8 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
 
         public string CpfCnpj { get; set; }
         public string TelefonePrincipal { get; set; } = string.Empty;
-        public string TelefoneWhatsApp { get; set; } = string.Empty; public string Email { get; set; }
+        public string TelefoneWhatsApp { get; set; } = string.Empty; 
+        public string Email { get; set; }
         public TipoFornecedor? Tipo { get; set; }
 
         public bool Ativo { get; set; }

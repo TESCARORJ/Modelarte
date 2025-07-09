@@ -6,7 +6,8 @@
         public string Nome { get; set; } = string.Empty;
         public string Sobrenome { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
-        public string Telefone { get; set; } = string.Empty;
+        public string TelefonePrincipal { get; set; } = string.Empty;
+        public string TelefoneWhatsApp { get; set; } = string.Empty;
         public bool Ativo { get; set; }
         public string? Senha { get; set; }
         public string? ConfirmarSenha { get; set; }
