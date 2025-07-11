@@ -7,6 +7,7 @@ namespace ByTescaro.ConstrutorApp.Domain.Interfaces
     {
 
         Task<T?> GetByIdAsync(long id);
+        Task<T?> GetByIdTrackingAsync(long id);
         Task<List<T>> GetAllAsync();
         Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate);
         Task<T?> FindOneAsync(Expression<Func<T, bool>> predicate);
@@ -21,6 +22,7 @@ namespace ByTescaro.ConstrutorApp.Domain.Interfaces
         void Add(T entity);
         void Update(T entity);
         void Remove(T entity);
+        void RemoveRange(IEnumerable<T> entities);
     }
 
 }

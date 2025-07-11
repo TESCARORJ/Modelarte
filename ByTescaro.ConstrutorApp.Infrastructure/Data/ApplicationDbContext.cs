@@ -66,6 +66,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     #endregion
 
+    #region COMPROMISSO
+    public DbSet<Evento> Eventos { get; set; }
+    public DbSet<ParticipanteEvento> ParticipantesEvento { get; set; }
+    public DbSet<LembreteEvento> LembretesEvento { get; set; }
+    #endregion
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -105,7 +111,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
               .OnDelete(DeleteBehavior.SetNull); // Se o Endereco for deletado, a FK em Pessoa vira NULL
         }
     }
-    }
 
     public class EnderecoConfiguration : IEntityTypeConfiguration<Endereco>
     {
@@ -121,7 +126,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             builder.Property(e => e.UF).HasMaxLength(2);
             builder.Property(e => e.CEP).HasMaxLength(9);
         }
-    }    
+    }
 
     public class ClienteConfiguration : IEntityTypeConfiguration<Cliente>
     {
@@ -253,8 +258,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         }
     }
 
-
-
     public class PerfilUsuarioConfiguration : IEntityTypeConfiguration<PerfilUsuario>
     {
         public void Configure(EntityTypeBuilder<PerfilUsuario> builder)
@@ -263,8 +266,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             builder.Property(e => e.Nome).IsRequired().HasMaxLength(100);
         }
     }
-   
-
 
     public class FornecedorInsumoConfiguration : IEntityTypeConfiguration<FornecedorInsumo>
     {
@@ -294,7 +295,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         }
     }
 
-   
+
     public class ObraFuncionarioConfiguration : IEntityTypeConfiguration<ObraFuncionario>
     {
         public void Configure(EntityTypeBuilder<ObraFuncionario> builder)
@@ -306,7 +307,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             builder.Property(e => e.DataHoraCadastro).IsRequired();
             builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
 
-            builder.HasOne(e => e.Obra).WithMany(o => o.Funcionarios).HasForeignKey(e => e.ObraId);
+            builder.HasOne(e => e.Obra)
+                .WithMany(o => o.Funcionarios)
+                .HasForeignKey(e => e.ObraId)
+                .OnDelete(DeleteBehavior.Restrict); 
+
+            builder.HasOne(e => e.Funcionario)
+                .WithMany()
+                .HasForeignKey(e => e.FuncionarioId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 
@@ -320,10 +329,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             builder.Property(e => e.DataHoraCadastro).IsRequired();
             builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
 
-            builder.HasOne(e => e.Obra).WithMany(o => o.Fornecedores).HasForeignKey(e => e.ObraId);
+            builder.HasOne(e => e.Obra)
+                .WithMany(o => o.Fornecedores)
+                .HasForeignKey(e => e.ObraId)
+                .OnDelete(DeleteBehavior.Restrict); 
+
+            builder.HasOne(e => e.Fornecedor)
+                .WithMany()
+                .HasForeignKey(e => e.FornecedorId);
         }
     }
-
     public class ObraEquipamentoConfiguration : IEntityTypeConfiguration<ObraEquipamento>
     {
         public void Configure(EntityTypeBuilder<ObraEquipamento> builder)
@@ -525,6 +540,58 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         }
     }
 
+    public class EventoConfiguration : IEntityTypeConfiguration<Evento>
+    {
+        public void Configure(EntityTypeBuilder<Evento> builder)
+        {
+            builder.HasKey(e => e.Id);
 
+            builder.HasOne(e => e.Criador)
+                .WithMany()
+                .HasForeignKey(e => e.CriadorId);
+
+            builder.Property(e => e.Titulo).HasMaxLength(200);
+            builder.Property(e => e.Descricao).HasMaxLength(2000);
+
+        }
+    }
+
+    public class ParticipanteEventoConfiguration : IEntityTypeConfiguration<ParticipanteEvento>
+    {
+        public void Configure(EntityTypeBuilder<ParticipanteEvento> builder)
+        {
+            builder.HasKey(pe => pe.Id);
+
+            builder.HasOne(pe => pe.Evento)
+                .WithMany(e => e.Participantes)
+                .HasForeignKey(pe => pe.EventoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(pe => pe.Usuario)
+                .WithMany()
+                .HasForeignKey(pe => pe.UsuarioId)
+                .OnDelete(DeleteBehavior.Restrict); 
+
+            builder.Property(pe => pe.StatusParticipacao).IsRequired(false);
+            builder.Property(pe => pe.DataHoraCadastro).IsRequired();
+            builder.Property(pe => pe.UsuarioCadastro).HasMaxLength(100);
+        }
+    }
+
+    public class LembreteEventoConfiguration : IEntityTypeConfiguration<LembreteEvento>
+    {
+        public void Configure(EntityTypeBuilder<LembreteEvento> builder)
+        {
+            builder.HasKey(le => le.Id);
+
+            builder.HasOne(le => le.Evento)
+                .WithMany(e => e.Lembretes)
+                .HasForeignKey(le => le.EventoId);
+
+
+        }
+    }
 
     #endregion
+
+}

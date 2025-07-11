@@ -1,0 +1,28 @@
+﻿@page "/agenda"
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Interfaces
+@inject IAgendaService AgendaService
+@inject IUsuarioLogadoService UsuarioLogadoService
+@inject NavigationManager NavigationManager
+
+// Usar o componente RadzenScheduler
+<RadzenScheduler Data="@eventos" TItem="EventoDto" ...>
+    // Configurar as views (Day, Week, Month) e templates
+</RadzenScheduler>
+
+@code {
+    private IEnumerable<EventoDto> eventos;
+    private long usuarioLogadoId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var usuario = await UsuarioLogadoService.ObterUsuarioAtualAsync();
+        if (usuario != null)
+        {
+            usuarioLogadoId = usuario.Id;
+            eventos = await AgendaService.ObterEventosDoUsuarioAsync(usuarioLogadoId);
+        }
+    }
+
+    // Métodos para lidar com clique em slot vazio (criar evento) ou em evento existente (editar/detalhes)
+}

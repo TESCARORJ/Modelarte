@@ -1,0 +1,235 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Interfaces
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Radzen
+@using Radzen.Blazor
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Forms
+@using ByTescaro.ConstrutorApp.Application.Utils
+
+@inject IAgendaService AgendaService
+@inject UsuarioApiService UsuarioApiService
+@inject IUsuarioLogadoService UsuarioLogadoService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<RadzenStack Orientation="Orientation.Vertical" Gap="1rem" Style="padding: 1rem;">
+    <RadzenText Text="Criar Novo Evento" TextStyle="TextStyle.H5" />
+    @if (editContext != null)
+    {
+        <EditForm EditContext="@editContext" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <RadzenFieldset Text="Detalhes do Evento">
+                <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem">
+                    <RadzenRow AlignItems="AlignItems.Center">
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Título: *" Component="Titulo" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenTextBox @bind-Value="eventoRequest.Titulo" Style="width:100%;" Name="Titulo" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow AlignItems="AlignItems.Center">
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Descrição: *" Component="Descricao" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenTextArea @bind-Value="eventoRequest.Descricao" Style="width:100%;" Name="Descricao" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow AlignItems="AlignItems.Center">
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Início: *" Component="DataHoraInicio" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenDatePicker @bind-Value="eventoRequest.DataHoraInicio" ShowTime="true" DateFormat="dd/MM/yyyy HH:mm"
+                                              Style="width:100%;" Name="DataHoraInicio" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow AlignItems="AlignItems.Center">
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Término: *" Component="DataHoraFim" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenDatePicker @bind-Value="eventoRequest.DataHoraFim" ShowTime="true" DateFormat="dd/MM/yyyy HH:mm"
+                                              Style="width:100%;" Name="DataHoraFim" />
+                            
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow AlignItems="AlignItems.Center">
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Visibilidade:" Component="Visibilidade" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenDropDown @bind-Value="eventoRequest.Visibilidade" Data="@VisibilidadeList"
+                                            TextProperty="Label" ValueProperty="Value"
+                                            Style="width:100%;" Name="Visibilidade" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenStack>
+            </RadzenFieldset>
+
+            <RadzenFieldset Text="Participantes (Convidados)" Class="rz-mt-3">
+                <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem">
+                    <RadzenRow AlignItems="AlignItems.Center">
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Selecionar Usuários:" Component="Participantes" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenDropDown @bind-Value="eventoRequest.IdsParticipantesConvidados" Data="@usuariosDisponiveis"
+                                            TextProperty="Nome" ValueProperty="Id" Multiple="true"
+                                            AllowClear="true" Style="width:100%;" Name="Participantes">
+                                <Template Context="userContext">
+                                    <div>
+                                        <strong>@userContext.Nome</strong> - @userContext.TelefoneWhatsApp
+                                    </div>
+                                </Template>
+                            </RadzenDropDown>
+
+                            @if (usuariosDisponiveis != null && !usuariosDisponiveis.Any())
+                            {
+                                <RadzenText Text="Nenhum usuário disponível para convite (após filtro)." TextStyle="TextStyle.Caption" Class="rz-color-info rz-mt-2" />
+                            }
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenStack>
+            </RadzenFieldset>
+
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem" Class="rz-mt-3">
+                <RadzenButton ButtonType="ButtonType.Submit" Text="Criar Evento" Icon="add" Variant="Variant.Flat" />
+                <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancelar" Click="@OnCancel" Variant="Variant.Flat" />
+            </RadzenStack>
+        </EditForm>
+    }
+    else
+    {
+        <RadzenText Text="Carregando formulário..." TextStyle="TextStyle.Body1" />
+    }
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public CriarEventoRequest EventoInicial { get; set; }
+
+    private CriarEventoRequest eventoRequest;
+    private EditContext? editContext;
+    private IEnumerable<UsuarioDto> usuariosDisponiveis = new List<UsuarioDto>();
+    private long usuarioLogadoId;
+    private List<EnumOption<Visibilidade>> VisibilidadeList = EnumHelper.ListarOpcoes<Visibilidade>(incluirNulo: false); // Removido 'incluirNulo: true'
+
+    protected override async Task OnInitializedAsync()
+    {
+        eventoRequest = EventoInicial ?? new CriarEventoRequest();
+
+        // Garante que as propriedades não sejam nulas
+        eventoRequest.Titulo ??= string.Empty;
+        eventoRequest.Descricao ??= string.Empty;
+        eventoRequest.IdsParticipantesConvidados ??= new List<long>();
+        eventoRequest.Visibilidade = Visibilidade.Publico; // Define Visibilidade como Pública por padrão
+
+        editContext = new EditContext(eventoRequest);
+
+        var usuario = await UsuarioLogadoService.ObterUsuarioAtualAsync();
+        if (usuario != null)
+        {
+            usuarioLogadoId = usuario.Id;
+            try
+            {
+                var allUsers = await UsuarioApiService.GetAllAsync();
+                usuariosDisponiveis = allUsers?.Where(u => u.Id != usuarioLogadoId).ToList() ?? new List<UsuarioDto>();
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro ao carregar usuários", Detail = $"Não foi possível carregar a lista de usuários: {ex.Message}" });
+                usuariosDisponiveis = new List<UsuarioDto>();
+            }
+        }
+        else
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = "Usuário não autenticado." });
+            DialogService.Close(false);
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var validationErrors = ValidateForm(eventoRequest);
+
+        if (validationErrors.Any())
+        {
+            // Adiciona os erros de validação ao ValidationSummary e notifica o usuário
+            foreach (var error in validationErrors)
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro de Validação", Detail = error });
+            }
+            return; // Impede a submissão se houver erros de validação
+        }
+
+        try
+        {
+            await AgendaService.CriarEventoAsync(eventoRequest, usuarioLogadoId);
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Evento criado com sucesso!" });
+            DialogService.Close(true);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro ao criar evento", Detail = ex.Message });
+            DialogService.Close(false);
+        }
+    }
+
+    private List<string> ValidateForm(CriarEventoRequest model)
+    {
+        var errors = new List<string>();
+
+        // Validação de Título
+        if (string.IsNullOrWhiteSpace(model.Titulo))
+        {
+            errors.Add("Título é obrigatório.");
+        }
+        // Exemplo: Validação de tamanho mínimo/máximo, se necessário
+        // if (model.Titulo?.Length < 3 || model.Titulo?.Length > 100)
+        // {
+        //     errors.Add("Título deve ter entre 3 e 100 caracteres.");
+        // }
+
+        // Validação de Descrição (opcional, se for um campo que pode ser vazio)
+        // if (string.IsNullOrWhiteSpace(model.Descricao))
+        // {
+        //     errors.Add("Descrição é obrigatória.");
+        // }
+
+        // Validação de DataHoraInicio
+        if (model.DataHoraInicio == default(DateTime)) // Verifica se a data é o valor padrão (não foi selecionada)
+        {
+            errors.Add("Data e Hora de Início são obrigatórias.");
+        }
+
+        // Validação de DataHoraFim
+        if (model.DataHoraFim == default(DateTime))
+        {
+            errors.Add("Data e Hora de Término são obrigatórias.");
+        }
+        else if (model.DataHoraFim <= model.DataHoraInicio)
+        {
+            errors.Add("A data de término deve ser posterior à data de início.");
+        }
+
+        // Validação de Visibilidade (já será Pública por padrão, mas bom ter a validação aqui também)
+        // Se Visibilidade for um enum nullable, você pode verificar `!model.Visibilidade.HasValue`
+        // Mas como estamos definindo como pública por padrão, essa validação se torna menos crítica a menos que
+        // você permita que o usuário altere para um valor nulo.
+        // Já definimos o padrão como Pública, e o DropDown não permite nulo.
+        // A validação do RadzenRequiredValidator no componente já cobre isso se o usuário manipular o HTML.
+
+        return errors;
+    }
+
+    void OnCancel()
+    {
+        DialogService.Close(false);
+    }
+}

@@ -329,7 +329,14 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.FornecedorNome, opt => opt.MapFrom(src => src.Fornecedor.Nome))
             .ReverseMap();
 
+        // ==== Agenda ==== 
 
-
+        CreateMap<Evento, EventoDto>()
+    .ForMember(dest => dest.NomeCriador, opt => opt.MapFrom(src => src.Criador.Nome)); // Exemplo de mapeamento de nome do criador
+        CreateMap<CriarEventoRequest, Evento>();
+        CreateMap<AtualizarEventoRequest, Evento>();
+        CreateMap<ParticipanteEvento, ParticipanteEventoDto>()
+             .ForMember(dest => dest.NomeUsuario, opt => opt.MapFrom(src => src.Usuario.Nome));
+        CreateMap<LembreteEvento, LembreteEventoDto>();
     }
 }

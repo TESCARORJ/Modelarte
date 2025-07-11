@@ -1,30 +1,37 @@
 ﻿using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Application.Mappings;
 using ByTescaro.ConstrutorApp.Application.Services;
-using ByTescaro.ConstrutorApp.Domain.Interfaces.ByTescaro.ConstrutorApp.Domain.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
+using ByTescaro.ConstrutorApp.Domain.Interfaces.ByTescaro.ConstrutorApp.Domain.Interfaces;
 using ByTescaro.ConstrutorApp.Infrastructure.Data;
 using ByTescaro.ConstrutorApp.Infrastructure.Repositories;
+using ByTescaro.ConstrutorApp.Infrastructure.Services;
 using ByTescaro.ConstrutorApp.UI.Authentication;
 using ByTescaro.ConstrutorApp.UI.Components;
 using ByTescaro.ConstrutorApp.UI.Properties;
 using ByTescaro.ConstrutorApp.UI.Services;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
-using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
-using ByTescaro.ConstrutorApp.Infrastructure.Services;
 using Microsoft.Extensions.Options;
+using Radzen;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Adiciona suporte ao Radzen ThemeService
-builder.Services.AddScoped<Radzen.ThemeService>();
-builder.Services.AddScoped<Radzen.DialogService>();
-builder.Services.AddScoped<Radzen.NotificationService>();
-builder.Services.AddScoped<Radzen.TooltipService>();
-builder.Services.AddScoped<Radzen.ContextMenuService>();
+//builder.Services.AddScoped<Radzen.ThemeService>();
+//builder.Services.AddScoped<Radzen.DialogService>();
+//builder.Services.AddScoped<Radzen.NotificationService>();
+//builder.Services.AddScoped<Radzen.TooltipService>();
+//builder.Services.AddScoped<Radzen.ContextMenuService>();
+//builder.Services.AddScoped<Radzen.SchedulerAppointmentMoveEventArgs>();
+//builder.Services.AddScoped<Radzen.SchedulerAppointmentRenderEventArgs>();
+builder.Services.AddScoped<Radzen.SchedulerDaySelectEventArgs>();
+
+builder.Services.AddRadzenComponents();
+
 
 
 // 🔐 Persistência de chaves compartilhada entre subdomínios
@@ -342,6 +349,9 @@ builder.Services.AddScoped<IFornecedorServicoRepository, FornecedorServicoReposi
 builder.Services.AddScoped<IOrcamentoRepository, OrcamentoRepository>();
 builder.Services.AddScoped<IOrcamentoItemRepository, OrcamentoItemRepository>();
 builder.Services.AddScoped<IOrcamentoObraRepository, OrcamentoObraRepository>();
+builder.Services.AddScoped<IEventoRepository, EventoRepository>();
+builder.Services.AddScoped<IParticipanteEventoRepository, ParticipanteEventoRepository>();
+builder.Services.AddScoped<ILembreteEventoRepository, LembreteEventoRepository>();
 
 #endregion
 
@@ -388,6 +398,9 @@ builder.Services.AddScoped<IObraServicoListaService, ObraServicoListaService>();
 builder.Services.AddScoped<IOrcamentoService, OrcamentoService>();
 builder.Services.AddScoped<IOrcamentoItemService, OrcamentoItemService>();
 builder.Services.AddScoped<IOrcamentoObraService, OrcamentoObraService>();
+builder.Services.AddScoped<IAgendaService, AgendaService>();
+builder.Services.AddHostedService<LembreteHostedService>();
+
 
 // Configuração do Z-API para notificações via WhatsApp
 builder.Services.AddHttpClient();

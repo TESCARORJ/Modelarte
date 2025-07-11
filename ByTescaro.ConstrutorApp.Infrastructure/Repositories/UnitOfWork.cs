@@ -54,6 +54,10 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         private IOrcamentoItemRepository? _orcamentoItemRepository;
         private IFornecedorInsumoRepository? _fornecedorInsumoRepository;
         private IFornecedorServicoRepository? _fornecedorServicoRepository;
+        private IEventoRepository? _eventoRepository;
+        private IParticipanteEventoRepository? _participanteEventoRepository;
+        private ILembreteEventoRepository? _lembreteEventoRepository;
+
         #endregion
 
 
@@ -93,6 +97,9 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         public IOrcamentoItemRepository OrcamentoItemRepository => _orcamentoItemRepository ??= new OrcamentoItemRepository(_context);
         public IFornecedorInsumoRepository FornecedorInsumoRepository => _fornecedorInsumoRepository ??= new FornecedorInsumoRepository(_context);
         public IFornecedorServicoRepository FornecedorServicoRepository => _fornecedorServicoRepository ??= new FornecedorServicoRepository(_context);
+        public IEventoRepository EventoRepository => _eventoRepository ??= new EventoRepository(_context);
+        public IParticipanteEventoRepository ParticipanteEventoRepository => _participanteEventoRepository ??= new ParticipanteEventoRepository(_context);
+        public ILembreteEventoRepository LembreteEventoRepository => _lembreteEventoRepository ??= new LembreteEventoRepository(_context);
 
         #endregion
 

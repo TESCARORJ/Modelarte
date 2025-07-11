@@ -48,7 +48,28 @@ namespace ByTescaro.ConstrutorApp.UI.Services
             var response = await _http.PutAsJsonAsync($"api/usuario/{dto.Id}", dto);
 
             if (!response.IsSuccessStatusCode)
-                throw new Exception($"Erro ao atualizar usuário: {response.StatusCode}");
+            {
+                string errorMessage = $"Erro ao atualizar usuário: {response.StatusCode}";
+
+                try
+                {
+                    // Tenta ler o conteúdo da resposta se houver um erro,
+                    // que geralmente contém detalhes adicionais da API.
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    if (!string.IsNullOrEmpty(errorContent))
+                    {
+                        errorMessage += $" - Detalhes: {errorContent}";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Em caso de falha ao ler o conteúdo do erro (raro, mas possível),
+                    // registra a exceção para depuração.
+                    Console.WriteLine($"Erro ao ler o conteúdo da resposta de erro: {ex.Message}");
+                }
+
+                throw new Exception(errorMessage);
+            }
         }
 
         public async Task DeleteAsync(long id)
