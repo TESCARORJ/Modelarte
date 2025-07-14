@@ -22,13 +22,7 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
         public Visibilidade Visibilidade { get; set; }
         public List<ParticipanteEventoDto> Participantes { get; set; } = new List<ParticipanteEventoDto>();
         // Adicione outras propriedades se necessário
-    }
-
-   
-
-    
-
-    
+    } 
 
     
 }

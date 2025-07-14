@@ -12,5 +12,7 @@ namespace ByTescaro.ConstrutorApp.Application.Interfaces
         Task ResponderConviteAsync(RespostaConviteRequest request, long usuarioId);
         Task EnviarLembretesProximosEventosAsync();
         Task ProcessarRespostaWebhookZApiAsync(ZApiWebhookMessage receivedMessage);
+        Task<IEnumerable<EventoDto>> GetEventosByDateRangeAsync(DateTime startDate, DateTime endDate);
+
     }
 }

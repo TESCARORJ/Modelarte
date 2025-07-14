@@ -70,6 +70,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Evento> Eventos { get; set; }
     public DbSet<ParticipanteEvento> ParticipantesEvento { get; set; }
     public DbSet<LembreteEvento> LembretesEvento { get; set; }
+    public DbSet<ConfiguracaoLembreteDiario> ConfiguracoesLembreteDiario { get; set; } 
+
     #endregion
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -589,6 +591,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(le => le.EventoId);
 
 
+        }
+    }
+    public class ConfiguracaoLembreteDiarioConfiguration : IEntityTypeConfiguration<ConfiguracaoLembreteDiario>
+    {
+        public void Configure(EntityTypeBuilder<ConfiguracaoLembreteDiario> builder)
+        {
+            builder.HasKey(x => x.Id);
+
+            builder.HasOne(x => x.UsuarioCadastro)
+                .WithMany()
+                .HasForeignKey(x => x.UsuarioCadastroId)
+                .OnDelete(DeleteBehavior.NoAction);
         }
     }
 

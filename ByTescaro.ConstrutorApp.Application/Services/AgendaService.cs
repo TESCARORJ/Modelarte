@@ -476,5 +476,14 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
             return eventoDto;
         }
+
+        public async Task<IEnumerable<EventoDto>> GetEventosByDateRangeAsync(DateTime startDate, DateTime endDate)
+        {
+            // Busca os eventos do repositório, incluindo Participantes e seus Usuários
+            var eventos = await _unitOfWork.EventoRepository.GetEventosWithParticipantesAndUsuariosByDateRangeAsync(startDate, endDate);
+
+            // Mapeia as entidades para DTOs
+            return _mapper.Map<IEnumerable<EventoDto>>(eventos);
+        }
     }
 }

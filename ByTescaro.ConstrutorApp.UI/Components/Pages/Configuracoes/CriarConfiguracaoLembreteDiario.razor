@@ -1,0 +1,98 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Interfaces
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Radzen
+@using Radzen.Blazor
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Forms
+@inject ConfiguracaoLembreteDiarioApiService ConfiguracaoLembreteDiarioApiService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<RadzenStack Orientation="Orientation.Vertical" Gap="1rem" Style="padding: 1rem;">
+    <RadzenText Text="Adicionar Nova Hora de Lembrete" TextStyle="TextStyle.H5" />
+
+    <EditForm Model="@request" OnValidSubmit="@HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <RadzenFieldset Text="Detalhes da Configuração">
+            <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem">
+                <RadzenRow AlignItems="AlignItems.Center">
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenLabel Text="Hora do Dia:" Component="HoraDoDia" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="8">
+                        @* Removido DateFormat="HH:mm" pois RadzenDatePicker com ShowTime=true já usa o formato de tempo padrão. *@
+                        @* Permite valor nulo para o DatePicker para validação de campo obrigatório *@
+                        <RadzenDatePicker @bind-Value="HoraDoDiaBinding" ShowTime="true" TimeOnly="true" DateFormat="HH:mm"
+                                          Style="width:100%;" Name="HoraDoDia" />
+                        @* <RadzenRequiredValidator Component="HoraDoDia" Text="A hora é obrigatória." /> *@
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow AlignItems="AlignItems.Center">
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenLabel Text="Descrição:" Component="Descricao" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="8">
+                        <RadzenTextBox @bind-Value="request.Descricao" Style="width:100%;" Name="Descricao" />
+@*                         <RadzenLengthValidator Component="Descricao" Max="100" Text="Máximo 100 caracteres." />
+ *@                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow AlignItems="AlignItems.Center">
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenLabel Text="Ativo:" Component="Ativo" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="8">
+                        <RadzenSwitch @bind-Value="request.Ativo" Name="Ativo" />
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenStack>
+        </RadzenFieldset>
+
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem" Class="rz-mt-3">
+            <RadzenButton ButtonType="ButtonType.Submit" Text="Salvar" Icon="save" Variant="Variant.Flat" />
+            <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancelar" Click="@OnCancel" Variant="Variant.Flat" />
+        </RadzenStack>
+    </EditForm>
+</RadzenStack>
+
+@code {
+    CriarConfiguracaoLembreteDiarioRequest request = new();
+
+    // Propriedade auxiliar para vincular o TimeSpan a um DateTime? para o RadzenDatePicker
+    // Permite que o campo comece vazio se request.HoraDoDia for TimeSpan.Zero
+    private DateTime? HoraDoDiaBinding
+    {
+        get => request.HoraDoDia == TimeSpan.Zero ? (DateTime?)null : DateTime.Today.Add(request.HoraDoDia);
+        set => request.HoraDoDia = value?.TimeOfDay ?? TimeSpan.Zero; // Define para TimeSpan.Zero se for nulo
+    }
+
+    protected override void OnInitialized()
+    {
+        // Se você NÃO quer um valor inicial e quer que o DatePicker comece vazio, remova a linha abaixo.
+        // A validação de campo obrigatório do RadzenRequiredValidator cuidará disso.
+        // request.HoraDoDia = TimeSpan.FromHours(8); // Exemplo: 08:00 AM
+    }
+
+    async Task HandleValidSubmit()
+    {
+        try
+        {
+            await ConfiguracaoLembreteDiarioApiService.CreateAsync(request);
+            DialogService.Close(true);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro ao criar", Detail = $"Erro: {ex.Message}" });
+            // Não é ideal fechar o diálogo com false aqui se houver um erro,
+            // pois o usuário pode querer corrigir. Mas se é um erro de serviço, ok.
+            // DialogService.Close(false); // Opcional: remover esta linha para manter o diálogo aberto em caso de erro.
+        }
+    }
+
+    void OnCancel()
+    {
+        DialogService.Close(false);
+    }
+}

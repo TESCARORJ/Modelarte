@@ -1,0 +1,146 @@
+﻿@page "/configuracoes/lembretesdiarios"
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Interfaces
+@using ByTescaro.ConstrutorApp.Application.Utils
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Radzen
+@using Radzen.Blazor
+@inject ConfiguracaoLembreteDiarioApiService ConfiguracaoLembreteDiarioApiService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Configurações de Lembretes Diários</PageTitle>
+
+<RadzenCard Class="rz-p-4 rz-mb-6" Variant="Variant.Filled">
+    <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
+        <RadzenText Text="Configurações de Lembretes Diários" TextStyle="TextStyle.H4" />
+        <RadzenText Text="Gerencie os horários em que os lembretes automáticos serão enviados. Lembretes são enviados apenas em dias úteis e não em feriados." Style="margin-bottom: 1rem; color: gray;" /> @* Adicionado mais detalhes sobre a regra de dias **@
+
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
+            <RadzenButton Text="Adicionar Nova Hora" Icon="add_circle_outline" Click="@AdicionarConfiguracao" />
+        </RadzenStack>
+
+        <RadzenDataGrid Data="@Configuracoes" TItem="ConfiguracaoLembreteDiarioDto"
+                        AllowPaging="true" PageSize="10" AllowSorting="true" IsLoading="@isLoading"
+                        EmptyText="Nenhuma configuração de lembrete diário encontrada.">
+            @* Adicionado EmptyText e IsLoading *@
+            <Columns>
+                <RadzenDataGridColumn TItem="ConfiguracaoLembreteDiarioDto" Property="HoraDoDia" Title="Hora" Width="150px">
+                    <Template Context="config">
+                        @config.HoraDoDia.ToString(@"hh\:mm")
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ConfiguracaoLembreteDiarioDto" Property="Descricao" Title="Descrição" />
+                <RadzenDataGridColumn TItem="ConfiguracaoLembreteDiarioDto" Property="UsuarioCadastroNome" Title="Cadastrado Por" Width="180px" /> @* Nova coluna para o nome do usuário cadastrador *@
+                <RadzenDataGridColumn TItem="ConfiguracaoLembreteDiarioDto" Property="Ativo" Title="Ativo" Width="100px" TextAlign="TextAlign.Center">
+                    <Template Context="config">
+                        <RadzenSwitch @bind-Value="config.Ativo" Change="@(args => ToggleAtivo(config.Id, args, config))" /> @* Passa o objeto config para evitar buscar novamente *@
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ConfiguracaoLembreteDiarioDto" Title="Ações" Width="120px" TextAlign="TextAlign.Center" Filterable="false" Sortable="false">
+                    <Template Context="config">
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Size="ButtonSize.ExtraSmall" Click="@(() => EditarConfiguracao(config.Id))" />
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Size="ButtonSize.ExtraSmall" Click="@(() => ExcluirConfiguracao(config.Id))" Class="rz-ml-1" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenStack>
+</RadzenCard>
+
+@code {
+    IEnumerable<ConfiguracaoLembreteDiarioDto> Configuracoes = new List<ConfiguracaoLembreteDiarioDto>();
+    bool isLoading = true; // Para indicar o estado de carregamento da grid
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadConfiguracoes();
+    }
+
+    async Task LoadConfiguracoes()
+    {
+        isLoading = true; // Inicia o carregamento
+        try
+        {
+            Configuracoes = await ConfiguracaoLembreteDiarioApiService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao carregar configurações: {ex.Message}" });
+        }
+        finally
+        {
+            isLoading = false; // Finaliza o carregamento
+        }
+    }
+
+    async Task AdicionarConfiguracao()
+    {
+        var result = await DialogService.OpenAsync<CriarConfiguracaoLembreteDiario>("Adicionar Hora de Lembrete", null,
+            new DialogOptions { Width = "500px", Resizable = true, Draggable = true });
+
+        if (result == true) // Se a configuração foi criada com sucesso
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Hora de lembrete adicionada com sucesso!" });
+            await LoadConfiguracoes();
+        }
+    }
+
+    async Task EditarConfiguracao(long id)
+    {
+        var result = await DialogService.OpenAsync<EditarConfiguracaoLembreteDiario>("Editar Hora de Lembrete",
+            new Dictionary<string, object> { { "ConfiguracaoId", id } },
+            new DialogOptions { Width = "500px", Resizable = true, Draggable = true });
+
+        if (result == true) // Se a configuração foi atualizada com sucesso
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Hora de lembrete atualizada com sucesso!" });
+            await LoadConfiguracoes();
+        }
+    }
+
+    async Task ExcluirConfiguracao(long id)
+    {
+        var confirm = await DialogService.Confirm("Tem certeza que deseja excluir esta configuração de lembrete?", "Confirmação de Exclusão", new ConfirmOptions { OkButtonText = "Sim", CancelButtonText = "Não" });
+        if (confirm == true)
+        {
+            try
+            {
+                await ConfiguracaoLembreteDiarioApiService.DeleteAsync(id);
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Configuração excluída com sucesso!" });
+                await LoadConfiguracoes();
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao excluir configuração: {ex.Message}" });
+            }
+        }
+    }
+
+    async Task ToggleAtivo(long id, bool isActive, ConfiguracaoLembreteDiarioDto configToUpdate)
+    {
+        try
+        {
+            // O DTO passado já está "em memória", então podemos criar a request diretamente dele
+            // e atualizar apenas o campo Ativo.
+            var updateRequest = new AtualizarConfiguracaoLembreteDiarioRequest
+            {
+                Id = configToUpdate.Id,
+                HoraDoDia = configToUpdate.HoraDoDia, // Mantenha as outras propriedades
+                Descricao = configToUpdate.Descricao,
+                Ativo = isActive
+            };
+            await ConfiguracaoLembreteDiarioApiService.UpdateAsync(updateRequest);
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = $"Status da configuração alterado para {isActive}." });
+            // Não é necessário recarregar tudo se apenas um item foi atualizado e a UI já refletiu.
+            // Se o sistema fosse multi-usuário e o estado pudesse mudar por fora, talvez um LoadConfiguracoes fosse mais seguro.
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao alterar status: {ex.Message}" });
+            // Em caso de falha, reverta o estado do switch na UI
+            await LoadConfiguracoes();
+        }
+    }
+}

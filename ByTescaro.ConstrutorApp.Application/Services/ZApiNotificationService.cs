@@ -7,7 +7,8 @@ using System.Text; // Para StringBuilder
 using System.Text.Json; // Para JsonSerializer
 using System.Linq; // Para .Select
 using RestSharp; // <--- NOVO: Importar RestSharp
-using System.Threading.Tasks; // Certificar que está presente
+using System.Threading.Tasks;
+using ByTescaro.ConstrutorApp.Domain.Interfaces; // Certificar que está presente
 
 namespace ByTescaro.ConstrutorApp.Application.Services
 {
@@ -16,9 +17,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         private readonly RestClient _restClient; // <--- MUDANÇA: Usar RestClient
         private readonly ZApiSettings _zApiSettings;
         private readonly ILogger<ZApiNotificationService> _logger;
+        private readonly IUnitOfWork _unitOfWork;
 
         // <--- MUDANÇA: Construtor agora recebe RestClient em vez de IHttpClientFactory
-        public ZApiNotificationService(IOptions<ZApiSettings> zApiSettings, ILogger<ZApiNotificationService> logger)
+        public ZApiNotificationService(IOptions<ZApiSettings> zApiSettings, ILogger<ZApiNotificationService> logger, IUnitOfWork unitOfWork)
         {
             _zApiSettings = zApiSettings.Value;
             _logger = logger;
@@ -27,6 +29,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             // A BaseUrl deve ser a raiz da API, Ex: "https://api.z-api.io/"
             // Os InstanceId e InstanceToken serão adicionados ao path da requisição.
             _restClient = new RestClient(_zApiSettings.BaseUrl);
+            _unitOfWork = unitOfWork;
         }
 
         private string CleanAndFormatPhoneNumber(string phoneNumber)
@@ -147,6 +150,92 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             {
                 _logger.LogError(ex, "Z-API - Erro GERAL ao enviar mensagem com botões para Z-API (RestSharp, AddParameter).");
                 throw;
+            }
+        }
+
+        // NOVO: Implementação do método SendNotificationToAllActiveUsers
+        // Este método será responsável por buscar os usuários participantes e enviar a notificação.
+        // A lógica de "participantes" é arbitrária aqui, assumindo que são todos os usuários com telefone.
+        // Você precisará refinar a lógica de seleção de usuários com base nas suas regras de negócio.
+        public async Task SendNotificationToAllActiveUsers(string subject, string message)
+        {
+            _logger.LogInformation("Z-API: Iniciando envio de notificação para todos os usuários participantes.");
+
+            // Combina assunto e mensagem para o conteúdo do WhatsApp
+            var fullMessage = string.IsNullOrWhiteSpace(subject) ? message : $"{subject}\n\n{message}";
+
+            // Busca todos os usuários. Adicione um filtro para "usuários ativos" ou "participantes" se necessário.
+            // Para este exemplo, assumimos que Usuario possui um campo Telefone e Ativo.
+            // Você pode precisar de um método específico no UsuarioRepository, como GetActiveUsersWithPhoneNumberAsync()
+            var allUsers = await _unitOfWork.UsuarioRepository.GetAllAsync(); //
+
+            // Filtra usuários que possuem um número de telefone e que estão ativos (se houver o campo Ativo na entidade Usuario)
+            // Assumindo que Usuario tem uma propriedade Telefone (string) e Ativo (bool)
+            var usersToNotify = allUsers.Where(u => !string.IsNullOrWhiteSpace(u.TelefoneWhatsApp) && u.Ativo).ToList(); //
+
+            if (!usersToNotify.Any()) //
+            {
+                _logger.LogWarning("Z-API: Nenhum usuário participante encontrado para enviar a notificação."); //
+                return;
+            }
+
+            foreach (var user in usersToNotify) //
+            {
+                try
+                {
+                    _logger.LogInformation("Z-API: Enviando notificação para o usuário {UserName} ({PhoneNumber}).", user.Nome, user.TelefoneWhatsApp); //
+                    await SendWhatsAppMessageAsync(user.TelefoneWhatsApp, fullMessage); //
+                }
+                catch (Exception ex)
+                {
+                    // Loga o erro, mas não interrompe o envio para os outros usuários
+                    _logger.LogError(ex, "Z-API: Falha ao enviar notificação para o usuário {UserName} ({PhoneNumber}).", user.Nome, user.TelefoneWhatsApp); //
+                }
+            }
+
+            _logger.LogInformation("Z-API: Concluído o processo de envio de notificações para usuários participantes."); //
+        }
+
+        // NOVO: Implementação do método SendNotificationAsync
+        // Este método é mais genérico e pode ser usado para enviar uma notificação para um usuário específico.
+        public async Task SendNotificationAsync(long userId, string subject, string message)
+        {
+            _logger.LogInformation("Z-API: Tentando enviar notificação para o usuário ID: {UserId}.", userId); //
+
+            // Combina assunto e mensagem para o conteúdo do WhatsApp
+            var fullMessage = string.IsNullOrWhiteSpace(subject) ? message : $"{subject}\n\n{message}"; //
+
+            // Busca o usuário pelo ID
+            var user = await _unitOfWork.UsuarioRepository.GetByIdAsync(userId); //
+
+            if (user == null) //
+            {
+                _logger.LogWarning("Z-API: Usuário com ID {UserId} não encontrado para envio de notificação.", userId); //
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(user.TelefoneWhatsApp)) //
+            {
+                _logger.LogWarning("Z-API: Usuário {UserName} (ID: {UserId}) não possui número de telefone cadastrado para envio de notificação.", user.Nome, userId); //
+                return;
+            }
+
+            // Supondo que a entidade Usuario tenha uma propriedade 'Ativo'
+            if (!user.Ativo) //
+            {
+                _logger.LogWarning("Z-API: Usuário {UserName} (ID: {UserId}) está inativo e não receberá notificações.", user.Nome, userId); //
+                return;
+            }
+
+            try
+            {
+                _logger.LogInformation("Z-API: Enviando notificação para o usuário {UserName} ({PhoneNumber}).", user.Nome, user.TelefoneWhatsApp); //
+                await SendWhatsAppMessageAsync(user.TelefoneWhatsApp, fullMessage); //
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Z-API: Falha ao enviar notificação para o usuário {UserName} (ID: {UserId}).", user.Nome, userId); //
+                throw; // Re-lança a exceção para que a camada superior possa lidar com ela
             }
         }
     }

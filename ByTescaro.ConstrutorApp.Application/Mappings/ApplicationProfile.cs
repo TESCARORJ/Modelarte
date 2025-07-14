@@ -332,11 +332,16 @@ public class ApplicationProfile : Profile
         // ==== Agenda ==== 
 
         CreateMap<Evento, EventoDto>()
-    .ForMember(dest => dest.NomeCriador, opt => opt.MapFrom(src => src.Criador.Nome)); // Exemplo de mapeamento de nome do criador
+                .ForMember(dest => dest.NomeCriador, opt => opt.MapFrom(src => src.Criador.Nome))
+                .ForMember(dest => dest.Participantes, opt => opt.MapFrom(src => src.Participantes)); 
+
         CreateMap<CriarEventoRequest, Evento>();
         CreateMap<AtualizarEventoRequest, Evento>();
         CreateMap<ParticipanteEvento, ParticipanteEventoDto>()
              .ForMember(dest => dest.NomeUsuario, opt => opt.MapFrom(src => src.Usuario.Nome));
         CreateMap<LembreteEvento, LembreteEventoDto>();
+        CreateMap<ConfiguracaoLembreteDiario, ConfiguracaoLembreteDiarioDto>();
+        CreateMap<CriarConfiguracaoLembreteDiarioRequest, ConfiguracaoLembreteDiario>();
+        CreateMap<AtualizarConfiguracaoLembreteDiarioRequest, ConfiguracaoLembreteDiario>(); 
     }
 }

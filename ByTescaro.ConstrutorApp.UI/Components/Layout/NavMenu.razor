@@ -53,6 +53,15 @@
                 </Authorized>
             </AuthorizeView>
 
+            <AuthorizeView Roles="Administrador,SA" Context="adminContext">
+                <Authorized>
+                    <RadzenPanelMenuItem Text="Configurações" Icon="settings">
+                        <RadzenPanelMenuItem Text="Lembretes Diários" Icon="alarm" Path="configuracoes/lembretesdiarios" />
+                        @* Você pode adicionar outros itens de configuração aqui *@
+                    </RadzenPanelMenuItem>
+                </Authorized>
+            </AuthorizeView>
+
             <!-- Administração -->
             <AuthorizeView Roles="Administrador,SA" Context="adminContext">
                 <Authorized>

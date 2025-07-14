@@ -1,8 +1,10 @@
-﻿using ByTescaro.ConstrutorApp.Application.Interfaces;
+﻿using ByTescaro.ConstrutorApp.Application.BackgroundServices;
+using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Application.Mappings;
 using ByTescaro.ConstrutorApp.Application.Services;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Interfaces.ByTescaro.ConstrutorApp.Domain.Interfaces;
+using ByTescaro.ConstrutorApp.Domain.Services;
 using ByTescaro.ConstrutorApp.Infrastructure.Data;
 using ByTescaro.ConstrutorApp.Infrastructure.Repositories;
 using ByTescaro.ConstrutorApp.Infrastructure.Services;
@@ -245,8 +247,6 @@ builder.Services.AddScoped<ObraRetrabalhoApiService>(sp =>
     return new ObraRetrabalhoApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
 });
 
-
-
 builder.Services.AddScoped<ObraPendenciaApiService>(sp =>
 {
     var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
@@ -308,6 +308,13 @@ builder.Services.AddScoped<OrcamentoItemApiService>(sp =>
 });
 
 
+builder.Services.AddScoped<ConfiguracaoLembreteDiarioApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new ConfiguracaoLembreteDiarioApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
+
+
 
 #endregion
 
@@ -352,6 +359,7 @@ builder.Services.AddScoped<IOrcamentoObraRepository, OrcamentoObraRepository>();
 builder.Services.AddScoped<IEventoRepository, EventoRepository>();
 builder.Services.AddScoped<IParticipanteEventoRepository, ParticipanteEventoRepository>();
 builder.Services.AddScoped<ILembreteEventoRepository, LembreteEventoRepository>();
+builder.Services.AddScoped<IConfiguracaoLembreteDiarioRepository, ConfiguracaoLembreteDiarioRepository>();
 
 #endregion
 
@@ -372,8 +380,6 @@ builder.Services.AddScoped<IFuncionarioService, FuncionarioService>();
 builder.Services.AddScoped<IObraService, ObraService>();
 builder.Services.AddScoped<IObraEtapaPadraoService, ObraEtapaPadraoService>();
 builder.Services.AddScoped<IObraItemEtapaPadraoService, ObraItemEtapaPadraoService>();
-//builder.Services.AddScoped<IObraEtapaService, ObraEtapaService>();
-//builder.Services.AddScoped<IObraItemEtapaService, ObraItemEtapaService>();
 builder.Services.AddScoped<IObraEquipamentoService, ObraEquipamentoService>();
 builder.Services.AddScoped<IObraFuncionarioService, ObraFuncionarioService>();
 builder.Services.AddScoped<IObraFornecedorService, ObraFornecedorService>();
@@ -400,6 +406,11 @@ builder.Services.AddScoped<IOrcamentoItemService, OrcamentoItemService>();
 builder.Services.AddScoped<IOrcamentoObraService, OrcamentoObraService>();
 builder.Services.AddScoped<IAgendaService, AgendaService>();
 builder.Services.AddHostedService<LembreteHostedService>();
+builder.Services.AddScoped<IConfiguracaoLembreteDiarioService, ConfiguracaoLembreteDiarioService>();
+builder.Services.AddScoped<DailyReminderService>();
+builder.Services.AddHostedService<DailyReminderBackgroundService>();
+builder.Services.AddScoped<IHolidaysService, BrazilHolidayService>();
+builder.Services.AddScoped<IHolidaysService, HolidayService>();
 
 
 // Configuração do Z-API para notificações via WhatsApp

@@ -4,6 +4,7 @@ using ByTescaro.ConstrutorApp.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250714143424_AddConfiguracaoLembreteDiarioTableCadastro")]
+    partial class AddConfiguracaoLembreteDiarioTableCadastro
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -65,6 +68,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Descricao")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -75,8 +79,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("UsuarioCadastroId");
 
                     b.ToTable("ConfiguracoesLembreteDiario");
                 });
@@ -1528,17 +1530,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasIndex("FuncaoId");
 
                     b.ToTable("Funcionario", (string)null);
-                });
-
-            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ConfiguracaoLembreteDiario", b =>
-                {
-                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
-                        .WithMany()
-                        .HasForeignKey("UsuarioCadastroId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Evento", b =>

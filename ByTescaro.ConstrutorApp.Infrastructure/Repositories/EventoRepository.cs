@@ -50,5 +50,33 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 
             return await query.ToListAsync();
         }
+
+        public async Task<IEnumerable<Evento>> GetEventosWithParticipantesAndUsuariosByDateRangeAsync(DateTime startDate, DateTime endDate)
+        {
+            // Ajustando endDate para ser o final do dia de 'endDate' (23:59:59.999...)
+            // Isso garante que eventos que terminam exatamente no final do dia sejam incluídos.
+            // A sua chamada no DailyReminderService já usa .AddDays(1).AddTicks(-1), que é o correto.
+            // var adjustedEndDate = endDate.Date.AddDays(1).AddTicks(-1); // Comentado, pois já é tratado na chamada do serviço.
+
+            return await _dbSet
+                         .Include(e => e.Participantes) // Inclui os participantes do evento
+                            .ThenInclude(p => p.Usuario) // Para cada participante, inclui o objeto Usuario
+                         .Where(e =>
+                            // O evento começa antes ou no final do período E
+                            // O evento termina depois ou no início do período
+                            e.DataHoraInicio <= endDate && e.DataHoraFim >= startDate
+                            ||
+                            // OU se for um evento recorrente, verifica se alguma ocorrência se sobrepõe
+                            // Esta lógica de recorrência é mais complexa e depende de como você gera as ocorrências.
+                            // Por simplicidade, se EhRecorrente for true, podemos considerar que ele "ocorre" se a data inicial se encaixa,
+                            // ou se a DataFimRecorrencia ainda não passou e a frequência engloba o período.
+                            // Para um tratamento completo de recorrência, você precisaria de uma função que "expanda" as ocorrências.
+                            // POR ENQUANTO, VAMOS FOCAR NA LÓGICA DE OVERLAP SIMPLES PARA DATETIMEINICIO/FIM
+                            // E AVISAR SOBRE A RECORRÊNCIA.
+                            (e.IsRecorrente && e.DataFimRecorrencia >= startDate.Date) // Se é recorrente e a recorrência ainda é válida
+                         )
+                         .ToListAsync();
+        }
+
     }
 }

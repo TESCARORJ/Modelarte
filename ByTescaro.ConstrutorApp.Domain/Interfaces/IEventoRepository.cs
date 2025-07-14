@@ -6,5 +6,7 @@ namespace ByTescaro.ConstrutorApp.Domain.Interfaces
     {
         Task<IEnumerable<Evento>> GetEventosByUsuarioIdAsync(long usuarioId);
         Task<IEnumerable<Evento>> GetEventosByDateRangeAsync(DateTime startDate, DateTime endDate, long? userId = null);
+        Task<IEnumerable<Evento>> GetEventosWithParticipantesAndUsuariosByDateRangeAsync(DateTime startDate, DateTime endDate);
+
     }
 }

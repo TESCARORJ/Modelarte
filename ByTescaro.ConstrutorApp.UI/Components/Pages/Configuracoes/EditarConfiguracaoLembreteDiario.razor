@@ -1,0 +1,137 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Interfaces
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Radzen
+@using Radzen.Blazor
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Forms
+@inject ConfiguracaoLembreteDiarioApiService ConfiguracaoLembreteDiarioApiService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<RadzenStack Orientation="Orientation.Vertical" Gap="1rem" Style="padding: 1rem;">
+    <RadzenText Text="Editar Hora de Lembrete" TextStyle="TextStyle.H5" />
+
+    @if (request != null)
+    {
+        <EditForm Model="@request" OnValidSubmit="@HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <RadzenFieldset Text="Detalhes da Configuração">
+                <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem">
+                    @* Alterado para Vertical para melhor organização de rows *@
+                    <RadzenRow AlignItems="AlignItems.Center">
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Hora do Dia:" Component="HoraDoDia" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            @* Mantido DateFormat="HH:mm" para clareza, embora ShowTime=true já gerencie o formato de tempo *@
+                            <RadzenDatePicker @bind-Value="HoraDoDiaBinding" ShowTime="true" TimeOnly="true" DateFormat="HH:mm"
+                                              Style="width:100%;" Name="HoraDoDia" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow AlignItems="AlignItems.Center">
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Descrição:" Component="Descricao" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenTextBox @bind-Value="request.Descricao" Style="width:100%;" Name="Descricao" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow AlignItems="AlignItems.Center">
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Ativo:" Component="Ativo" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenSwitch @bind-Value="request.Ativo" Name="Ativo" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenStack>
+            </RadzenFieldset>
+
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem" Class="rz-mt-3">
+                <RadzenButton ButtonType="ButtonType.Submit" Text="Salvar" Icon="save" Variant="Variant.Flat" />
+                <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancelar" Click="@OnCancel" Variant="Variant.Flat" />
+            </RadzenStack>
+        </EditForm>
+    }
+    else
+    {
+        <RadzenText Text="Carregando dados..." TextStyle="TextStyle.Body1" />
+    }
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public long ConfiguracaoId { get; set; }
+
+    AtualizarConfiguracaoLembreteDiarioRequest request = new AtualizarConfiguracaoLembreteDiarioRequest();
+
+    private DateTime? HoraDoDiaBinding
+    {
+        get
+        {
+            if (request == null)
+                return null;
+            if (request.HoraDoDia == TimeSpan.Zero)
+                return DateTime.Today.AddHours(8); // Valor padrão
+            return DateTime.Today.Add(request.HoraDoDia);
+        }
+        set
+        {
+            if (request != null)
+            {
+                request.HoraDoDia = value?.TimeOfDay ?? TimeSpan.Zero;
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var configDto = await ConfiguracaoLembreteDiarioApiService.GetByIdAsync(ConfiguracaoId);
+            if (configDto != null)
+            {
+                request = new AtualizarConfiguracaoLembreteDiarioRequest
+                {
+                    Id = configDto.Id,
+                    HoraDoDia = configDto.HoraDoDia,
+                    Descricao = configDto.Descricao,
+                    Ativo = configDto.Ativo
+                };
+            }
+            else
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = "Configuração não encontrada." });
+                DialogService.Close(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro ao carregar", Detail = $"Erro: {ex.Message}" });
+            DialogService.Close(false);
+        }
+    }
+
+    async Task HandleValidSubmit()
+    {
+        try
+        {
+            await ConfiguracaoLembreteDiarioApiService.UpdateAsync(request);
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Configuração atualizada com sucesso!" }); // Notificação de sucesso aqui
+            DialogService.Close(true); // Indica sucesso
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro ao atualizar", Detail = $"Erro: {ex.Message}" });
+            // DialogService.Close(false); // Opcional: remover para manter o diálogo aberto em caso de erro.
+        }
+    }
+
+    void OnCancel()
+    {
+        DialogService.Close(false); // Fecha o diálogo sem salvar
+    }
+}
