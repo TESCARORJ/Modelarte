@@ -10,6 +10,7 @@ namespace ByTescaro.ConstrutorApp.Application.Interfaces
         Task<IEnumerable<EventoDto>> ObterEventosDoUsuarioAsync(long usuarioId);
         Task<EventoDto> ObterEventoPorIdAsync(long eventoId, long usuarioId);
         Task ResponderConviteAsync(RespostaConviteRequest request, long usuarioId);
-        Task EnviarLembretesProximosEventosAsync(); // Para serviço de background
+        Task EnviarLembretesProximosEventosAsync();
+        Task ProcessarRespostaWebhookZApiAsync(ZApiWebhookMessage receivedMessage);
     }
 }

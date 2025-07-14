@@ -407,16 +407,16 @@ builder.Services.AddHttpClient();
 // 1. Lê a seção "ZApiSettings" do appsettings.json e a registra.
 builder.Services.Configure<ZApiSettings>(builder.Configuration.GetSection("ZApiSettings"));
 
-// 2. Adiciona e configura um HttpClient nomeado especificamente para a Z-API.
-builder.Services.AddHttpClient("ZApiClient", (serviceProvider, client) =>
-{
-    var settings = serviceProvider.GetRequiredService<IOptions<ZApiSettings>>().Value;
+//// 2. Adiciona e configura um HttpClient nomeado especificamente para a Z-API.
+//builder.Services.AddHttpClient("ZApiClient", (serviceProvider, client) =>
+//{
+//    var settings = serviceProvider.GetRequiredService<IOptions<ZApiSettings>>().Value;
 
-    client.BaseAddress = new Uri(settings.BaseUrl);
+//    client.BaseAddress = new Uri(settings.BaseUrl);
 
-    // AGORA USANDO O TOKEN CORRETO PARA O HEADER:
-    client.DefaultRequestHeaders.Add("Client-Token", settings.ClientToken);
-});
+//    // AGORA USANDO O TOKEN CORRETO PARA O HEADER:
+//    client.DefaultRequestHeaders.Add("Client-Token", settings.ClientToken);
+//});
 
 // 3. Registra o serviço de notificação para injeção de dependência.
 builder.Services.AddScoped<INotificationService, ZApiNotificationService>();
