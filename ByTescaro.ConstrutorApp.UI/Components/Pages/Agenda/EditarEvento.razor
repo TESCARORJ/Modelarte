@@ -27,42 +27,45 @@
     {
         <EditForm EditContext="@editContext" OnValidSubmit="@HandleValidSubmit">
             <DataAnnotationsValidator />
-            <ValidationSummary /> @* O ValidationSummary ainda mostrará erros do DataAnnotations e erros adicionados manualmente *@
+            <ValidationSummary />
 
             <RadzenFieldset Text="Detalhes do Evento">
                 <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem">
                     <RadzenRow AlignItems="AlignItems.Center">
                         <RadzenColumn Size="12" SizeMD="4">
-                            <RadzenLabel Text="Título: *" Component="Titulo" /> @* Adicionei o '*' para indicar que é obrigatório *@
+                            <RadzenLabel Text="Título:" Component="Titulo" />
                         </RadzenColumn>
                         <RadzenColumn Size="12" SizeMD="8">
-                            <RadzenTextBox @bind-Value="eventoRequest.Titulo" Style="width:100%;" Name="Titulo" ReadOnly="@(!IsCriador)" />
+                            <RadzenTextBox @bind-Value="eventoRequest.Titulo" Style="width:100%;" Name="Titulo" Disabled="!isCreator" />
                         </RadzenColumn>
                     </RadzenRow>
                     <RadzenRow AlignItems="AlignItems.Center">
                         <RadzenColumn Size="12" SizeMD="4">
-                            <RadzenLabel Text="Descrição: *" Component="Descricao" /> @* Adicionei o '*' para indicar que é obrigatório *@
+                            <RadzenLabel Text="Descrição:" Component="Descricao" />
                         </RadzenColumn>
                         <RadzenColumn Size="12" SizeMD="8">
-                            <RadzenTextArea @bind-Value="eventoRequest.Descricao" Style="width:100%; height:300px" Name="Descricao" ReadOnly="@(!IsCriador)" />
+                            <RadzenTextArea @bind-Value="eventoRequest.Descricao" Style="width:100%;" Name="Descricao" Disabled="!isCreator" />
                         </RadzenColumn>
                     </RadzenRow>
                     <RadzenRow AlignItems="AlignItems.Center">
                         <RadzenColumn Size="12" SizeMD="4">
-                            <RadzenLabel Text="Início: *" Component="DataHoraInicio" /> @* Adicionei o '*' para indicar que é obrigatório *@
+                            <RadzenLabel Text="Início:" Component="DataHoraInicio" />
                         </RadzenColumn>
                         <RadzenColumn Size="12" SizeMD="8">
                             <RadzenDatePicker @bind-Value="eventoRequest.DataHoraInicio" ShowTime="true" DateFormat="dd/MM/yyyy HH:mm"
-                                              Style="width:100%;" Name="DataHoraInicio" ReadOnly="@(!IsCriador)" />
+                                              Style="width:100%;" Name="DataHoraInicio" Disabled="!isCreator" />
+                            @* REMOVIDO: RadzenRequiredValidator Component="DataHoraInicio" *@
                         </RadzenColumn>
                     </RadzenRow>
                     <RadzenRow AlignItems="AlignItems.Center">
                         <RadzenColumn Size="12" SizeMD="4">
-                            <RadzenLabel Text="Término: *" Component="DataHoraTermino" /> @* Adicionei o '*' para indicar que é obrigatório *@
+                            <RadzenLabel Text="Término:" Component="DataHoraTermino" />
                         </RadzenColumn>
                         <RadzenColumn Size="12" SizeMD="8">
                             <RadzenDatePicker @bind-Value="eventoRequest.DataHoraFim" ShowTime="true" DateFormat="dd/MM/yyyy HH:mm"
-                                              Style="width:100%;" Name="DataHoraFim" ReadOnly="@(!IsCriador)" />
+                                              Style="width:100%;" Name="DataHoraFim" Disabled="!isCreator" />
+                            @* REMOVIDO: RadzenRequiredValidator Component="DataHoraTermino" *@
+                            @* REMOVIDO: RadzenCompareValidator Component="DataHoraTermino" *@
                         </RadzenColumn>
                     </RadzenRow>
                     <RadzenRow AlignItems="AlignItems.Center">
@@ -72,7 +75,7 @@
                         <RadzenColumn Size="12" SizeMD="8">
                             <RadzenDropDown @bind-Value="eventoRequest.Visibilidade" Data="@VisibilidadeList"
                                             TextProperty="Label" ValueProperty="Value"
-                                            Style="width:100%;" Name="Visibilidade" ReadOnly="@(!IsCriador)" />
+                                            Style="width:100%;" Name="Visibilidade" Disabled="!isCreator" />
                         </RadzenColumn>
                     </RadzenRow>
                 </RadzenStack>
@@ -80,30 +83,28 @@
 
             <RadzenFieldset Text="Participantes (Convidados)" Class="rz-mt-3">
                 <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem">
-                    @if (IsCriador)
-                    {
-                        <RadzenRow AlignItems="AlignItems.Center">
-                            <RadzenColumn Size="12" SizeMD="4">
-                                <RadzenLabel Text="Selecionar Usuários:" Component="Participantes" />
-                            </RadzenColumn>
-                            <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenDropDown @bind-Value="eventoRequest.IdsParticipantesConvidados" Data="@usuariosDisponiveis"
-                                                TextProperty="Nome" ValueProperty="Id" Multiple="true"
-                                                AllowClear="true" Style="width:100%;" Name="Participantes">
-                                    <Template Context="userContext">
-                                        <div>
-                                            <strong>@userContext.Nome</strong> - @userContext.Email
-                                        </div>
-                                    </Template>
-                                </RadzenDropDown>
+                    <RadzenRow AlignItems="AlignItems.Center">
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Selecionar Usuários:" Component="Participantes" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenDropDown @bind-Value="eventoRequest.IdsParticipantesConvidados" Data="@usuariosDisponiveis"
+                                            TextProperty="Nome" ValueProperty="Id" Multiple="true"
+                                            AllowClear="true" Style="width:100%;" Name="Participantes" Disabled="!isCreator">
+                                <Template Context="userContext">
+                                    <div>
+                                        <strong>@((string)userContext.Nome)</strong> - @((string)userContext.TelefoneWhatsApp)
+                                    </div>
+                                </Template>
+                            </RadzenDropDown>
 
-                                @if (usuariosDisponiveis != null && !usuariosDisponiveis.Any())
-                                {
-                                    <RadzenText Text="Nenhum usuário disponível para convite (após filtro)." TextStyle="TextStyle.Caption" Class="rz-color-info rz-mt-2" />
-                                }
-                            </RadzenColumn>
-                        </RadzenRow>
-                    }
+                            @if (usuariosDisponiveis != null && !usuariosDisponiveis.Any())
+                            {
+                                <RadzenText Text="Nenhum usuário disponível para convite (após filtro)." TextStyle="TextStyle.Caption" Class="rz-color-info rz-mt-2" />
+                            }
+                           
+                        </RadzenColumn>
+                    </RadzenRow>
                     <RadzenRow>
                         <RadzenColumn Size="12">
                             <RadzenDataGrid Data="@eventoSelecionado?.Participantes" AllowPaging="false" AllowSorting="false"
@@ -113,10 +114,10 @@
                                     <RadzenDataGridColumn TItem="ParticipanteEventoDto" Property="StatusParticipacao" Title="Status" />
                                     <RadzenDataGridColumn TItem="ParticipanteEventoDto" Context="data" Width="80px" Filterable="false" Sortable="false" TextAlign="TextAlign.Center">
                                         <Template Context="participante">
-                                            @if (IsCriador && participante.UsuarioId != usuarioLogadoId)
+                                            @if (eventoSelecionado?.CriadorId == usuarioLogadoId && participante.UsuarioId != usuarioLogadoId)
                                             {
                                                 <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Size="ButtonSize.ExtraSmall"
-                                                              Click="@(() => RemoverParticipante(participante.UsuarioId))" />
+                                                              Click="@(() => RemoverParticipante(participante.UsuarioId))" Disabled="!isCreator" />
                                             }
                                         </Template>
                                     </RadzenDataGridColumn>
@@ -128,7 +129,8 @@
             </RadzenFieldset>
 
             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem" Class="rz-mt-3">
-                @if (IsCriador)
+                @* Botões de Ação: Visíveis APENAS para o criador *@
+                @if (isCreator)
                 {
                     <RadzenButton ButtonType="ButtonType.Submit" Text="Salvar Alterações" Icon="save" Variant="Variant.Flat" />
                     <RadzenButton ButtonStyle="ButtonStyle.Danger" Text="Excluir Evento" Icon="delete" Variant="Variant.Flat"
@@ -151,13 +153,10 @@
     private AtualizarEventoRequest eventoRequest;
     private EventoDto? eventoSelecionado;
     private EditContext? editContext;
-    private ValidationMessageStore? messageStore; // Adicionado para exibir erros customizados no ValidationSummary
     private IEnumerable<UsuarioDto> usuariosDisponiveis = new List<UsuarioDto>();
     private long usuarioLogadoId;
-    private bool IsCriador => eventoSelecionado?.CriadorId == usuarioLogadoId;
-
-    // A lista de visibilidade não deve incluir nulo se queremos garantir uma seleção padrão
-    private List<EnumOption<Visibilidade>> VisibilidadeList = EnumHelper.ListarOpcoes<Visibilidade>(incluirNulo: false);
+    private bool isCreator = false;
+    private List<EnumOption<Visibilidade>> VisibilidadeList = EnumHelper.ListarOpcoes<Visibilidade>(incluirNulo: true);
 
     protected override async Task OnInitializedAsync()
     {
@@ -165,38 +164,20 @@
         if (usuario != null)
         {
             usuarioLogadoId = usuario.Id;
-            await CarregarDetalhesEvento(); // Carrega eventoSelecionado e inicializa eventoRequest
+            await CarregarDetalhesEvento();
+            isCreator = eventoSelecionado?.CriadorId == usuarioLogadoId; // Define isCreator APÓS eventoSelecionado ser carregado
 
-            if (eventoRequest != null)
-            {
-                // Garante que as propriedades de string e lista não sejam nulas
-                eventoRequest.Titulo ??= string.Empty;
-                eventoRequest.Descricao ??= string.Empty;
-                eventoRequest.IdsParticipantesConvidados ??= new List<long>();
-
-                // Inicializa EditContext e ValidationMessageStore APÓS eventoRequest ser carregado
-                editContext = new EditContext(eventoRequest);
-                messageStore = new ValidationMessageStore(editContext);
-
-                // Assina eventos para validação em tempo real
-                editContext.OnValidationRequested += (sender, eventArgs) => messageStore?.Clear();
-                editContext.OnFieldChanged += (sender, eventArgs) => ValidateField(eventArgs.FieldIdentifier);
-            }
-
-            // Carrega usuários disponíveis apenas se o usuário logado for o criador
-            if (IsCriador)
-            {
-                usuariosDisponiveis = (await UsuarioApiService.GetAllAsync())?.Where(u => u.Id != usuarioLogadoId).ToList() ?? new List<UsuarioDto>();
-            }
-            else
-            {
-                usuariosDisponiveis = new List<UsuarioDto>();
-            }
+            usuariosDisponiveis = (await UsuarioApiService.GetAllAsync())?.Where(u => u.Id != usuarioLogadoId).ToList() ?? new List<UsuarioDto>();
         }
         else
         {
             NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = "Usuário não autenticado." });
             DialogService.Close(false);
+        }
+
+        if (eventoRequest != null)
+        {
+            editContext = new EditContext(eventoRequest);
         }
     }
 
@@ -213,7 +194,7 @@
                     Titulo = eventoSelecionado.Titulo ?? string.Empty,
                     Descricao = eventoSelecionado.Descricao ?? string.Empty,
                     DataHoraInicio = eventoSelecionado.DataHoraInicio,
-                    DataHoraFim = eventoSelecionado.DataHoraFim,
+                    DataHoraFim = eventoSelecionado.DataHoraFim, // CORRIGIDO: Propriedade consistente com DTO e Request
                     EhRecorrente = eventoSelecionado.EhRecorrente,
                     FrequenciaRecorrencia = eventoSelecionado.FrequenciaRecorrencia,
                     DataFimRecorrencia = eventoSelecionado.DataFimRecorrencia,
@@ -234,65 +215,13 @@
         }
     }
 
-    private void ValidateField(FieldIdentifier fieldIdentifier)
-    {
-        // Só valida campos se o usuário for o criador
-        if (!IsCriador) return;
-
-        messageStore?.Clear(fieldIdentifier);
-
-        // Chame ValidateForm para obter todos os erros, e filtre pelo campo atual
-        var allErrors = ValidateForm(eventoRequest);
-        var fieldErrors = allErrors.Where(error =>
-        {
-            // Lógica para associar o erro à propriedade correta, baseada no texto do erro ou no nome do campo
-            if (fieldIdentifier.FieldName == nameof(AtualizarEventoRequest.Titulo) && error.Contains("Título", StringComparison.OrdinalIgnoreCase)) return true;
-            if (fieldIdentifier.FieldName == nameof(AtualizarEventoRequest.Descricao) && error.Contains("Descrição", StringComparison.OrdinalIgnoreCase)) return true;
-            if (fieldIdentifier.FieldName == nameof(AtualizarEventoRequest.DataHoraInicio) && error.Contains("Início", StringComparison.OrdinalIgnoreCase)) return true;
-            if (fieldIdentifier.FieldName == nameof(AtualizarEventoRequest.DataHoraFim) && error.Contains("Término", StringComparison.OrdinalIgnoreCase)) return true;
-            if (fieldIdentifier.FieldName == nameof(AtualizarEventoRequest.Visibilidade) && error.Contains("Visibilidade", StringComparison.OrdinalIgnoreCase)) return true;
-            return false;
-        }).ToList();
-
-        foreach (var error in fieldErrors)
-        {
-            messageStore?.Add(fieldIdentifier, error);
-        }
-        editContext?.NotifyValidationStateChanged();
-    }
-
-
     private async Task HandleValidSubmit()
     {
-        // Só permite a submissão se o usuário for o criador
-        if (!IsCriador)
-        {
-            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Permissão Negada", Detail = "Você não tem permissão para editar este evento." });
-            return;
-        }
-
-        // Limpa todas as mensagens de validação existentes no EditContext antes de revalidar
-        messageStore?.Clear();
-        editContext?.NotifyValidationStateChanged(); // Notifica para limpar os erros visíveis
-
-        // Primeiro, o DataAnnotationsValidator (se você tiver atributos [Required] etc. no DTO)
-        var isValidDataAnnotations = editContext!.Validate();
-
-        // Validação customizada
-        var validationErrors = ValidateForm(eventoRequest);
+        // NOVO: Executa validações customizadas
+        var validationErrors = await ValidateEventoForm(eventoRequest);
 
         if (validationErrors.Any())
         {
-            // Adiciona os erros customizados ao ValidationMessageStore para que apareçam no ValidationSummary
-            foreach (var error in validationErrors)
-            {
-                // Por simplicidade, adiciona como um erro geral do modelo.
-                // Para associar a campos específicos, seria preciso uma lógica mais complexa em ValidateForm.
-                messageStore?.Add(new FieldIdentifier(eventoRequest, ""), error);
-            }
-            editContext?.NotifyValidationStateChanged(); // Notifica o EditContext para atualizar a UI
-
-            // Notifica o usuário com mensagens pop-up também
             foreach (var error in validationErrors)
             {
                 NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro de Validação", Detail = error });
@@ -300,65 +229,70 @@
             return; // Impede a submissão se houver erros de validação
         }
 
-        // Se o DataAnnotationsValidator encontrou problemas e eles não foram replicados em ValidateForm
-        if (!isValidDataAnnotations)
+        if (isCreator && editContext?.Validate() == true)
         {
-            // Os erros de DataAnnotations já estarão no ValidationSummary.
+            try
+            {
+                await AgendaService.AtualizarEventoAsync(eventoRequest, usuarioLogadoId);
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Evento atualizado com sucesso!" });
+                DialogService.Close(true);
+            }
+            catch (UnauthorizedAccessException uex)
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Permissão Negada", Detail = uex.Message });
+                DialogService.Close(false);
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro ao atualizar evento", Detail = ex.Message });
+                DialogService.Close(false);
+            }
+        }
+        else if (!isCreator)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Permissão", Detail = "Você não tem permissão para salvar edições neste evento." });
+        }
+        else // Validação falhou
+        {
             NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Validação", Detail = "Por favor, corrija os erros do formulário." });
-            return;
-        }
-
-        try
-        {
-            await AgendaService.AtualizarEventoAsync(eventoRequest, usuarioLogadoId);
-            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Evento atualizado com sucesso!" });
-            DialogService.Close(true);
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro ao atualizar evento", Detail = ex.Message });
-            DialogService.Close(false);
         }
     }
 
-    private List<string> ValidateForm(AtualizarEventoRequest model)
+    // NOVO: Método auxiliar para consolidar todas as validações personalizadas
+    private async Task<List<string>> ValidateEventoForm(AtualizarEventoRequest model)
     {
         var errors = new List<string>();
 
-        // Validação de Título
+        // Validação de Campos Obrigatórios
         if (string.IsNullOrWhiteSpace(model.Titulo))
         {
-            errors.Add("Título é obrigatório.");
+            errors.Add("O Título do evento é obrigatório.");
+        }
+        if (model.DataHoraInicio == default(DateTime))
+        {
+            errors.Add("A Data e Hora de Início são obrigatórias.");
+        }
+        if (model.DataHoraFim == default(DateTime)) // Usar DataHoraFim
+        {
+            errors.Add("A Data e Hora de Término são obrigatórias.");
         }
 
-        // Validação de Descrição
-        if (string.IsNullOrWhiteSpace(model.Descricao))
-        {
-            errors.Add("Descrição é obrigatória.");
-        }
-
-        // Validação de DataHoraInicio
-        if (model.DataHoraInicio == default(DateTime) || model.DataHoraInicio == DateTime.MinValue)
-        {
-            errors.Add("Data e Hora de Início são obrigatórias.");
-        }
-
-        // Validação de DataHoraFim
-        if (model.DataHoraFim == default(DateTime) || model.DataHoraFim == DateTime.MinValue)
-        {
-            errors.Add("Data e Hora de Término são obrigatórias.");
-        }
-        else if (model.DataHoraFim <= model.DataHoraInicio)
+        // Validação de Comparação de Datas
+        if (model.DataHoraInicio != default(DateTime) && model.DataHoraFim != default(DateTime) && model.DataHoraFim <= model.DataHoraInicio) // Usar DataHoraFim
         {
             errors.Add("A data de término deve ser posterior à data de início.");
         }
 
-        // Validação de Visibilidade
-        // Como 'incluirNulo: false' é usado, Visibilidade deve ter um valor.
-        // A verificação Enum.IsDefined é um bom fallback.
-        if (!Enum.IsDefined(typeof(Visibilidade), model.Visibilidade))
+        // Validação de Tamanho de Descrição
+        if (!string.IsNullOrEmpty(model.Descricao) && model.Descricao.Length > 100)
         {
-            errors.Add("Visibilidade é obrigatória e deve ser um valor válido.");
+            errors.Add("A Descrição deve ter no máximo 100 caracteres.");
+        }
+
+        // Validação de Visibilidade (se você tiver uma regra específica além de obrigatório)
+        if (model.Visibilidade == Visibilidade.SomenteConvidados && (model.IdsParticipantesConvidados == null || !model.IdsParticipantesConvidados.Any()))
+        {
+            errors.Add("Para eventos 'Somente Convidados', pelo menos um participante deve ser selecionado.");
         }
 
         return errors;
@@ -366,10 +300,9 @@
 
     private async Task RemoverParticipante(long usuarioId)
     {
-        // Só permite a remoção se o usuário for o criador
-        if (!IsCriador)
+        if (!isCreator)
         {
-            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Permissão Negada", Detail = "Você não tem permissão para remover participantes deste evento." });
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Permissão", Detail = "Você não tem permissão para remover participantes." });
             return;
         }
 
@@ -381,11 +314,9 @@
                 eventoRequest.IdsParticipantesConvidados = eventoRequest.IdsParticipantesConvidados.Where(id => id != usuarioId).ToList();
                 eventoSelecionado.Participantes = eventoSelecionado.Participantes.Where(p => p.UsuarioId != usuarioId).ToList();
 
-                // Atualiza o evento no serviço, passando o ID do criador para validação
                 await AgendaService.AtualizarEventoAsync(eventoRequest, usuarioLogadoId);
 
                 NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Participante removido com sucesso!" });
-                // Re-carregar detalhes para garantir que a UI reflita o estado mais recente
                 await CarregarDetalhesEvento();
             }
             catch (Exception ex)
@@ -397,10 +328,9 @@
 
     async Task OnDelete()
     {
-        // Só permite a exclusão se o usuário for o criador
-        if (!IsCriador)
+        if (!isCreator)
         {
-            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Permissão Negada", Detail = "Você não tem permissão para excluir este evento." });
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Permissão", Detail = "Você não tem permissão para excluir este evento." });
             return;
         }
 
@@ -412,6 +342,11 @@
                 await AgendaService.ExcluirEventoAsync(EventoId, usuarioLogadoId);
                 NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Evento excluído com sucesso!" });
                 DialogService.Close(true);
+            }
+            catch (UnauthorizedAccessException uex)
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Permissão Negada", Detail = uex.Message });
+                DialogService.Close(false);
             }
             catch (Exception ex)
             {
