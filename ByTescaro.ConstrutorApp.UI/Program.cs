@@ -1,30 +1,39 @@
-﻿using ByTescaro.ConstrutorApp.Application.Interfaces;
+﻿using ByTescaro.ConstrutorApp.Application.BackgroundServices;
+using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Application.Mappings;
 using ByTescaro.ConstrutorApp.Application.Services;
-using ByTescaro.ConstrutorApp.Domain.Interfaces.ByTescaro.ConstrutorApp.Domain.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
+using ByTescaro.ConstrutorApp.Domain.Interfaces.ByTescaro.ConstrutorApp.Domain.Interfaces;
+using ByTescaro.ConstrutorApp.Domain.Services;
 using ByTescaro.ConstrutorApp.Infrastructure.Data;
 using ByTescaro.ConstrutorApp.Infrastructure.Repositories;
+using ByTescaro.ConstrutorApp.Infrastructure.Services;
 using ByTescaro.ConstrutorApp.UI.Authentication;
 using ByTescaro.ConstrutorApp.UI.Components;
 using ByTescaro.ConstrutorApp.UI.Properties;
 using ByTescaro.ConstrutorApp.UI.Services;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
-using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
-using ByTescaro.ConstrutorApp.Infrastructure.Services;
 using Microsoft.Extensions.Options;
+using Radzen;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Adiciona suporte ao Radzen ThemeService
-builder.Services.AddScoped<Radzen.ThemeService>();
-builder.Services.AddScoped<Radzen.DialogService>();
-builder.Services.AddScoped<Radzen.NotificationService>();
-builder.Services.AddScoped<Radzen.TooltipService>();
-builder.Services.AddScoped<Radzen.ContextMenuService>();
+//builder.Services.AddScoped<Radzen.ThemeService>();
+//builder.Services.AddScoped<Radzen.DialogService>();
+//builder.Services.AddScoped<Radzen.NotificationService>();
+//builder.Services.AddScoped<Radzen.TooltipService>();
+//builder.Services.AddScoped<Radzen.ContextMenuService>();
+//builder.Services.AddScoped<Radzen.SchedulerAppointmentMoveEventArgs>();
+//builder.Services.AddScoped<Radzen.SchedulerAppointmentRenderEventArgs>();
+builder.Services.AddScoped<Radzen.SchedulerDaySelectEventArgs>();
+
+builder.Services.AddRadzenComponents();
+
 
 
 // 🔐 Persistência de chaves compartilhada entre subdomínios
@@ -238,8 +247,6 @@ builder.Services.AddScoped<ObraRetrabalhoApiService>(sp =>
     return new ObraRetrabalhoApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
 });
 
-
-
 builder.Services.AddScoped<ObraPendenciaApiService>(sp =>
 {
     var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
@@ -301,6 +308,13 @@ builder.Services.AddScoped<OrcamentoItemApiService>(sp =>
 });
 
 
+builder.Services.AddScoped<ConfiguracaoLembreteDiarioApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new ConfiguracaoLembreteDiarioApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
+
+
 
 #endregion
 
@@ -342,6 +356,10 @@ builder.Services.AddScoped<IFornecedorServicoRepository, FornecedorServicoReposi
 builder.Services.AddScoped<IOrcamentoRepository, OrcamentoRepository>();
 builder.Services.AddScoped<IOrcamentoItemRepository, OrcamentoItemRepository>();
 builder.Services.AddScoped<IOrcamentoObraRepository, OrcamentoObraRepository>();
+builder.Services.AddScoped<IEventoRepository, EventoRepository>();
+builder.Services.AddScoped<IParticipanteEventoRepository, ParticipanteEventoRepository>();
+builder.Services.AddScoped<ILembreteEventoRepository, LembreteEventoRepository>();
+builder.Services.AddScoped<IConfiguracaoLembreteDiarioRepository, ConfiguracaoLembreteDiarioRepository>();
 
 #endregion
 
@@ -362,8 +380,6 @@ builder.Services.AddScoped<IFuncionarioService, FuncionarioService>();
 builder.Services.AddScoped<IObraService, ObraService>();
 builder.Services.AddScoped<IObraEtapaPadraoService, ObraEtapaPadraoService>();
 builder.Services.AddScoped<IObraItemEtapaPadraoService, ObraItemEtapaPadraoService>();
-//builder.Services.AddScoped<IObraEtapaService, ObraEtapaService>();
-//builder.Services.AddScoped<IObraItemEtapaService, ObraItemEtapaService>();
 builder.Services.AddScoped<IObraEquipamentoService, ObraEquipamentoService>();
 builder.Services.AddScoped<IObraFuncionarioService, ObraFuncionarioService>();
 builder.Services.AddScoped<IObraFornecedorService, ObraFornecedorService>();
@@ -388,22 +404,30 @@ builder.Services.AddScoped<IObraServicoListaService, ObraServicoListaService>();
 builder.Services.AddScoped<IOrcamentoService, OrcamentoService>();
 builder.Services.AddScoped<IOrcamentoItemService, OrcamentoItemService>();
 builder.Services.AddScoped<IOrcamentoObraService, OrcamentoObraService>();
+builder.Services.AddScoped<IAgendaService, AgendaService>();
+builder.Services.AddHostedService<LembreteHostedService>();
+builder.Services.AddScoped<IConfiguracaoLembreteDiarioService, ConfiguracaoLembreteDiarioService>();
+builder.Services.AddScoped<DailyReminderService>();
+builder.Services.AddHostedService<DailyReminderBackgroundService>();
+builder.Services.AddScoped<IHolidaysService, BrazilHolidayService>();
+builder.Services.AddScoped<IHolidaysService, HolidayService>();
+
 
 // Configuração do Z-API para notificações via WhatsApp
 builder.Services.AddHttpClient();
 // 1. Lê a seção "ZApiSettings" do appsettings.json e a registra.
 builder.Services.Configure<ZApiSettings>(builder.Configuration.GetSection("ZApiSettings"));
 
-// 2. Adiciona e configura um HttpClient nomeado especificamente para a Z-API.
-builder.Services.AddHttpClient("ZApiClient", (serviceProvider, client) =>
-{
-    var settings = serviceProvider.GetRequiredService<IOptions<ZApiSettings>>().Value;
+//// 2. Adiciona e configura um HttpClient nomeado especificamente para a Z-API.
+//builder.Services.AddHttpClient("ZApiClient", (serviceProvider, client) =>
+//{
+//    var settings = serviceProvider.GetRequiredService<IOptions<ZApiSettings>>().Value;
 
-    client.BaseAddress = new Uri(settings.BaseUrl);
+//    client.BaseAddress = new Uri(settings.BaseUrl);
 
-    // AGORA USANDO O TOKEN CORRETO PARA O HEADER:
-    client.DefaultRequestHeaders.Add("Client-Token", settings.ClientToken);
-});
+//    // AGORA USANDO O TOKEN CORRETO PARA O HEADER:
+//    client.DefaultRequestHeaders.Add("Client-Token", settings.ClientToken);
+//});
 
 // 3. Registra o serviço de notificação para injeção de dependência.
 builder.Services.AddScoped<INotificationService, ZApiNotificationService>();

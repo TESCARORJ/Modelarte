@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Components.Pages.Agenda
 @using ByTescaro.ConstrutorApp.UI.Services
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
@@ -14,11 +15,15 @@
 <RadzenCard Class="rz-pa-4 rz-mb-6" Variant="Variant.Filled">
     <RadzenStack Gap="0.5rem">
         <RadzenText Text="Dashboard" TextStyle="TextStyle.H4" />
+
+        <AgendaComponent />
+        
+
+
         <RadzenText Text="Resumo executivo das operações e indicadores-chave do sistema"
                     Style="margin-bottom: 1rem; color: gray;" />
 
         <RadzenStack Orientation="Orientation.Horizontal" Wrap="FlexWrap.Wrap" >
-            <!-- Clientes e Projetos -->
             @Card("Total de Clientes", Clientes, "people_alt", "/clientes")
             @Card("Total de Projetos", Projetos, "assignment", "/projetos")
         </RadzenStack>
@@ -44,9 +49,12 @@
             @Card("Alocados", EquipamentosAlocados, "groups", "/equipamentos/alocados")
         </RadzenStack>
 
-      @*   <RadzenStack Orientation="Orientation.Horizontal" Wrap="FlexWrap.Wrap">
+      @* <RadzenStack Orientation="Orientation.Horizontal" Wrap="FlexWrap.Wrap">
             @Card("Total de Insumos", Insumos, "inventory", "/insumos")
         </RadzenStack> *@
+
+
+
     </RadzenStack>
 </RadzenCard>
 

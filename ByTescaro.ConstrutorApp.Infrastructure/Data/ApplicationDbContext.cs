@@ -66,6 +66,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     #endregion
 
+    #region COMPROMISSO
+    public DbSet<Evento> Eventos { get; set; }
+    public DbSet<ParticipanteEvento> ParticipantesEvento { get; set; }
+    public DbSet<LembreteEvento> LembretesEvento { get; set; }
+    public DbSet<ConfiguracaoLembreteDiario> ConfiguracoesLembreteDiario { get; set; }
+
+    #endregion
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -86,10 +94,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             // Configura a estratégia de herança Table-per-Hierarchy (TPH)
             // A coluna "TipoEntidade" será o Discriminator para saber qual tipo de pessoa cada registro é.
             //builder.HasDiscriminator(p => p.TipoEntidade)
-            //       .HasValue<Cliente>(TipoEntidadePessoa.Cliente)
-            //       .HasValue<Funcionario>(TipoEntidadePessoa.Funcionario)
-            //       .HasValue<Fornecedor>(TipoEntidadePessoa.Fornecedor)
-            //       .HasValue<Usuario>(TipoEntidadePessoa.Usuario);
+            //     .HasValue<Cliente>(TipoEntidadePessoa.Cliente)
+            //     .HasValue<Funcionario>(TipoEntidadePessoa.Funcionario)
+            //     .HasValue<Fornecedor>(TipoEntidadePessoa.Fornecedor)
+            //     .HasValue<Usuario>(TipoEntidadePessoa.Usuario);
 
             builder.HasKey(e => e.Id);
             builder.Property(e => e.Nome).HasMaxLength(100);
@@ -104,7 +112,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
               .IsRequired(false) // Permite que EnderecoId seja NULL
               .OnDelete(DeleteBehavior.SetNull); // Se o Endereco for deletado, a FK em Pessoa vira NULL
         }
-    }
     }
 
     public class EnderecoConfiguration : IEntityTypeConfiguration<Endereco>
@@ -121,7 +128,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             builder.Property(e => e.UF).HasMaxLength(2);
             builder.Property(e => e.CEP).HasMaxLength(9);
         }
-    }    
+    }
 
     public class ClienteConfiguration : IEntityTypeConfiguration<Cliente>
     {
@@ -142,8 +149,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             builder.Property(e => e.Salario).HasColumnType("decimal(18, 2)");
 
             builder.HasOne(e => e.Funcao)
-                   .WithMany() // Supondo que uma Função pode pertencer a vários funcionários
-                   .HasForeignKey(e => e.FuncaoId);
+                       .WithMany() // Supondo que uma Função pode pertencer a vários funcionários
+                       .HasForeignKey(e => e.FuncaoId);
         }
     }
 
@@ -168,8 +175,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             builder.Property(e => e.Sobrenome).HasMaxLength(100);
 
             builder.HasOne(e => e.PerfilUsuario)
-                   .WithMany(p => p.Usuarios)
-                   .HasForeignKey(e => e.PerfilUsuarioId);
+                       .WithMany(p => p.Usuarios)
+                       .HasForeignKey(e => e.PerfilUsuarioId);
         }
     }
 
@@ -181,14 +188,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             builder.HasKey(e => e.Id);
 
             builder.HasOne(p => p.Cliente)
-                   .WithMany(c => c.Projetos)
-                   .HasForeignKey(p => p.ClienteId)
-                   .OnDelete(DeleteBehavior.Cascade); // Se deletar um cliente, seus projetos são deletados.
+                       .WithMany(c => c.Projetos)
+                       .HasForeignKey(p => p.ClienteId)
+                       .OnDelete(DeleteBehavior.Cascade); // Se deletar um cliente, seus projetos são deletados.
 
             builder.HasOne(p => p.Endereco)
-                   .WithMany()
-                   .HasForeignKey(p => p.EnderecoId)
-                   .OnDelete(DeleteBehavior.Cascade);
+                       .WithMany()
+                       .HasForeignKey(p => p.EnderecoId)
+                       .OnDelete(DeleteBehavior.Cascade);
         }
     }
 
@@ -197,14 +204,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         public void Configure(EntityTypeBuilder<Obra> builder)
         {
             builder.HasOne(d => d.ResponsavelObra)
-                  .WithMany() // Um funcionário pode ser responsável por várias obras
-                  .HasForeignKey(d => d.ResponsavelObraId)
-                  .OnDelete(DeleteBehavior.NoAction); // Não deletar o funcionário se a obra for removida
+                     .WithMany() // Um funcionário pode ser responsável por várias obras
+                     .HasForeignKey(d => d.ResponsavelObraId)
+                     .OnDelete(DeleteBehavior.NoAction); // Não deletar o funcionário se a obra for removida
 
             builder.HasOne(o => o.Projeto)
-                   .WithMany(p => p.Obras)
-                   .HasForeignKey(o => o.ProjetoId)
-                   .OnDelete(DeleteBehavior.Cascade); // Se deletar o projeto, suas obras são deletadas.
+                       .WithMany(p => p.Obras)
+                       .HasForeignKey(o => o.ProjetoId)
+                       .OnDelete(DeleteBehavior.Cascade); // Se deletar o projeto, suas obras são deletadas.
         }
     }
 
@@ -253,8 +260,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         }
     }
 
-
-
     public class PerfilUsuarioConfiguration : IEntityTypeConfiguration<PerfilUsuario>
     {
         public void Configure(EntityTypeBuilder<PerfilUsuario> builder)
@@ -263,8 +268,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             builder.Property(e => e.Nome).IsRequired().HasMaxLength(100);
         }
     }
-   
-
 
     public class FornecedorInsumoConfiguration : IEntityTypeConfiguration<FornecedorInsumo>
     {
@@ -294,7 +297,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         }
     }
 
-   
+
     public class ObraFuncionarioConfiguration : IEntityTypeConfiguration<ObraFuncionario>
     {
         public void Configure(EntityTypeBuilder<ObraFuncionario> builder)
@@ -306,7 +309,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             builder.Property(e => e.DataHoraCadastro).IsRequired();
             builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
 
-            builder.HasOne(e => e.Obra).WithMany(o => o.Funcionarios).HasForeignKey(e => e.ObraId);
+            builder.HasOne(e => e.Obra)
+                .WithMany(o => o.Funcionarios)
+                .HasForeignKey(e => e.ObraId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(e => e.Funcionario)
+                .WithMany()
+                .HasForeignKey(e => e.FuncionarioId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 
@@ -320,10 +331,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             builder.Property(e => e.DataHoraCadastro).IsRequired();
             builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
 
-            builder.HasOne(e => e.Obra).WithMany(o => o.Fornecedores).HasForeignKey(e => e.ObraId);
+            builder.HasOne(e => e.Obra)
+                .WithMany(o => o.Fornecedores)
+                .HasForeignKey(e => e.ObraId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(e => e.Fornecedor)
+                .WithMany()
+                .HasForeignKey(e => e.FornecedorId);
         }
     }
-
     public class ObraEquipamentoConfiguration : IEntityTypeConfiguration<ObraEquipamento>
     {
         public void Configure(EntityTypeBuilder<ObraEquipamento> builder)
@@ -440,9 +457,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
 
             builder.HasOne(e => e.ObraEtapaPadrao)
-                   .WithMany(eo => eo.Itens)
-                   .HasForeignKey(e => e.ObraEtapaPadraoId)
-                   .OnDelete(DeleteBehavior.Cascade);
+                       .WithMany(eo => eo.Itens)
+                       .HasForeignKey(e => e.ObraEtapaPadraoId)
+                       .OnDelete(DeleteBehavior.Cascade);
         }
     }
 
@@ -455,10 +472,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             builder.Property(e => e.DataHoraCadastro).IsRequired();
             builder.Property(e => e.UsuarioCadastro).IsRequired().HasMaxLength(100);
 
+            builder.HasOne(e => e.Insumo)
+                        .WithMany()
+                        .HasForeignKey(e => e.InsumoId)
+                        .OnDelete(DeleteBehavior.Restrict); // Evita a exclusão em cascata do Insumo ao excluir um ObraItemEtapaPadraoInsumo, se o Insumo for usado em outros lugares.
+
             builder.HasOne(e => e.ObraItemEtapaPadrao)
-                   .WithMany(p => p.Insumos)
-                   .HasForeignKey(e => e.ObraItemEtapaPadraoId)
-                   .OnDelete(DeleteBehavior.Cascade);
+                       .WithMany(p => p.Insumos)
+                       .HasForeignKey(e => e.ObraItemEtapaPadraoId)
+                       .OnDelete(DeleteBehavior.Cascade);
         }
     }
 
@@ -525,6 +547,101 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         }
     }
 
+    public class EventoConfiguration : IEntityTypeConfiguration<Evento>
+    {
+        public void Configure(EntityTypeBuilder<Evento> builder)
+        {
+            builder.HasKey(e => e.Id);
 
+            builder.HasOne(e => e.Criador)
+                .WithMany()
+                .HasForeignKey(e => e.CriadorId);
+
+            builder.Property(e => e.Titulo).HasMaxLength(200);
+            builder.Property(e => e.Descricao).HasMaxLength(2000);
+
+        }
+    }
+
+    public class ParticipanteEventoConfiguration : IEntityTypeConfiguration<ParticipanteEvento>
+    {
+        public void Configure(EntityTypeBuilder<ParticipanteEvento> builder)
+        {
+            builder.HasKey(pe => pe.Id);
+
+            builder.HasOne(pe => pe.Evento)
+                .WithMany(e => e.Participantes)
+                .HasForeignKey(pe => pe.EventoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(pe => pe.Usuario)
+                .WithMany()
+                .HasForeignKey(pe => pe.UsuarioId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Property(pe => pe.StatusParticipacao).IsRequired(false);
+            builder.Property(pe => pe.DataHoraCadastro).IsRequired();
+            builder.Property(pe => pe.UsuarioCadastro).HasMaxLength(100);
+        }
+    }
+
+    public class LembreteEventoConfiguration : IEntityTypeConfiguration<LembreteEvento>
+    {
+        public void Configure(EntityTypeBuilder<LembreteEvento> builder)
+        {
+            builder.HasKey(le => le.Id);
+
+            builder.HasOne(le => le.Evento)
+                .WithMany(e => e.Lembretes)
+                .HasForeignKey(le => le.EventoId);
+
+
+        }
+    }
+    public class ConfiguracaoLembreteDiarioConfiguration : IEntityTypeConfiguration<ConfiguracaoLembreteDiario>
+    {
+        public void Configure(EntityTypeBuilder<ConfiguracaoLembreteDiario> builder)
+        {
+            builder.HasKey(x => x.Id);
+
+            builder.HasOne(x => x.UsuarioCadastro)
+                .WithMany()
+                .HasForeignKey(x => x.UsuarioCadastroId)
+                .OnDelete(DeleteBehavior.NoAction);
+        }
+    }
+
+    public class OrcamentoConfiguration : IEntityTypeConfiguration<Orcamento>
+    {
+        public void Configure(EntityTypeBuilder<Orcamento> builder)
+        {
+            builder.HasKey(o => o.Id);
+            builder.Property(o => o.TotalEstimado).HasPrecision(18, 2); // Adicionado para resolver o warning
+            // Outras configurações de Orcamento aqui, se houver
+        }
+    }
+
+    public class OrcamentoItemConfiguration : IEntityTypeConfiguration<OrcamentoItem>
+    {
+        public void Configure(EntityTypeBuilder<OrcamentoItem> builder)
+        {
+            builder.HasKey(oi => oi.Id);
+            builder.Property(oi => oi.PrecoUnitario).HasPrecision(18, 2); // Adicionado para resolver o warning
+            builder.Property(oi => oi.Quantidade).HasPrecision(18, 2); // Adicionado para resolver o warning
+            // Outras configurações de OrcamentoItem aqui, se houver
+        }
+    }
+
+    public class OrcamentoObraConfiguration : IEntityTypeConfiguration<OrcamentoObra>
+    {
+        public void Configure(EntityTypeBuilder<OrcamentoObra> builder)
+        {
+            builder.HasKey(oo => oo.Id);
+            builder.Property(oo => oo.TotalEstimado).HasPrecision(18, 2); // Adicionado para resolver o warning
+            // Outras configurações de OrcamentoObra aqui, se houver
+        }
+    }
 
     #endregion
+
+}

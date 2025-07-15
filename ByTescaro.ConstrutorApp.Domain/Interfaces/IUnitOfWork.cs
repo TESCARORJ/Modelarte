@@ -43,5 +43,9 @@ namespace ByTescaro.ConstrutorApp.Domain.Interfaces
         IProjetoRepository ProjetoRepository { get; }
         IServicoRepository ServicoRepository { get; }
         IUsuarioRepository UsuarioRepository { get; }
+        IEventoRepository EventoRepository { get; }
+        IParticipanteEventoRepository ParticipanteEventoRepository { get; }
+        ILembreteEventoRepository LembreteEventoRepository { get; }
+        IConfiguracaoLembreteDiarioRepository ConfiguracaoLembreteDiarioRepository { get; }
     }
 }

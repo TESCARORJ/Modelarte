@@ -50,7 +50,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.ToTable("PerfilUsuario");
                 });
 
-            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", b =>
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ConfiguracaoLembreteDiario", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -64,44 +64,24 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.Property<DateTime>("DataHoraCadastro")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
+                    b.Property<string>("Descricao")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<TimeSpan>("HoraDoDia")
+                        .HasColumnType("time");
 
-                    b.Property<long>("PerfilUsuarioId")
+                    b.Property<long>("UsuarioCadastroId")
                         .HasColumnType("bigint");
-
-                    b.Property<string>("SenhaHash")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Sobrenome")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Telefone")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UsuarioCadastro")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PerfilUsuarioId");
+                    b.HasIndex("UsuarioCadastroId");
 
-                    b.ToTable("Usuario");
+                    b.ToTable("ConfiguracoesLembreteDiario");
                 });
 
-            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Cliente", b =>
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Endereco", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -109,78 +89,40 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<bool>("Ativo")
-                        .HasColumnType("bit");
-
                     b.Property<string>("Bairro")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.Property<string>("CEP")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(9)
+                        .HasColumnType("nvarchar(9)");
 
                     b.Property<string>("Cidade")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.Property<string>("Complemento")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CpfCnpj")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<DateTime>("DataHoraCadastro")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Estado")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Logradouro")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("Numero")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TelefonePrincipal")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TelefoneWhatsApp")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("TipoPessoa")
-                        .HasColumnType("int");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("UF")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UsuarioCadastro")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Cliente");
+                    b.ToTable("Endereco", (string)null);
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Equipamento", b =>
@@ -227,7 +169,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.ToTable("Equipamento");
                 });
 
-            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Fornecedor", b =>
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Evento", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -235,49 +177,46 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<bool>("Ativo")
-                        .HasColumnType("bit");
+                    b.Property<long>("CriadorId")
+                        .HasColumnType("bigint");
 
-                    b.Property<string>("CpfCnpj")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                    b.Property<DateTime?>("DataFimRecorrencia")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("DataHoraCadastro")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<DateTime>("DataHoraFim")
+                        .HasColumnType("datetime2");
 
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<DateTime>("DataHoraInicio")
+                        .HasColumnType("datetime2");
 
-                    b.Property<string>("TelefonePrincipal")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("Descricao")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
-                    b.Property<string>("TelefoneWhatsApp")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Tipo")
+                    b.Property<int?>("FrequenciaRecorrencia")
                         .HasColumnType("int");
 
-                    b.Property<int?>("TipoPessoa")
-                        .HasColumnType("int");
+                    b.Property<bool>("IsRecorrente")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Titulo")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("UsuarioCadastro")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("Visibilidade")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Fornecedor");
+                    b.HasIndex("CriadorId");
+
+                    b.ToTable("Eventos");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.FornecedorInsumo", b =>
@@ -397,102 +336,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.ToTable("Funcao");
                 });
 
-            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Funcionario", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<bool>("Ativo")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Bairro")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CEP")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Cidade")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Complemento")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CpfCnpj")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<DateTime>("DataAdmissao")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DataDemissao")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("DataHoraCadastro")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Estado")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<long>("FuncaoId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("Logradouro")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Numero")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("Salario")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("TelefonePrincipal")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TelefoneWhatsApp")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("TipoPessoa")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UF")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UsuarioCadastro")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FuncaoId");
-
-                    b.ToTable("Funcionario");
-                });
-
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Insumo", b =>
                 {
                     b.Property<long>("Id")
@@ -527,6 +370,39 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Insumo");
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.LembreteEvento", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("DataHoraCadastro")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("Enviado")
+                        .HasColumnType("bit");
+
+                    b.Property<long>("EventoId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("TempoAntes")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UnidadeTempo")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UsuarioCadastro")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventoId");
+
+                    b.ToTable("LembretesEvento");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.LogAuditoria", b =>
@@ -864,6 +740,9 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.Property<long>("FuncionarioId")
                         .HasColumnType("bigint");
 
+                    b.Property<long?>("FuncionarioId1")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("FuncionarioNome")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -880,6 +759,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FuncionarioId");
+
+                    b.HasIndex("FuncionarioId1");
 
                     b.HasIndex("ObraId");
 
@@ -1423,6 +1304,97 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.ToTable("OrcamentoObra");
                 });
 
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ParticipanteEvento", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("DataHoraCadastro")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DataResposta")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("EventoId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int?>("StatusParticipacao")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UsuarioCadastro")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<long>("UsuarioId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventoId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("ParticipantesEvento");
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Pessoa", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("CpfCnpj")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("DataHoraCadastro")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<long?>("EnderecoId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Nome")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("TelefonePrincipal")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TelefoneWhatsApp")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TipoEntidade")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TipoPessoa")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UsuarioCadastro")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnderecoId");
+
+                    b.ToTable("Pessoa", (string)null);
+
+                    b.UseTptMappingStrategy();
+                });
+
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Projeto", b =>
                 {
                     b.Property<long>("Id")
@@ -1431,24 +1403,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<string>("Bairro")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CEP")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Cidade")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<long>("ClienteId")
                         .HasColumnType("bigint");
-
-                    b.Property<string>("Complemento")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("DataFim")
                         .HasColumnType("datetime2");
@@ -1459,20 +1415,10 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.Property<DateTime>("DataInicio")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Estado")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Logradouro")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<long?>("EnderecoId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Numero")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Status")
@@ -1482,19 +1428,16 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("UF")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("UsuarioCadastro")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ClienteId");
 
-                    b.ToTable("Projeto");
+                    b.HasIndex("EnderecoId");
+
+                    b.ToTable("Projeto", (string)null);
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Servico", b =>
@@ -1531,13 +1474,82 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", b =>
                 {
-                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.PerfilUsuario", "PerfilUsuario")
-                        .WithMany("Usuarios")
-                        .HasForeignKey("PerfilUsuarioId")
+                    b.HasBaseType("ByTescaro.ConstrutorApp.Domain.Entities.Pessoa");
+
+                    b.Property<long>("PerfilUsuarioId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("SenhaHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Sobrenome")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasIndex("PerfilUsuarioId");
+
+                    b.ToTable("Usuario", (string)null);
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Cliente", b =>
+                {
+                    b.HasBaseType("ByTescaro.ConstrutorApp.Domain.Entities.Pessoa");
+
+                    b.ToTable("Cliente", (string)null);
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Fornecedor", b =>
+                {
+                    b.HasBaseType("ByTescaro.ConstrutorApp.Domain.Entities.Pessoa");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("int");
+
+                    b.ToTable("Fornecedor", (string)null);
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Funcionario", b =>
+                {
+                    b.HasBaseType("ByTescaro.ConstrutorApp.Domain.Entities.Pessoa");
+
+                    b.Property<DateTime>("DataAdmissao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DataDemissao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("FuncaoId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("Salario")
+                        .HasColumnType("decimal(18, 2)");
+
+                    b.HasIndex("FuncaoId");
+
+                    b.ToTable("Funcionario", (string)null);
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ConfiguracaoLembreteDiario", b =>
+                {
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("UsuarioCadastro");
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Evento", b =>
+                {
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "Criador")
+                        .WithMany()
+                        .HasForeignKey("CriadorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("PerfilUsuario");
+                    b.Navigation("Criador");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.FornecedorInsumo", b =>
@@ -1545,13 +1557,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Fornecedor", "Fornecedor")
                         .WithMany()
                         .HasForeignKey("FornecedorId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Insumo", "Insumo")
                         .WithMany()
                         .HasForeignKey("InsumoId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Fornecedor");
@@ -1564,13 +1576,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Fornecedor", "Fornecedor")
                         .WithMany()
                         .HasForeignKey("FornecedorId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Servico", "Servico")
                         .WithMany()
                         .HasForeignKey("ServicoId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Fornecedor");
@@ -1578,15 +1590,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.Navigation("Servico");
                 });
 
-            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Funcionario", b =>
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.LembreteEvento", b =>
                 {
-                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Funcao", "Funcao")
-                        .WithMany()
-                        .HasForeignKey("FuncaoId")
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Evento", "Evento")
+                        .WithMany("Lembretes")
+                        .HasForeignKey("EventoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Funcao");
+                    b.Navigation("Evento");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Obra", b =>
@@ -1659,7 +1671,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Obra", "Obra")
                         .WithMany("Fornecedores")
                         .HasForeignKey("ObraId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Fornecedor");
@@ -1670,15 +1682,19 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraFuncionario", b =>
                 {
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Funcionario", "Funcionario")
-                        .WithMany("ProjetoFuncionarios")
+                        .WithMany()
                         .HasForeignKey("FuncionarioId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Funcionario", null)
+                        .WithMany("ProjetoFuncionarios")
+                        .HasForeignKey("FuncionarioId1");
+
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Obra", "Obra")
                         .WithMany("Funcionarios")
                         .HasForeignKey("ObraId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Funcionario");
@@ -1702,7 +1718,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Insumo", "Insumo")
                         .WithMany()
                         .HasForeignKey("InsumoId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Obra", null)
@@ -1731,7 +1747,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Funcionario", "Responsavel")
                         .WithMany()
                         .HasForeignKey("ResponsavelId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Obra");
@@ -1790,8 +1806,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Funcionario", "Responsavel")
                         .WithMany()
-                        .HasForeignKey("ResponsavelId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("ResponsavelId");
 
                     b.Navigation("Obra");
 
@@ -1808,8 +1823,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Funcionario", "Responsavel")
                         .WithMany()
-                        .HasForeignKey("ResponsavelId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("ResponsavelId");
 
                     b.Navigation("Obra");
 
@@ -1831,7 +1845,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Servico", "Servico")
                         .WithMany()
                         .HasForeignKey("ServicoId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Lista");
@@ -1847,10 +1861,10 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Fornecedor", "Responsavel")
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Funcionario", "Responsavel")
                         .WithMany()
                         .HasForeignKey("ResponsavelId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Obra");
@@ -1913,6 +1927,35 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.Navigation("Obra");
                 });
 
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ParticipanteEvento", b =>
+                {
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Evento", "Evento")
+                        .WithMany("Participantes")
+                        .HasForeignKey("EventoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Evento");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Pessoa", b =>
+                {
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Endereco", "Endereco")
+                        .WithMany()
+                        .HasForeignKey("EnderecoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Endereco");
+                });
+
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Projeto", b =>
                 {
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Cliente", "Cliente")
@@ -1921,7 +1964,66 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Endereco", "Endereco")
+                        .WithMany()
+                        .HasForeignKey("EnderecoId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.Navigation("Cliente");
+
+                    b.Navigation("Endereco");
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", b =>
+                {
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Pessoa", null)
+                        .WithOne()
+                        .HasForeignKey("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.PerfilUsuario", "PerfilUsuario")
+                        .WithMany("Usuarios")
+                        .HasForeignKey("PerfilUsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PerfilUsuario");
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Cliente", b =>
+                {
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Pessoa", null)
+                        .WithOne()
+                        .HasForeignKey("ByTescaro.ConstrutorApp.Domain.Entities.Cliente", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Fornecedor", b =>
+                {
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Pessoa", null)
+                        .WithOne()
+                        .HasForeignKey("ByTescaro.ConstrutorApp.Domain.Entities.Fornecedor", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Funcionario", b =>
+                {
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Funcao", "Funcao")
+                        .WithMany()
+                        .HasForeignKey("FuncaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Pessoa", null)
+                        .WithOne()
+                        .HasForeignKey("ByTescaro.ConstrutorApp.Domain.Entities.Funcionario", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Funcao");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Admin.PerfilUsuario", b =>
@@ -1929,19 +2031,16 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.Navigation("Usuarios");
                 });
 
-            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Cliente", b =>
-                {
-                    b.Navigation("Projetos");
-                });
-
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Equipamento", b =>
                 {
                     b.Navigation("ProjetoEquipamentos");
                 });
 
-            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Funcionario", b =>
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Evento", b =>
                 {
-                    b.Navigation("ProjetoFuncionarios");
+                    b.Navigation("Lembretes");
+
+                    b.Navigation("Participantes");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Obra", b =>
@@ -2009,6 +2108,16 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Projeto", b =>
                 {
                     b.Navigation("Obras");
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Cliente", b =>
+                {
+                    b.Navigation("Projetos");
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Funcionario", b =>
+                {
+                    b.Navigation("ProjetoFuncionarios");
                 });
 #pragma warning restore 612, 618
         }

@@ -23,6 +23,11 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         public virtual async Task<T?> GetByIdAsync(long id) => await _dbSet.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id);
         // Nota: FindAsync() rastreia a entidade. Preferimos FirstOrDefaultAsync + AsNoTracking() para este cenário.
 
+        public virtual async Task<T?> GetByIdTrackingAsync(long id)
+        { 
+            return await _dbSet.FindAsync(id);
+        }
+
         public virtual async Task<List<T>> GetAllAsync() => await _dbSet.AsNoTracking().ToListAsync();
 
         //public virtual async Task<List<T>> GetActivesAsync() => await _dbSet.Where(e => e.Ativo).AsNoTracking().ToListAsync();
@@ -88,7 +93,20 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 
         public virtual void Remove(T entity)
         {
+            try
+            {
             _dbSet.Remove(entity);
+
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        public virtual void RemoveRange(IEnumerable<T> entities)
+        {
+            _dbSet.RemoveRange(entities);
         }
     }
 }

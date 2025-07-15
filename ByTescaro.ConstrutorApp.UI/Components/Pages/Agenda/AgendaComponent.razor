@@ -1,0 +1,198 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Interfaces
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Radzen
+@using Radzen.Blazor
+@using ByTescaro.ConstrutorApp.Application.Utils
+
+@inject IAgendaService AgendaService
+@inject IUsuarioLogadoService UsuarioLogadoService
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<RadzenCard Class="rz-pa-4 rz-mb-6" Variant="Variant.Filled">
+    <RadzenStack Gap="0.5rem">
+        <RadzenText Text="Minha Agenda" TextStyle="TextStyle.H5" />
+        <RadzenText Text="Crie e gerencie seus eventos e convites." Style="margin-bottom: 1rem; color: gray;" />
+
+        <RadzenScheduler @ref="scheduler"
+                         Data="@eventos"
+                         TItem="EventoDto"
+                         StartProperty="DataHoraInicio"
+                         EndProperty="DataHoraFim"
+                         TextProperty="Titulo"
+                         Theme="Material3"
+                         Style="height: 768px;"
+                         SelectedIndex="2"
+                         SlotSelect="@OnSlotSelect"
+                         AppointmentSelect="@OnAppointmentSelect"
+                         SlotRender="@OnSlotRender"             
+                         DaySelect="@OnDaySelect"              
+                         AppointmentMove="@OnAppointmentMove">
+            <RadzenDayView Text="Dia" />
+            <RadzenWeekView Text="Semana" />
+            <RadzenMonthView Text="Mês" />
+            <RadzenYearPlannerView Text="Ano (Planejador)" />
+            <RadzenYearTimelineView Text="Ano (Linha do Tempo)" />
+        </RadzenScheduler>
+    </RadzenStack>
+</RadzenCard>
+
+@code {
+    RadzenScheduler<EventoDto>? scheduler; 
+    IEnumerable<EventoDto> eventos = new List<EventoDto>(); 
+    private long usuarioLogadoId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var usuario = await UsuarioLogadoService.ObterUsuarioAtualAsync(); 
+        if (usuario != null)
+        {
+            usuarioLogadoId = usuario.Id;
+            await CarregarEventos();
+        }
+        else
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Erro", Detail = "Usuário não autenticado." });
+            NavigationManager.NavigateTo("/login");
+        }
+    }
+
+    private async Task CarregarEventos()
+    {
+        try
+        {
+            // NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Info, Summary = "Carregamento de Eventos", Detail = "Iniciando carregamento de eventos." });
+            var fetchedEvents = await AgendaService.ObterEventosDoUsuarioAsync(usuarioLogadoId);
+            eventos = fetchedEvents ?? new List<EventoDto>();
+
+            // NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Info, Summary = "Carregamento de Eventos", Detail = $"Total de eventos carregados: {eventos.Count()}." });
+
+            // if (eventos.Any())
+            // {
+            //     var firstEvent = eventos.First();
+            //     NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Info, Summary = "Detalhes do Primeiro Evento", Detail = $"Título: {firstEvent.Titulo}, Início: {firstEvent.DataHoraInicio}, Fim: {firstEvent.DataHoraFim}, Criador: {firstEvent.NomeCriador}" });
+            // }
+            // else
+            // {
+            //     NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Info, Summary = "Carregamento de Eventos", Detail = "Nenhum evento encontrado para este usuário." });
+            // }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro ao carregar eventos", Detail = $"Não foi possível carregar os eventos: {ex.Message}" });
+            eventos = new List<EventoDto>();
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task OnSlotSelect(SchedulerSlotSelectEventArgs args)
+    {
+        if (args.View.Text == "Year Planner") return; 
+
+        var novoEventoRequest = new CriarEventoRequest
+        {
+            DataHoraInicio = args.Start,
+            DataHoraFim = args.End
+        };
+
+        var result = await DialogService.OpenAsync<CriarEvento>("Criar Novo Evento",
+            new Dictionary<string, object> { { "EventoInicial", novoEventoRequest } },
+            new DialogOptions { Width = "1200px", Height = "600px", Resizable = true, Draggable = true });
+
+        if (result == true)
+        {
+            await CarregarEventos();
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Evento criado com sucesso!" });
+        }
+        else if (result is bool wasCancelled && !wasCancelled)
+        {
+             // Diálogo cancelado ou erro não fatal
+        }
+    }
+
+    async Task OnAppointmentSelect(SchedulerAppointmentSelectEventArgs<EventoDto> args)
+    {
+        var eventoSelecionado = args.Data;
+        var result = await DialogService.OpenAsync<EditarEvento>("Detalhes do Evento",
+            new Dictionary<string, object> { { "EventoId", eventoSelecionado.Id } },
+            new DialogOptions { Width = "1200px", Height = "600px", Resizable = true, Draggable = true });
+
+        if (result == true)
+        {
+            await CarregarEventos();
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Evento atualizado/excluído com sucesso!" });
+        }
+        else if (result is bool wasCancelled && !wasCancelled)
+        {
+            // O diálogo foi fechado sem um resultado 'true', pode ser cancelado ou erro
+        }
+    }
+
+    void OnSlotRender(SchedulerSlotRenderEventArgs args)
+    {
+        if (args.View.Text == "Month" && args.Start.Date == DateTime.Today)
+        {
+            args.Attributes["style"] = "background: var(--rz-scheduler-highlight-background-color, rgba(255,220,40,.2));";
+        }
+
+        if ((args.View.Text == "Week" || args.View.Text == "Day") && args.Start.Hour >= 9 && args.Start.Hour < 18)
+        {
+            args.Attributes["style"] = "background: var(--rz-scheduler-highlight-background-color, rgba(255,220,40,.2));";
+        }
+    }
+
+    void OnDaySelect(SchedulerDaySelectEventArgs args)
+    {
+        Console.WriteLine($"Dia selecionado: {args.Day}. Eventos: {args.Appointments.Count()}");
+    }
+
+    async Task OnAppointmentMove(SchedulerAppointmentMoveEventArgs args)
+    {
+        var draggedEvento = eventos.FirstOrDefault(x => x == args.Appointment.Data);
+
+        if (draggedEvento != null)
+        {
+            var duration = draggedEvento.DataHoraFim - draggedEvento.DataHoraInicio;
+
+            if (args.SlotDate.TimeOfDay == TimeSpan.Zero)
+            {
+                draggedEvento.DataHoraInicio = args.SlotDate.Date.Add(draggedEvento.DataHoraInicio.TimeOfDay);
+            }
+            else
+            {
+                draggedEvento.DataHoraInicio = args.SlotDate;
+            }
+
+            draggedEvento.DataHoraFim = draggedEvento.DataHoraInicio.Add(duration);
+
+            try
+            {
+                var updateRequest = new AtualizarEventoRequest
+                {
+                    Id = draggedEvento.Id,
+                    Titulo = draggedEvento.Titulo,
+                    Descricao = draggedEvento.Descricao,
+                    DataHoraInicio = draggedEvento.DataHoraInicio,
+                    DataHoraFim = draggedEvento.DataHoraFim,
+                    EhRecorrente = draggedEvento.EhRecorrente,
+                    FrequenciaRecorrencia = draggedEvento.FrequenciaRecorrencia,
+                    DataFimRecorrencia = draggedEvento.DataFimRecorrencia,
+                    Visibilidade = draggedEvento.Visibilidade,
+                    IdsParticipantesConvidados = draggedEvento.Participantes.Select(p => p.UsuarioId).ToList()
+                };
+
+                await AgendaService.AtualizarEventoAsync(updateRequest, usuarioLogadoId);
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Evento movido com sucesso!" });
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro ao mover evento", Detail = ex.Message });
+            }
+
+            await scheduler!.Reload();
+        }
+    }
+}
