@@ -34,14 +34,34 @@
                     PageSize="10"
                     FilterMode="FilterMode.Advanced"
                     Responsive="true"
-                    ShowPagingSummary="true">
+                    ShowPagingSummary="true" EmptyText="Não contém registros.">
 
         <Columns>
             <RadzenDataGridColumn TItem="FornecedorDto" Property="Nome" Title="Nome" />
             <RadzenDataGridColumn TItem="FornecedorDto" Property="CpfCnpj" Title="CPF/CNPJ" />
             <RadzenDataGridColumn TItem="FornecedorDto" Property="TipoPessoa" Title="Tipo" />
-            <RadzenDataGridColumn TItem="FornecedorDto" Property="TelefonePrincipal" Title="Telefone" />
-            <RadzenDataGridColumn TItem="FornecedorDto" Property="Email" Title="Email" />
+            <RadzenDataGridColumn TItem="FornecedorDto" Title="WhatsApp"  TextAlign="TextAlign.Center">
+                <Template Context="fornecedor">
+                    @if (!string.IsNullOrWhiteSpace(fornecedor.TelefoneWhatsApp))
+                    {
+                        <a href="@($"https://wa.me/55{LimparNumeroTelefone(fornecedor.TelefoneWhatsApp)}")" target="_blank" title="Abrir no WhatsApp">
+                            <i class="fa fa-whatsapp" style="color: #25D366; font-size: 1.2em;"></i>
+                            @fornecedor.TelefoneWhatsApp
+                        </a>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="FornecedorDto" Title="E-mail">
+                <Template Context="fornecedor">
+                    @if (!string.IsNullOrWhiteSpace(fornecedor.Email))
+                    {
+                        <a href="@($"mailto:{fornecedor.Email}")" title="Enviar e-mail">
+                            @fornecedor.Email
+                        </a>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
             <RadzenDataGridColumn TItem="FornecedorDto" Title="Ações" Filterable="false" Sortable="false">
                 <Template Context="Fornecedor">
                     <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
@@ -112,5 +132,13 @@
         {
             NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao excluir Fornecedor: {ex.Message}", Duration = 5000 });
         }
+    }
+
+    private string LimparNumeroTelefone(string numero)
+    {
+        // Remove todos os caracteres que não são dígitos.
+        // Se seus números não tiverem o código do país (como 55 para o Brasil),
+        // você pode adicioná-lo aqui. Ex: return "55" + ...
+        return new string(numero.Where(char.IsDigit).ToArray());
     }
 }

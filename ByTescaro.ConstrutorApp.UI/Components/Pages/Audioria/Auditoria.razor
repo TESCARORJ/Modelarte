@@ -1,6 +1,9 @@
 ﻿@page "/auditoria"
+@using ByTescaro.ConstrutorApp.Application.DTOs
 @using ByTescaro.ConstrutorApp.Application.Interfaces
+@using ByTescaro.ConstrutorApp.Application.Utils
 @using ByTescaro.ConstrutorApp.Domain.Entities
+@using ByTescaro.ConstrutorApp.Domain.Enums
 @using Microsoft.AspNetCore.Authorization
 @inject ILogAuditoriaService LogService
 @attribute [Authorize]
@@ -8,31 +11,41 @@
 <RadzenCard Style="margin: 1rem;">
     <RadzenHeading Size="H5" Text="Registros de Auditoria" />
 
-    <RadzenDataGrid TItem="LogAuditoria" Data="@_logs" Class="mt-4"
-                    AllowPaging="true" PageSize="10"
-                    AllowSorting="true" AllowFiltering="true"
-                    FilterMode="FilterMode.Advanced"
+    <RadzenDataGrid TItem="LogAuditoriaDTO" Data="@_logs" Class="mt-4"
+                    AllowFiltering="true"
+                    AllowColumnResize="true"
+                    AllowSorting="true"
+                    PageSize="10"
+                    AllowPaging="true" 
+                    PagerHorizontalAlign="HorizontalAlign.Left"
                     ShowPagingSummary="true"
-                    Responsive="true">
+                    FilterMode="FilterMode.Advanced"
+                    Responsive="true"
+                    ColumnWidth="300px">
 
         <Columns>
-            <RadzenDataGridColumn TItem="LogAuditoria" Property="Id" Title="ID" Width="80px" TextAlign="TextAlign.Center" />
-            <RadzenDataGridColumn TItem="LogAuditoria" Title="Data" Width="160px">
+            <RadzenDataGridColumn TItem="LogAuditoriaDTO" Property="Id" Title="ID" Width="80px" TextAlign="TextAlign.Center" />
+            <RadzenDataGridColumn TItem="LogAuditoriaDTO" Title="Data" Width="160px">
                 <Template Context="log">
                     @log.DataHora.ToString("dd/MM/yyyy HH:mm")
                 </Template>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="LogAuditoria" Property="Usuario" Title="Usuário" />
-            <RadzenDataGridColumn TItem="LogAuditoria" Property="Entidade" Title="Entidade" />
-            <RadzenDataGridColumn TItem="LogAuditoria" Property="IdEntidade" Title="ID Entidade" TextAlign="TextAlign.Center" />
-            <RadzenDataGridColumn TItem="LogAuditoria" Property="Acao" Title="Ação" />
-            <RadzenDataGridColumn TItem="LogAuditoria" Property="Descricao" Title="Descrição" />
+            <RadzenDataGridColumn TItem="LogAuditoriaDTO" Property="UsuarioNome" Title="Usuário" />
+            <RadzenDataGridColumn TItem="LogAuditoriaDTO" Property="IdEntidade" Title="ID Entidade" TextAlign="TextAlign.Center" />
+            <RadzenDataGridColumn TItem="LogAuditoriaDTO" Title="Ação">
+                <Template Context="e">
+                    @EnumHelper.ObterDescricaoEnum(e.TipoLogAuditoria)
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="LogAuditoriaDTO" Property="Descricao" Title="Descrição" Width="5000px" />
         </Columns>
     </RadzenDataGrid>
 </RadzenCard>
 
 @code {
-    private List<LogAuditoria> _logs = new();
+    private List<LogAuditoriaDTO> _logs = new();
+    private List<EnumOption<TipoLogAuditoria>> tipoLogAuditoriaOptions = EnumHelper.ListarOpcoes<TipoLogAuditoria>(incluirNulo: true);
+
 
     protected override async Task OnInitializedAsync()
     {

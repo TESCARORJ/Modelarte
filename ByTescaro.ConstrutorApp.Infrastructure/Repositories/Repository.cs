@@ -28,6 +28,11 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
             return await _dbSet.FindAsync(id);
         }
 
+        public virtual async Task<T?> GetByIdNoTrackingAsync(long id)
+        {
+            return await _dbSet.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id);
+        }
+
         public virtual async Task<List<T>> GetAllAsync() => await _dbSet.AsNoTracking().ToListAsync();
 
         //public virtual async Task<List<T>> GetActivesAsync() => await _dbSet.Where(e => e.Ativo).AsNoTracking().ToListAsync();
@@ -58,6 +63,18 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
             }
 
             return await query.Where(predicate).ToListAsync();
+        }
+
+        public async Task<T?> FindOneWithIncludesNoTrackingAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includeProperties)
+        {
+            IQueryable<T> query = _dbSet.AsNoTracking(); // Adicionado AsNoTracking() aqui
+
+            foreach (var includeProperty in includeProperties)
+            {
+                query = query.Include(includeProperty);
+            }
+
+            return await query.FirstOrDefaultAsync(predicate);
         }
 
         public async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate) => await _dbSet.AnyAsync(predicate);

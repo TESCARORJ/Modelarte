@@ -58,21 +58,54 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task AtualizarAsync(InsumoDto dto)
         {
-            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
-            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+            var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
+            var usuarioLogadoId = usuarioLogado?.Id ?? 0;
 
-            var entityAntigo = await _unitOfWork.InsumoRepository.GetByIdAsync(dto.Id);
-            if (entityAntigo == null) return;
+            // 1. Busque a entidade antiga SOMENTE PARA FINS DE AUDITORIA, SEM RASTREAMENTO.
+            // Essa instância 'insumoAntigoParaAuditoria' NÃO será modificada pelo AutoMapper,
+            // preservando o estado original para o log.
+            var insumoAntigoParaAuditoria = await _unitOfWork.InsumoRepository.GetByIdNoTrackingAsync(dto.Id);
 
-            var entityNovo = _mapper.Map<Insumo>(dto);
-            entityNovo.UsuarioCadastroId = entityAntigo.UsuarioCadastroId;
-            entityNovo.DataHoraCadastro = entityAntigo.DataHoraCadastro;
+            if (insumoAntigoParaAuditoria == null)
+            {
+                // Se não encontrou, não há o que atualizar ou auditar para um ID existente.
+                throw new KeyNotFoundException($"Insumo com ID {dto.Id} não encontrado para auditoria.");
+            }
 
-            _unitOfWork.InsumoRepository.Update(entityNovo);
-            await _auditoriaService.RegistrarAtualizacaoAsync(entityAntigo, entityNovo, usuarioLogadoId);
+            // 2. Busque a entidade que REALMENTE SERÁ ATUALIZADA, COM RASTREAMENTO.
+            // Essa instância 'insumoParaAtualizar' é a que o EF Core está monitorando
+            // e que terá suas propriedades alteradas.
+            var insumoParaAtualizar = await _unitOfWork.InsumoRepository.GetByIdAsync(dto.Id);
+
+            if (insumoParaAtualizar == null)
+            {
+                // Isso deve ser raro se 'insumoAntigoParaAuditoria' foi encontrado,
+                // mas é uma boa verificação de segurança.
+                throw new KeyNotFoundException($"Insumo com ID {dto.Id} não encontrado para atualização.");
+            }
+
+            // 3. Mapeie as propriedades do DTO para a entidade 'insumoParaAtualizar' (a rastreada).
+            // O AutoMapper irá aplicar as mudanças DIRETAMENTE nesta instância.
+            _mapper.Map(dto, insumoParaAtualizar);
+
+            // Se houver campos de auditoria de criação (UsuarioCadastroId, DataHoraCadastro)
+            // que não devem ser alterados pelo DTO, você pode reatribuí-los aqui,
+            // usando os valores de 'insumoAntigoParaAuditoria':
+            insumoParaAtualizar.UsuarioCadastroId = insumoAntigoParaAuditoria.UsuarioCadastroId;
+            insumoParaAtualizar.DataHoraCadastro = insumoAntigoParaAuditoria.DataHoraCadastro;
+
+            // A chamada a .Update() no repositório é geralmente redundante se a entidade já está
+            // rastreada e suas propriedades foram alteradas diretamente. O EF Core detecta isso.
+            // _unitOfWork.InsumoRepository.Update(insumoParaAtualizar);
+
+            // 4. Registre a auditoria, passando a cópia original e a entidade atualizada.
+            // 'insumoAntigoParaAuditoria' tem os dados ANTES da mudança.
+            // 'insumoParaAtualizar' tem os dados DEPOIS da mudança.
+            await _auditoriaService.RegistrarAtualizacaoAsync(insumoAntigoParaAuditoria, insumoParaAtualizar, usuarioLogadoId);
+
+            // 5. Salve as alterações no banco de dados.
             await _unitOfWork.CommitAsync();
         }
-
         public async Task RemoverAsync(long id)
         {
             var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;

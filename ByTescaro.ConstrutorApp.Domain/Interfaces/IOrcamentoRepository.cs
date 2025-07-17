@@ -1,9 +1,4 @@
 ﻿using ByTescaro.ConstrutorApp.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ByTescaro.ConstrutorApp.Domain.Interfaces
 {
@@ -11,6 +6,7 @@ namespace ByTescaro.ConstrutorApp.Domain.Interfaces
     {
         Task<List<Orcamento>> GetByObraAsync(long obraId);
         Task<Orcamento?> GetByIdComItensAsync(long id);
+        Task<Orcamento?> GetByIdComItensNoTrackingAsync(long id);
 
     }
 }

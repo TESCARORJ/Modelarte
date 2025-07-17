@@ -54,19 +54,53 @@ public class PerfilUsuarioService : IPerfilUsuarioService
 
     public async Task AtualizarAsync(PerfilUsuarioDto dto)
     {
-        var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
-        var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+        // Obtém o ID do usuário logado (usando 'await' para obter o resultado da Task de forma assíncrona e segura)
+        var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
+        var usuarioLogadoId = usuarioLogado?.Id ?? 0;
 
-        var entityAntigo = await _unitOfWork.PerfilUsuarioRepository.GetByIdAsync(dto.Id);
-        if (entityAntigo == null) return;
+        // 1. Busque a entidade antiga SOMENTE PARA FINS DE AUDITORIA, SEM RASTREAMENTO.
+        // Essa instância 'perfilUsuarioAntigoParaAuditoria' NÃO será modificada e representa o estado original.
+        var perfilUsuarioAntigoParaAuditoria = await _unitOfWork.PerfilUsuarioRepository.GetByIdNoTrackingAsync(dto.Id);
 
-        var entityNovo = _mapper.Map<PerfilUsuario>(dto);
-        entityNovo.UsuarioCadastroId = entityAntigo.Id;
-        entityNovo.DataHoraCadastro = entityAntigo.DataHoraCadastro;
+        if (perfilUsuarioAntigoParaAuditoria == null)
+        {
+            // Se a entidade não foi encontrada, não há o que atualizar ou auditar.
+            throw new KeyNotFoundException($"Perfil de Usuário com ID {dto.Id} não encontrado para auditoria.");
+        }
 
-        _unitOfWork.PerfilUsuarioRepository.Update(entityNovo);
+        // 2. Busque a entidade que REALMENTE SERÁ ATUALIZADA, COM RASTREAMENTO.
+        // Essa instância 'perfilUsuarioParaAtualizar' é a que o EF Core está monitorando
+        // e que terá suas propriedades alteradas e salvas no banco de dados.
+        var perfilUsuarioParaAtualizar = await _unitOfWork.PerfilUsuarioRepository.GetByIdAsync(dto.Id);
 
-        await _auditoriaService.RegistrarAtualizacaoAsync(entityAntigo, entityNovo, usuarioLogadoId);
+        if (perfilUsuarioParaAtualizar == null)
+        {
+            // Isso deve ser raro se 'perfilUsuarioAntigoParaAuditoria' foi encontrado,
+            // mas é uma boa verificação de segurança para o fluxo de atualização.
+            throw new KeyNotFoundException($"Perfil de Usuário com ID {dto.Id} não encontrado para atualização.");
+        }
+
+        // 3. Mapeie as propriedades do DTO para a entidade 'perfilUsuarioParaAtualizar' (a rastreada).
+        // O AutoMapper irá aplicar as mudanças DIRETAMENTE nesta instância.
+        _mapper.Map(dto, perfilUsuarioParaAtualizar);
+
+        // Reatribua os campos de auditoria de criação que não devem ser alterados pelo DTO.
+        // Eles vêm da entidade original não modificada.
+        // CUIDADO: Você tinha entityNovo.UsuarioCadastroId = entityAntigo.Id; na sua versão original.
+        // O correto aqui é perfilUsuarioAntigoParaAuditoria.UsuarioCadastroId (o ID do usuário que CADASTRou).
+        perfilUsuarioParaAtualizar.UsuarioCadastroId = perfilUsuarioAntigoParaAuditoria.UsuarioCadastroId;
+        perfilUsuarioParaAtualizar.DataHoraCadastro = perfilUsuarioAntigoParaAuditoria.DataHoraCadastro;
+
+        // O método .Update() no repositório é geralmente redundante se a entidade já está
+        // rastreada e suas propriedades foram alteradas diretamente. O EF Core detecta essas mudanças automaticamente.
+        // _unitOfWork.PerfilUsuarioRepository.Update(perfilUsuarioParaAtualizar);
+
+        // 4. Registre a auditoria, passando a cópia original e a entidade atualizada.
+        // 'perfilUsuarioAntigoParaAuditoria' tem os dados ANTES da mudança.
+        // 'perfilUsuarioParaAtualizar' tem os dados DEPOIS da mudança.
+        await _auditoriaService.RegistrarAtualizacaoAsync(perfilUsuarioAntigoParaAuditoria, perfilUsuarioParaAtualizar, usuarioLogadoId);
+
+        // 5. Salve TODAS as alterações no banco de dados em uma única transação.
         await _unitOfWork.CommitAsync();
     }
 

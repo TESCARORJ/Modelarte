@@ -73,66 +73,68 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task AtualizarAsync(ClienteDto dto)
         {
-            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
-            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+            var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
+            var usuarioLogadoId = usuarioLogado?.Id ?? 0;
 
+            // 1. Busque a entidade Cliente original COM ENDEREÇO INCLUÍDO e SEM RASTREAMENTO
+            // Esta é a CÓPIA para auditoria, que não deve ser modificada pelo AutoMapper.
+            Cliente? entityOriginalParaAuditoria = await _unitOfWork.ClienteRepository
+                .FindOneWithIncludesNoTrackingAsync(c => c.Id == dto.Id, c => c.Endereco);
 
-            // 1. Busque a entidade Cliente COM O ENDEREÇO INCLUÍDO e rastreado
-            var entityAntigo = await _unitOfWork.ClienteRepository.FindOneWithIncludesAsync(c => c.Id == dto.Id, c => c.Endereco);
-
-            if (entityAntigo == null)
+            if (entityOriginalParaAuditoria == null)
             {
-                throw new KeyNotFoundException($"Cliente com ID {dto.Id} não encontrado.");
+                throw new KeyNotFoundException($"Cliente com ID {dto.Id} não encontrado para auditoria.");
             }
 
             // Armazena uma cópia do estado antigo para o log de auditoria ANTES de modificar
-            var dadosAnteriores = JsonSerializer.Serialize(_mapper.Map<ClienteDto>(entityAntigo));
+            // Agora, entityOriginalParaAuditoria é uma cópia independente e não será afetada pelas operações de mapeamento.
+            // O JsonSerializer.Serialize aqui já faz uma "deep copy" efetiva para o propósito de auditoria.
+            var dadosAnteriores = JsonSerializer.Serialize(_mapper.Map<ClienteDto>(entityOriginalParaAuditoria));
 
-            // 2. Mapeie as propriedades do DTO para a entidade Cliente existente (exceto Endereco)
+            // 2. Busque a entidade Cliente que será ATUALIZADA COM RASTREAMENTO.
+            // Esta é a entidade que o AutoMapper e o EF Core irão modificar.
+            Cliente? entityParaAtualizar = await _unitOfWork.ClienteRepository
+                .FindOneWithIncludesAsync(c => c.Id == dto.Id, c => c.Endereco);
+
+            if (entityParaAtualizar == null)
+            {
+                throw new KeyNotFoundException($"Cliente com ID {dto.Id} não encontrado para atualização.");
+            }
 
             // Garante que campos de auditoria e discriminador não sejam sobrescritos
-            entityAntigo.TipoEntidade = TipoEntidadePessoa.Cliente;
+            entityParaAtualizar.TipoEntidade = TipoEntidadePessoa.Cliente;
 
-            // O AutoMapper por padrão não sobrescreve relacionamentos complexos como Endereco
-            var entityNovo = _mapper.Map(dto, entityAntigo);
+            // 3. Mapeie as propriedades do DTO para a entidade Cliente existente (entityParaAtualizar)
+            // O AutoMapper irá aplicar as mudanças diretamente em entityParaAtualizar.
+            _mapper.Map(dto, entityParaAtualizar);
 
-            // 3. Lógica para ATUALIZAR/CRIAR/REMOVER a entidade Endereco
+            // 4. Lógica para ATUALIZAR/CRIAR/REMOVER a entidade Endereco
             if (!string.IsNullOrWhiteSpace(dto.CEP)) // Se o DTO tem dados de endereço
             {
-                if (entityNovo.Endereco == null) // Se o cliente NÃO tinha endereço ANTES
+                if (entityParaAtualizar.Endereco == null) // Se o cliente NÃO tinha endereço ANTES
                 {
                     var novoEndereco = _mapper.Map<Endereco>(dto);
-                    _unitOfWork.EnderecoRepository.Add(novoEndereco); // Adiciona o novo endereço
-                    entityNovo.Endereco = novoEndereco; // Associa o novo endereço ao cliente
+                    _unitOfWork.EnderecoRepository.Add(novoEndereco); // Adiciona o novo endereço ao contexto
+                    entityParaAtualizar.Endereco = novoEndereco; // Associa o novo endereço ao cliente
                 }
                 else // Se o cliente JÁ tinha endereço
                 {
-                    _mapper.Map(dto, entityAntigo.Endereco); // Mapeia DTO para o endereço existente (rastreado)
-                    // Não é preciso _enderecoRepository.Update(clienteToUpdate.Endereco);
-                    // O EF detectará as mudanças automaticamente porque ele já está rastreado.
+                    // Mapeia DTO para o endereço existente. EF Core detectará as mudanças automaticamente.
+                    _mapper.Map(dto, entityParaAtualizar.Endereco);
                 }
             }
             else // Se o DTO NÃO tem CEP, e o cliente TINHA endereço, REMOVER/DESVINCULAR o Endereço existente
             {
-                if (entityNovo.Endereco != null)
+                if (entityParaAtualizar.Endereco != null)
                 {
-                    _unitOfWork.EnderecoRepository.Remove(entityNovo.Endereco); // Marca o endereço para remoção
-                    entityNovo.Endereco = null; // Desvincula o endereço do cliente
-                    entityNovo.EnderecoId = null; // Garante que a FK também seja nullificada
+                    _unitOfWork.EnderecoRepository.Remove(entityParaAtualizar.Endereco); // Marca o endereço para remoção
+                    entityParaAtualizar.Endereco = null; // Desvincula o endereço do cliente
+                    entityParaAtualizar.EnderecoId = null; // Garante que a FK também seja nullificada
                 }
             }
 
-            if (entityNovo.EnderecoId == null)
-            {
-                var novoEndereco = _mapper.Map<Endereco>(dto);
-                _unitOfWork.EnderecoRepository.Add(novoEndereco); // Adiciona o novo endereço ao contexto
-                entityNovo.Endereco = novoEndereco; // Associa o novo endereço ao funcionário
-            }
-
-            _unitOfWork.ClienteRepository.Update(entityNovo); // Marca o cliente como modificado (ou as mudanças já foram detectadas)
-
-            await _auditoriaService.RegistrarAtualizacaoAsync(entityAntigo, entityNovo, usuarioLogadoId);
-
+            
+            await _auditoriaService.RegistrarAtualizacaoAsync(entityOriginalParaAuditoria, entityParaAtualizar, usuarioLogadoId);
 
             // 5. Salva TODAS as alterações (Cliente, Endereço e Log) em uma única transação
             await _unitOfWork.CommitAsync();

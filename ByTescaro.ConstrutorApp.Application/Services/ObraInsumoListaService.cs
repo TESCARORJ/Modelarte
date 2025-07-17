@@ -53,35 +53,88 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task AtualizarAsync(ObraInsumoListaDto dto)
         {
-            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
-            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+            var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
+            var usuarioLogadoId = usuarioLogado?.Id ?? 0;
 
-            var entity = await _unitOfWork.ObraInsumoListaRepository.GetByIdWithItensAsync(dto.Id);
-            if (entity == null) return;
+            // 1. Busque a entidade antiga com os itens, SOMENTE PARA FINS DE AUDITORIA, SEM RASTREAMENTO.
+            // Essa instância 'listaAntigaParaAuditoria' NÃO será modificada e representa o estado original.
+            var listaAntigaParaAuditoria = await _unitOfWork.ObraInsumoListaRepository
+                .GetByIdWithItensNoTrackingAsync(dto.Id); // Novo método
 
-            // Atualiza os dados principais da lista
-            entity.Data = dto.Data.ToDateTime(TimeOnly.MinValue);
-            entity.ResponsavelId = dto.ResponsavelId;
-
-            // Atualiza os itens (remoção e adição simples)
-            entity.Itens.Clear();
-            foreach (var itemDto in dto.Itens)
+            if (listaAntigaParaAuditoria == null)
             {
-
-                entity.Itens.Add(new ObraInsumo
-                {
-                    InsumoId = itemDto.InsumoId,
-                    Quantidade = itemDto.Quantidade,
-                    DataHoraCadastro = DateTime.Now,
-                    UsuarioCadastroId = usuarioLogadoId
-                });
+                throw new KeyNotFoundException($"Lista de Insumos da Obra com ID {dto.Id} não encontrada para auditoria.");
             }
 
-            _unitOfWork.ObraInsumoListaRepository.Update(entity);
+            // 2. Busque a entidade que REALMENTE SERÁ ATUALIZADA, COM RASTREAMENTO e com os itens.
+            // Essa instância 'listaParaAtualizar' é a que o EF Core está monitorando e será modificada.
+            var listaParaAtualizar = await _unitOfWork.ObraInsumoListaRepository
+                .GetByIdWithItensAsync(dto.Id);
 
-            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
+            if (listaParaAtualizar == null)
+            {
+                throw new KeyNotFoundException($"Lista de Insumos da Obra com ID {dto.Id} não encontrada para atualização.");
+            }
 
+            // 3. Atualiza os dados principais da lista
+            listaParaAtualizar.Data = dto.Data.ToDateTime(TimeOnly.MinValue);
+            listaParaAtualizar.ResponsavelId = dto.ResponsavelId;
 
+            // 4. Lógica para ATUALIZAR/ADICIONAR/REMOVER itens da coleção 'Itens'.
+            // Em vez de Clear() e Add() de todos, que pode ser ineficiente e perde o rastreamento do EF,
+            // vamos comparar e modificar apenas o necessário.
+
+            // Itens a serem removidos (existem na lista antiga, mas não no DTO)
+            var itensParaRemover = listaParaAtualizar.Itens
+                .Where(existingItem => !dto.Itens.Any(dtoItem => dtoItem.Id == existingItem.Id && dtoItem.Id != 0))
+                .ToList(); // Note: Id == 0 para novos itens não rastreados.
+
+            foreach (var item in itensParaRemover)
+            {
+                listaParaAtualizar.Itens.Remove(item);
+                _unitOfWork.ObraInsumoRepository.Remove(item); // Marcar para remoção explícita se ObraInsumoRepository for usado
+            }
+
+            // Itens a serem adicionados ou atualizados
+            foreach (var itemDto in dto.Itens)
+            {
+                var existingItem = listaParaAtualizar.Itens.FirstOrDefault(i => i.Id == itemDto.Id && i.Id != 0);
+
+                if (existingItem == null) // Item novo
+                {
+                    listaParaAtualizar.Itens.Add(new ObraInsumo
+                    {
+                        InsumoId = itemDto.InsumoId,
+                        Quantidade = itemDto.Quantidade,
+                        DataHoraCadastro = DateTime.Now,
+                        UsuarioCadastroId = usuarioLogadoId,
+                        // Certifique-se de que a FK para ObraInsumoLista seja preenchida se não for feita por convenção do EF
+                        ObraInsumoListaId = listaParaAtualizar.Id
+                    });
+                }
+                else // Item existente, atualizar
+                {
+                    // Atualize as propriedades que podem mudar
+                    existingItem.InsumoId = itemDto.InsumoId;
+                    existingItem.Quantidade = itemDto.Quantidade;
+                
+
+                    // Não é necessário chamar _unitOfWork.ObraInsumoRepository.Update(existingItem);
+                    // O EF Core já está rastreando existingItem e detectará as mudanças.
+                }
+            }
+
+            // O _unitOfWork.ObraInsumoListaRepository.Update(entity); é geralmente redundante aqui,
+            // pois a entidade principal já está rastreada e suas propriedades e a coleção Itens foram modificadas.
+            // O EF Core detectará as mudanças automaticamente.
+            // _unitOfWork.ObraInsumoListaRepository.Update(listaParaAtualizar);
+
+            // 5. Registre a auditoria. Use RegistrarAtualizacaoAsync.
+            // Certifique-se de que o seu AuditoriaService saiba como lidar com coleções aninhadas
+            // ao comparar 'antigo' e 'novo'.
+            await _auditoriaService.RegistrarAtualizacaoAsync(listaAntigaParaAuditoria, listaParaAtualizar, usuarioLogadoId);
+
+            // 6. Salva TODAS as alterações em uma única transação
             await _unitOfWork.CommitAsync();
         }
 

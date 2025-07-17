@@ -8,12 +8,14 @@ namespace ByTescaro.ConstrutorApp.Domain.Interfaces
 
         Task<T?> GetByIdAsync(long id);
         Task<T?> GetByIdTrackingAsync(long id);
+        Task<T?> GetByIdNoTrackingAsync(long id);
         Task<List<T>> GetAllAsync();
         Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate);
         Task<T?> FindOneAsync(Expression<Func<T, bool>> predicate);
         //Task<List<T>> GetActivesAsync();
         Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
         Task<T?> FindOneWithIncludesAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includeProperties);
+        Task<T?> FindOneWithIncludesNoTrackingAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includeProperties);
         Task<IEnumerable<T>> FindAllWithIncludesAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includeProperties);
 
 

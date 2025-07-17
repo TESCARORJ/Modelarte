@@ -46,7 +46,7 @@
                     @if (!string.IsNullOrWhiteSpace(funcionario.TelefoneWhatsApp))
                     {
                         <a href="@($"https://wa.me/55{LimparNumeroTelefone(funcionario.TelefoneWhatsApp)}")" target="_blank" title="Abrir no WhatsApp">
-                            <i class="fa-brands fa-whatsapp" style="color: #25D366; font-size: 1.2em;"></i> @* Ícone opcional *@
+                            <i class="fa-brands fa-whatsapp" style="color: #25D366; font-size: 1.2em;"></i> 
                             @funcionario.TelefoneWhatsApp
                         </a>
                     }

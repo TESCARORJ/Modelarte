@@ -26,22 +26,21 @@
         <RadzenFieldset Text="Informações Pessoais" Style="margin-bottom: 1.5rem">
             <RadzenRow Class="rz-p-4" Style="row-gap: 1rem;">
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Nome" />
-                    <RadzenTextBox Value="@cliente.Nome" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Nome: </strong> <span>@cliente.Nome</span>
+                    </RadzenText>
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="3">
-                    <RadzenLabel Text="Tipo de Pessoa" />
-                    @* Exibe o texto amigável do enum, se disponível *@
-                    <RadzenTextBox Value="@(cliente.TipoPessoa.HasValue ? EnumHelper.ObterDescricaoEnum(cliente.TipoPessoa.Value) : string.Empty)" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Tipo de Pessoa: </strong> <span>@(cliente.TipoPessoa.HasValue ? EnumHelper.ObterDescricaoEnum(cliente.TipoPessoa.Value) : string.Empty)</span>
+                    </RadzenText>
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="3">
-                    <RadzenLabel Text="CPF ou CNPJ" />
-                    @* A RadzenMask não tem propriedade ReadOnly, então usamos RadzenTextBox com o valor formatado manualmente ou apenas o valor bruto.
-                       Para exibir formatado, você precisaria de uma lógica de formatação de CPF/CNPJ.
-                       Para simplicidade, usaremos o valor bruto do DTO. *@
-                    <RadzenTextBox Value="@cliente.CpfCnpj" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>CPF ou CNPJ: </strong> <span>@cliente.CpfCnpj</span>
+                    </RadzenText>
                 </RadzenColumn>
             </RadzenRow>
         </RadzenFieldset>
@@ -49,18 +48,21 @@
         <RadzenFieldset Text="Contato" Style="margin-bottom: 1.5rem">
             <RadzenRow Class="rz-p-4" Style="row-gap: 1rem;">
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenLabel Text="Telefone Principal" />
-                    <RadzenTextBox Value="@cliente.TelefonePrincipal" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Telefone Principal: </strong> <span>@cliente.TelefonePrincipal</span>
+                    </RadzenText>
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenLabel Text="WhatsApp" />
-                    <RadzenTextBox Value="@cliente.TelefoneWhatsApp" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>WhatsApp: </strong> <span>@cliente.TelefoneWhatsApp</span>
+                    </RadzenText>
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenLabel Text="Email" />
-                    <RadzenTextBox Value="@cliente.Email" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Email: </strong> <span>@cliente.Email</span>
+                    </RadzenText>
                 </RadzenColumn>
             </RadzenRow>
         </RadzenFieldset>
@@ -68,39 +70,47 @@
         <RadzenFieldset Text="Endereço" Style="margin-bottom: 1.5rem">
             <RadzenRow Class="rz-p-4" Style="row-gap: 1rem;">
                 <RadzenColumn Size="12" SizeMD="3">
-                    <RadzenLabel Text="CEP" />
-                    <RadzenTextBox Value="@cliente.CEP" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>CEP: </strong> <span>@cliente.CEP</span>
+                    </RadzenText>
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Logradouro" />
-                    <RadzenTextBox Value="@cliente.Logradouro" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Logradouro: </strong> <span>@cliente.Logradouro</span>
+                    </RadzenText>
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="3">
-                    <RadzenLabel Text="Número" />
-                    <RadzenTextBox Value="@cliente.Numero" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Número: </strong> <span>@cliente.Numero</span>
+                    </RadzenText>
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenLabel Text="Complemento" />
-                    <RadzenTextBox Value="@cliente.Complemento" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Complemento: </strong> <span>@cliente.Complemento</span>
+                    </RadzenText>
                 </RadzenColumn>
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenLabel Text="Bairro" />
-                    <RadzenTextBox Value="@cliente.Bairro" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Bairro: </strong> <span>@cliente.Bairro</span>
+                    </RadzenText>
                 </RadzenColumn>
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenLabel Text="Cidade" />
-                    <RadzenTextBox Value="@cliente.Cidade" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Cidade: </strong> <span>@cliente.Cidade</span>
+                    </RadzenText>
                 </RadzenColumn>
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Estado" />
-                    <RadzenTextBox Value="@cliente.Estado" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Estado: </strong> <span>@cliente.Estado</span>
+                    </RadzenText>
                 </RadzenColumn>
                 <RadzenColumn Size="12" SizeMD="2">
-                    <RadzenLabel Text="UF" />
-                    <RadzenTextBox Value="@cliente.UF" ReadOnly MaxLength="2" Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>UF: </strong> <span>@cliente.UF</span>
+                    </RadzenText>
                 </RadzenColumn>
             </RadzenRow>
         </RadzenFieldset>
@@ -121,7 +131,8 @@
 </RadzenCard>
 
 @code {
-    [Parameter] public long Id { get; set; }
+    [Parameter]
+    public long Id { get; set; }
 
     private ClienteDto? cliente;
     private string Titulo => $"Detalhes do Cliente: {cliente?.Nome ?? "Carregando..."}";

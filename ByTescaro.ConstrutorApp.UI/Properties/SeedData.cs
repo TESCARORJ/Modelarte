@@ -23,7 +23,7 @@ namespace ByTescaro.ConstrutorApp.UI.Properties
                     TelefonePrincipal = "(00) 00000-0000",
                     TelefoneWhatsApp = "(00) 00000-0000",
                     Ativo = true,
-                    PerfilUsuarioId = 1,
+                    PerfilUsuarioId = 2,
                     UsuarioCadastro = "sa",
                     DataHoraCadastro = DateTime.Now
                 };

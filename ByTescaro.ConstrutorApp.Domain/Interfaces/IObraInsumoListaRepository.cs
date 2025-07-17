@@ -11,5 +11,6 @@ namespace ByTescaro.ConstrutorApp.Domain.Interfaces
     {
         Task<List<ObraInsumoLista>> GetByObraIdAsync(long obraId);
         Task<ObraInsumoLista?> GetByIdWithItensAsync(long id);
+        Task<ObraInsumoLista?> GetByIdWithItensNoTrackingAsync(long id);
     }
 }

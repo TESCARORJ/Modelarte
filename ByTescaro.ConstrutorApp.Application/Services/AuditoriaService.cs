@@ -3,6 +3,7 @@ using ByTescaro.ConstrutorApp.Application.Utils;
 using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Enums;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
+using System.Collections;
 using System.Reflection;
 using System.Text.Json;
 
@@ -50,15 +51,16 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var entidadeFonte = dadosNovos ?? dadosAntigos!;
             string idEntidade = ObterIdEntidade(entidadeFonte);
             var usuario = _usuarioRepository.GetByIdAsync(usuarioId).Result;
+            var usuarioNome = usuario != null ? usuario.Nome : string.Empty;
 
             return new LogAuditoria
             {
-                UsuarioId = usuario != null ? usuario.Id : 0,
-                UsuarioNome = usuario != null ? usuario.Nome : string.Empty,
+                UsuarioId = usuarioId,
+                UsuarioNome = usuarioNome,
                 Entidade = entidade,
                 IdEntidade = idEntidade,
                 TipoLogAuditoria = acao,
-                Descricao = $"{entidade} foi {EnumHelper.ObterDescricaoEnum(acao)} por {usuario}",
+                Descricao = $"{entidade} foi {EnumHelper.ObterDescricaoEnum(acao)} por {usuarioNome} em {DateTime.Now}",
                 DataHora = DateTime.Now,
                 DadosAtuais = dadosNovos != null
                     ? JsonSerializer.Serialize(dadosNovos, new JsonSerializerOptions { WriteIndented = true })
@@ -72,99 +74,137 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         private string ObterIdEntidade<T>(T entidade) where T : class
         {
             var tipo = entidade.GetType();
-            var propId = tipo.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .FirstOrDefault(p =>
-                    string.Equals(p.Name, "Id", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(p.Name, "IdEntidade", StringComparison.OrdinalIgnoreCase));
 
-            var valor = propId?.GetValue(entidade);
-            if (valor == null)
-                throw new InvalidOperationException($"A entidade '{tipo.Name}' não possui valor na propriedade 'Id'.");
-
-            return valor.ToString()!;
+            return tipo.Name.ToString()!;
         }
 
-        private string GerarDescricaoDiferencas<T>(
-            T antigo,
-            T novo,
-            Dictionary<string, Dictionary<long, string>>? colecoesNomes = null) where T : class
+        public string GerarDescricaoDiferencas<T>(
+        T antigo,
+        T novo,
+        Dictionary<string, Dictionary<long, string>>? colecoesNomes = null) where T : class
         {
+            // Garante que ambos os objetos não são nulos antes de tentar comparar.
+            // Se ambos forem nulos, não há diferença.
+            if (antigo == null && novo == null)
+                return "Nenhuma alteração significativa detectada.";
+            // Se um for nulo e o outro não, há uma alteração drástica (objeto adicionado/removido).
+            if (antigo == null)
+                return "Objeto novo foi adicionado.";
+            if (novo == null)
+                return "Objeto antigo foi removido.";
+
             var tipo = typeof(T);
-            var props = tipo.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            var propriedades = tipo.GetProperties(BindingFlags.Public | BindingFlags.Instance);
             var alteracoes = new List<string>();
 
-            foreach (var prop in props)
+            foreach (var prop in propriedades)
             {
                 var nomeProp = prop.Name;
                 var tipoProp = prop.PropertyType;
                 var valorAntigo = prop.GetValue(antigo);
                 var valorNovo = prop.GetValue(novo);
 
-                // Comparar coleções simples
-                if (typeof(System.Collections.IEnumerable).IsAssignableFrom(tipoProp) && tipoProp != typeof(string))
+                // 1. Lidar com coleções de tipos primitivos (long/int)
+                if (typeof(IEnumerable).IsAssignableFrom(tipoProp) && tipoProp != typeof(string))
                 {
-                    var itemType = tipoProp.IsGenericType ? tipoProp.GetGenericArguments()[0] : null;
+                    var tipoElemento = tipoProp.IsGenericType ? tipoProp.GetGenericArguments()[0] : null;
 
-                    if (itemType != null && (itemType == typeof(long) || itemType == typeof(int)))
+                    // Apenas se for uma coleção de long ou int
+                    if (tipoElemento == typeof(long) || tipoElemento == typeof(int))
                     {
-                        var listaAntiga = (valorAntigo as System.Collections.IEnumerable)?
-                            .Cast<object>()
-                            .Select(x => x?.ToString())
-                            .Where(x => !string.IsNullOrWhiteSpace(x))
-                            .ToList() ?? new();
-
-                        var listaNova = (valorNovo as System.Collections.IEnumerable)?
-                            .Cast<object>()
-                            .Select(x => x?.ToString())
-                            .Where(x => !string.IsNullOrWhiteSpace(x))
-                            .ToList() ?? new();
-
-                        var removidos = listaAntiga.Except(listaNova).Select(x => long.TryParse(x, out var id) ? id : 0).Where(id => id > 0).ToList();
-                        var adicionados = listaNova.Except(listaAntiga).Select(x => long.TryParse(x, out var id) ? id : 0).Where(id => id > 0).ToList();
-
-
-                        if (removidos.Any() || adicionados.Any())
-                        {
-                            var nomesDisponiveis = colecoesNomes?.ContainsKey(nomeProp) == true
-                                ? colecoesNomes[nomeProp]
-                                : new Dictionary<long, string>();
-
-                            string TraduzirIds(IEnumerable<long> ids) =>
-                                string.Join(", ", ids.Select(id => nomesDisponiveis.TryGetValue(id, out var nome) ? nome : $"ID {id}"));
-
-                            var msg = $"Campo \"{nomeProp}\"";
-
-                            if (removidos.Any())
-                                msg += $" - Removidos: [{TraduzirIds(removidos)}]";
-
-                            if (adicionados.Any())
-                                msg += $" - Adicionados: [{TraduzirIds(adicionados)}]";
-
-                            alteracoes.Add(msg);
-                        }
+                        CompararColecaoDeNumeros(nomeProp, valorAntigo as IEnumerable, valorNovo as IEnumerable, colecoesNomes, alteracoes);
+                        continue; // Já tratou a propriedade, vai para a próxima.
                     }
-
+                    // Se for uma coleção de outros tipos, você pode adicionar lógica aqui
+                    // ou simplesmente ignorar se não for relevante para sua necessidade.
                     continue;
                 }
 
-                // Propriedades simples
+                // 2. Lidar com propriedades de tipos complexos (outras classes)
+                // Se a propriedade é uma classe e não é uma string, não é um tipo primitivo.
                 if (tipoProp.IsClass && tipoProp != typeof(string))
-                    continue;
-
-                string strAntigo = valorAntigo != null ? valorAntigo.ToString()?.Trim() ?? "" : "";
-                string strNovo = valorNovo != null ? valorNovo.ToString()?.Trim() ?? "" : "";
-
-
-                if (strAntigo != strNovo)
                 {
-                    alteracoes.Add($"Campo \"{nomeProp}\" alterado de \"{strAntigo}\" para \"{strNovo}\"");
+                    // **Importante:** Para comparar objetos aninhados, você precisaria de recursão.
+                    // Esta implementação simples apenas verifica se o objeto aninhado mudou (referência ou null).
+                    // Para uma comparação profunda, você chamaria GerarDescricaoDiferencas recursivamente aqui.
+                    if (!Equals(valorAntigo, valorNovo))
+                    {
+                        // Exemplo de como você poderia sinalizar uma mudança em um objeto complexo:
+                        // alteracoes.Add($"Campo \"{nomeProp}\" (objeto aninhado) foi alterado.");
+                        // Ou, para recursão:
+                        // var subAlteracoes = GerarDescricaoDiferencas(valorAntigo as object, valorNovo as object, colecoesNomes);
+                        // if (!subAlteracoes.Contains("Nenhuma alteração significativa detectada."))
+                        // {
+                        //     alteracoes.Add($"Campo \"{nomeProp}\" (objeto aninhado): {subAlteracoes}");
+                        // }
+                    }
+                    continue; // Já tratou a propriedade, vai para a próxima.
                 }
+
+                // 3. Lidar com propriedades de tipos primitivos e strings
+                CompararPropriedadeSimples(nomeProp, valorAntigo, valorNovo, alteracoes);
             }
 
-            return alteracoes.Count > 0
+            return alteracoes.Any()
                 ? string.Join("; ", alteracoes)
                 : "Nenhuma alteração significativa detectada.";
         }
-    }
 
+        /// <summary>
+        /// Compara duas coleções de números (long/int) e adiciona as diferenças à lista de alterações.
+        /// </summary>
+        private void CompararColecaoDeNumeros(
+            string nomeProp,
+            IEnumerable? antigoEnumerable,
+            IEnumerable? novoEnumerable,
+            Dictionary<string, Dictionary<long, string>>? colecoesNomes,
+            List<string> alteracoes)
+        {
+            // Transforma os enumeráveis em listas de long para facilitar a comparação.
+            var listaAntiga = antigoEnumerable?.Cast<long>().ToList() ?? new List<long>();
+            var listaNova = novoEnumerable?.Cast<long>().ToList() ?? new List<long>();
+
+            // Calcula os itens removidos e adicionados usando LINQ.
+            // O .Except() é útil aqui pois a ordem não importa e não queremos duplicatas.
+            var removidos = listaAntiga.Except(listaNova).ToList();
+            var adicionados = listaNova.Except(listaAntiga).ToList();
+
+            if (removidos.Any() || adicionados.Any())
+            {
+                var nomesDisponiveis = colecoesNomes != null && colecoesNomes.ContainsKey(nomeProp)
+                    ? colecoesNomes[nomeProp]
+                    : new Dictionary<long, string>();
+
+                string TraduzirIds(IEnumerable<long> ids) =>
+                    string.Join(", ", ids.Select(id => nomesDisponiveis.TryGetValue(id, out var nome) ? nome : $"ID {id}"));
+
+                var msg = $"Campo \"{nomeProp}\"";
+
+                if (removidos.Any())
+                    msg += $" - Removidos: [{TraduzirIds(removidos)}]";
+
+                if (adicionados.Any())
+                    msg += $" - Adicionados: [{TraduzirIds(adicionados)}]";
+
+                alteracoes.Add(msg);
+            }
+        }
+
+        /// <summary>
+        /// Compara duas propriedades de tipos simples (primitivos, strings) e adiciona as diferenças à lista de alterações.
+        /// </summary>
+        private void CompararPropriedadeSimples(string nomeProp, object? valorAntigo, object? valorNovo, List<string> alteracoes)
+        {
+            // Trata nulos de forma consistente antes de converter para string.
+            var strAntigo = valorAntigo?.ToString()?.Trim() ?? "";
+            var strNovo = valorNovo?.ToString()?.Trim() ?? "";
+
+            // Compara os valores como strings.
+            if (strAntigo != strNovo)
+            {
+                alteracoes.Add($"Campo \"{nomeProp}\" alterado de \"{strAntigo}\" para \"{strNovo}\" em {DateTime.Now}");
+            }
+        }
+
+    }
 }

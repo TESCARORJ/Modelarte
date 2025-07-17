@@ -1,10 +1,11 @@
-﻿using ByTescaro.ConstrutorApp.Domain.Entities;
+﻿using ByTescaro.ConstrutorApp.Application.DTOs;
+using ByTescaro.ConstrutorApp.Domain.Entities;
 
 namespace ByTescaro.ConstrutorApp.Application.Interfaces
 {
     public interface ILogAuditoriaService
     {
-        Task<List<LogAuditoria>> ObterTodosAsync();
+        Task<List<LogAuditoriaDTO>> ObterTodosAsync();
     }
 
 }

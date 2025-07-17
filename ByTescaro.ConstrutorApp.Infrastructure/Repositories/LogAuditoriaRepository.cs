@@ -22,9 +22,10 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 
         public async Task<List<LogAuditoria>> ObterTodosAsync()
         {
-            return await _context.LogAuditoria
+            var logs = _context.LogAuditoria
                 .OrderByDescending(l => l.DataHora)
                 .ToListAsync();
+            return await logs;
         }
     }
 }

@@ -46,19 +46,54 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task AtualizarAsync(ObraEquipamentoDto dto)
         {
-            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
-            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+            var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
+            var usuarioLogadoId = usuarioLogado?.Id ?? 0;
 
-            var entityAntigo = await _unitOfWork.ObraEquipamentoRepository.GetByIdAsync(dto.Id);
-            if (entityAntigo == null) return;
+            // 1. Busque a entidade antiga SOMENTE PARA FINS DE AUDITORIA, SEM RASTREAMENTO.
+            // Essa instância 'obraEquipamentoAntigoParaAuditoria' NÃO será modificada pelo AutoMapper,
+            // preservando o estado original para o log.
+            var obraEquipamentoAntigoParaAuditoria = await _unitOfWork.ObraEquipamentoRepository.GetByIdNoTrackingAsync(dto.Id);
 
-            var entityNovo = _mapper.Map(dto, entityAntigo);
-            _unitOfWork.ObraEquipamentoRepository.Update(entityNovo);
-            await _auditoriaService.RegistrarAtualizacaoAsync(entityAntigo, entityNovo, usuarioLogadoId);
+            if (obraEquipamentoAntigoParaAuditoria == null)
+            {
+                // Se não encontrou, não há o que atualizar ou auditar para um ID existente.
+                throw new KeyNotFoundException($"Obra Equipamento com ID {dto.Id} não encontrado para auditoria.");
+            }
 
+            // 2. Busque a entidade que REALMENTE SERÁ ATUALIZADA, COM RASTREAMENTO.
+            // Essa instância 'obraEquipamentoParaAtualizar' é a que o EF Core está monitorando
+            // e que terá suas propriedades alteradas.
+            var obraEquipamentoParaAtualizar = await _unitOfWork.ObraEquipamentoRepository.GetByIdAsync(dto.Id);
+
+            if (obraEquipamentoParaAtualizar == null)
+            {
+                // Isso deve ser raro se 'obraEquipamentoAntigoParaAuditoria' foi encontrado,
+                // mas é uma boa verificação de segurança.
+                throw new KeyNotFoundException($"Obra Equipamento com ID {dto.Id} não encontrado para atualização.");
+            }
+
+            // 3. Mapeie as propriedades do DTO para a entidade 'obraEquipamentoParaAtualizar' (a rastreada).
+            // O AutoMapper irá aplicar as mudanças DIRETAMENTE nesta instância.
+            _mapper.Map(dto, obraEquipamentoParaAtualizar);
+
+            // Se houver campos de auditoria de criação (UsuarioCadastroId, DataHoraCadastro)
+            // que não devem ser alterados pelo DTO, você pode reatribuí-los aqui,
+            // usando os valores de 'obraEquipamentoAntigoParaAuditoria':
+            // obraEquipamentoParaAtualizar.UsuarioCadastroId = obraEquipamentoAntigoParaAuditoria.UsuarioCadastroId;
+            // obraEquipamentoParaAtualizar.DataHoraCadastro = obraEquipamentoAntigoParaAuditoria.DataHoraCadastro;
+
+            // A chamada a .Update() no repositório é geralmente redundante se a entidade já está
+            // rastreada e suas propriedades foram alteradas diretamente. O EF Core detecta isso.
+            // _unitOfWork.ObraEquipamentoRepository.Update(obraEquipamentoParaAtualizar);
+
+            // 4. Registre a auditoria, passando a cópia original e a entidade atualizada.
+            // 'obraEquipamentoAntigoParaAuditoria' tem os dados ANTES da mudança.
+            // 'obraEquipamentoParaAtualizar' tem os dados DEPOIS da mudança.
+            await _auditoriaService.RegistrarAtualizacaoAsync(obraEquipamentoAntigoParaAuditoria, obraEquipamentoParaAtualizar, usuarioLogadoId);
+
+            // 5. Salve as alterações no banco de dados.
             await _unitOfWork.CommitAsync();
         }
-
         public async Task RemoverAsync(long id)
         {
             var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;

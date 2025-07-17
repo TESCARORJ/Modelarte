@@ -15,6 +15,10 @@ public class ApplicationProfile : Profile
         // MAPEAMENTO DE ENDEREÇO (DTO PARA ENTIDADE ENDERECO)
         // Isso é para criar/atualizar a entidade Endereco em si.
         // =========================================================================
+
+        CreateMap<LogAuditoriaDTO, LogAuditoria>().ReverseMap();
+
+
         CreateMap<ClienteDto, Endereco>()
            .ForMember(dest => dest.Id, opt => opt.Ignore())
            .ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Logradouro))

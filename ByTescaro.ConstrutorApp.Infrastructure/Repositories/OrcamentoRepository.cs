@@ -27,5 +27,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
                 .FirstOrDefaultAsync(o => o.Id == id);
         }
 
+        public async Task<Orcamento?> GetByIdComItensNoTrackingAsync(long id)
+        {
+            return await _dbSet
+                .AsNoTracking() // Importante: não rastreia a entidade principal
+                .Include(o => o.Itens) // Inclui a coleção de itens (também não serão rastreados por herança do AsNoTracking)
+                .FirstOrDefaultAsync(o => o.Id == id);
+        }
+
     }
 }

@@ -140,64 +140,118 @@ public class ProjetoService : IProjetoService
 
     public async Task AtualizarAsync(ProjetoDto dto)
     {
-        var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
-        var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+        var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
+        var usuarioLogadoId = usuarioLogado?.Id ?? 0;
 
-        var projeto = await _unitOfWork.ProjetoRepository.FindOneWithIncludesAsync( p => p.Id == dto.Id, p => p.Endereco, p => p.Obras);
-        if (projeto == null) return;
+        // 1. Busque a entidade 'Projeto' original COM INCLUDES (Endereco, Obras) e SEM RASTREAMENTO.
+        // Esta é a CÓPIA para auditoria. Ela representa o estado ANTES da atualização e não será modificada.
+        var projetoAntigoParaAuditoria = await _unitOfWork.ProjetoRepository
+            .FindOneWithIncludesNoTrackingAsync(p => p.Id == dto.Id, p => p.Endereco, p => p.Obras); // NOVO MÉTODO NECESSÁRIO
 
-        var dtoOriginal = _mapper.Map<ProjetoDto>(projeto);
+        if (projetoAntigoParaAuditoria == null)
+        {
+            throw new KeyNotFoundException($"Projeto com ID {dto.Id} não encontrado para auditoria.");
+        }
 
-        // Mapeia os dados do DTO para a entidade principal
-        _mapper.Map(dto, projeto);
-        projeto.UsuarioCadastroId = usuarioLogadoId;
-        projeto.DataHoraCadastro = DateTime.Now;
+        // 2. Busque a entidade 'Projeto' que REALMENTE SERÁ ATUALIZADA, COM INCLUDES e COM RASTREAMENTO.
+        // Esta é a entidade que o EF Core irá monitorar e que terá suas propriedades e coleções alteradas.
+        var projetoParaAtualizar = await _unitOfWork.ProjetoRepository
+            .FindOneWithIncludesAsync(p => p.Id == dto.Id, p => p.Endereco, p => p.Obras);
 
-        // 3. Lógica para ATUALIZAR/CRIAR/REMOVER a entidade Endereco
+        if (projetoParaAtualizar == null)
+        {
+            throw new KeyNotFoundException($"Projeto com ID {dto.Id} não encontrado para atualização.");
+        }
+
+        // 3. Mapeie os dados do DTO para a entidade principal rastreada ('projetoParaAtualizar')
+        // Campos de auditoria de criação ('UsuarioCadastroId', 'DataHoraCadastro') devem ser preservados
+        // e NÃO devem ser sobrescritos pelo DTO ou por DateTime.Now em uma atualização.
+        // Eles são do momento da CRIAÇÃO do registro.
+        _mapper.Map(dto, projetoParaAtualizar);
+        projetoParaAtualizar.UsuarioCadastroId = projetoAntigoParaAuditoria.UsuarioCadastroId; // Preserva o ID do usuário que criou
+        projetoParaAtualizar.DataHoraCadastro = projetoAntigoParaAuditoria.DataHoraCadastro; // Preserva a data/hora de criação
+
+
+        // 4. Lógica para ATUALIZAR/CRIAR/REMOVER a entidade Endereco (relacionamento 1:1)
         if (!string.IsNullOrWhiteSpace(dto.CEP)) // Se o DTO tem dados de endereço
         {
-            if (projeto.Endereco == null) // Se o cliente NÃO tinha endereço ANTES
+            if (projetoParaAtualizar.Endereco == null) // Se o projeto NÃO tinha endereço ANTES
             {
                 var novoEndereco = _mapper.Map<Endereco>(dto);
-                _unitOfWork.EnderecoRepository.Add(novoEndereco); // Adiciona o novo endereço
-                projeto.Endereco = novoEndereco; // Associa o novo endereço ao cliente
+                _unitOfWork.EnderecoRepository.Add(novoEndereco); // Adiciona o novo endereço ao contexto
+                projetoParaAtualizar.Endereco = novoEndereco; // Associa o novo endereço ao projeto
+                projetoParaAtualizar.EnderecoId = novoEndereco.Id; // Garante que a FK seja definida
             }
-            else // Se o cliente JÁ tinha endereço
+            else // Se o projeto JÁ tinha endereço, atualiza o existente
             {
-                _mapper.Map(dto, projeto.Endereco); // Mapeia DTO para o endereço existente (rastreado)
-                                                            // Não é preciso _enderecoRepository.Update(clienteToUpdate.Endereco);
-                                                            // O EF detectará as mudanças automaticamente porque ele já está rastreado.
+                _mapper.Map(dto, projetoParaAtualizar.Endereco); // Mapeia DTO para o endereço existente (rastreado)
+                // O EF detectará as mudanças automaticamente porque ele já está rastreado.
             }
         }
-        else // Se o DTO NÃO tem CEP, e o cliente TINHA endereço, REMOVER/DESVINCULAR o Endereço existente
+        else // Se o DTO NÃO tem CEP, e o projeto TINHA endereço, REMOVER/DESVINCULAR o Endereço existente
         {
-            if (projeto.Endereco != null)
+            if (projetoParaAtualizar.Endereco != null)
             {
-                _unitOfWork.EnderecoRepository.Remove(projeto.Endereco); // Marca o endereço para remoção
-                projeto.Endereco = null; // Desvincula o endereço do cliente
-                projeto.EnderecoId = null; // Garante que a FK também seja nullificada
+                _unitOfWork.EnderecoRepository.Remove(projetoParaAtualizar.Endereco); // Marca o endereço para remoção
+                projetoParaAtualizar.Endereco = null; // Desvincula o endereço do projeto
+                projetoParaAtualizar.EnderecoId = null; // Garante que a FK também seja nullificada
             }
         }
 
-        if (projeto.EnderecoId == null)
+        // Nota: A sua condição original 'if (projeto.EnderecoId == null)' após a lógica acima é redundante
+        // e pode levar à criação duplicada de endereços ou comportamento inesperado.
+        // A lógica de criação/atualização/remoção já cobre todos os casos.
+
+        // O _unitOfWork.ProjetoRepository.Update(projeto); é geralmente redundante aqui,
+        // pois a entidade principal já está rastreada e suas propriedades foram modificadas.
+        // O EF Core detectará as mudanças automaticamente.
+        // _unitOfWork.ProjetoRepository.Update(projetoParaAtualizar);
+
+
+        // 5. Lógica para sincronizar as obras (Adicionar, Atualizar, Remover) - Relacionamento 1:N
+        // Implementar esta lógica de forma mais robusta é crucial para coleções.
+        // O exemplo abaixo é uma abordagem comum:
+
+        // Obras a serem removidas (existem no projeto, mas não no DTO)
+        var obrasParaRemover = projetoParaAtualizar.Obras
+            .Where(existingObra => !dto.Obras.Any(dtoObra => dtoObra.Id == existingObra.Id && dtoObra.Id != 0))
+            .ToList();
+
+        foreach (var obra in obrasParaRemover)
         {
-            var novoEndereco = _mapper.Map<Endereco>(dto);
-            _unitOfWork.EnderecoRepository.Add(novoEndereco); // Adiciona o novo endereço ao contexto
-            projeto.Endereco = novoEndereco; // Associa o novo endereço ao funcionário
+            projetoParaAtualizar.Obras.Remove(obra);
+            _unitOfWork.ObraRepository.Remove(obra); // Marcar para remoção explícita
         }
 
-        _unitOfWork.ProjetoRepository.Update(projeto);
+        // Obras a serem adicionadas ou atualizadas
+        foreach (var obraDto in dto.Obras)
+        {
+            var existingObra = projetoParaAtualizar.Obras.FirstOrDefault(o => o.Id == obraDto.Id && o.Id != 0);
 
-        // Lógica para sincronizar as obras (Adicionar, Atualizar, Remover)
-        await SincronizarObrasAsync(dto, projeto);
+            if (existingObra == null) // Obra nova
+            {
+                var novaObra = _mapper.Map<Obra>(obraDto);
+                novaObra.UsuarioCadastroId = usuarioLogadoId;
+                novaObra.DataHoraCadastro = DateTime.Now;
+                projetoParaAtualizar.Obras.Add(novaObra);
+                // Não é necessário _unitOfWork.ObraRepository.Add(novaObra); aqui,
+                // se 'projetoParaAtualizar' é o pai e está sendo rastreado,
+                // o EF Core adicionará a nova obra quando o pai for salvo.
+            }
+            else // Obra existente, atualizar
+            {
+                _mapper.Map(obraDto, existingObra);
+                // O EF Core detectará as mudanças automaticamente.
+            }
+        }
 
-        // Comita todas as alterações (do projeto e das obras) em uma única transação.
+        // 6. Salva TODAS as alterações (Projeto, Endereço e Obras) em uma única transação.
         await _unitOfWork.CommitAsync();
 
-        // Registra a auditoria após a transação ser bem-sucedida.
-        await _auditoriaService.RegistrarAtualizacaoAsync(dtoOriginal, dto, usuarioLogadoId);
+        // 7. Registra a auditoria após a transação ser bem-sucedida.
+        // Agora, 'projetoAntigoParaAuditoria' tem o estado "antes", e 'projetoParaAtualizar' tem o estado "depois".
+        await _auditoriaService.RegistrarAtualizacaoAsync(projetoAntigoParaAuditoria, projetoParaAtualizar, usuarioLogadoId);
     }
-
     private async Task SincronizarObrasAsync(ProjetoDto dto, Projeto projeto)
     {
         var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;

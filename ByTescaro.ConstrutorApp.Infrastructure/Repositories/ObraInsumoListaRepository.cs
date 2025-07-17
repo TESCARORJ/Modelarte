@@ -36,6 +36,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<ObraInsumoLista?> GetByIdWithItensNoTrackingAsync(long id)
+        {
+            return await _dbSet
+                .AsNoTracking() // Importante: não rastreia a entidade principal
+                .Include(o => o.Itens) // Inclui a coleção de itens (também não serão rastreados por herança do AsNoTracking)
+                .FirstOrDefaultAsync(o => o.Id == id);
+        }
 
     }
 }

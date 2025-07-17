@@ -34,14 +34,34 @@
                     PageSize="10"
                     FilterMode="FilterMode.Advanced"
                     Responsive="true"
-                    ShowPagingSummary="true">
+                    ShowPagingSummary="true" EmptyText="Não contém registros.">
 
         <Columns>
             <RadzenDataGridColumn TItem="ClienteDto" Property="Nome" Title="Nome" />
-            <RadzenDataGridColumn TItem="ClienteDto" Property="CpfCnpj" Title="CPF/CNPJ" />
             <RadzenDataGridColumn TItem="ClienteDto" Property="TipoPessoa" Title="Tipo" />
-            <RadzenDataGridColumn TItem="ClienteDto" Property="TelefonePrincipal" Title="Telefone" />
-            <RadzenDataGridColumn TItem="ClienteDto" Property="Email" Title="Email" />
+            <RadzenDataGridColumn TItem="ClienteDto" Title="WhatsApp" TextAlign="TextAlign.Center">
+                <Template Context="cliente">
+                    @if (!string.IsNullOrWhiteSpace(cliente.TelefoneWhatsApp))
+                    {
+                        <a href="@($"https://wa.me/55{LimparNumeroTelefone(cliente.TelefoneWhatsApp)}")" target="_blank" title="Abrir no WhatsApp">
+                            <i class="fa fa-whatsapp"  style="color: #25D366; font-size: 1.2em;"></i> 
+                            @cliente.TelefoneWhatsApp
+                        </a>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="ClienteDto" Title="E-mail">
+                <Template Context="cliente">
+                    @if (!string.IsNullOrWhiteSpace(cliente.Email))
+                    {
+                        <a href="@($"mailto:{cliente.Email}")" title="Enviar e-mail">
+                            @cliente.Email
+                        </a>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+
             <RadzenDataGridColumn TItem="ClienteDto" Title="Ações" Filterable="false" Sortable="false">
                 <Template Context="cliente">
                     <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
@@ -112,5 +132,13 @@
         {
             NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao excluir cliente: {ex.Message}", Duration = 5000 });
         }
+    }
+
+    private string LimparNumeroTelefone(string numero)
+    {
+        // Remove todos os caracteres que não são dígitos.
+        // Se seus números não tiverem o código do país (como 55 para o Brasil),
+        // você pode adicioná-lo aqui. Ex: return "55" + ...
+        return new string(numero.Where(char.IsDigit).ToArray());
     }
 }
