@@ -4,6 +4,7 @@ using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
 using ByTescaro.ConstrutorApp.Infrastructure.Repositories;
+using DocumentFormat.OpenXml.Vml.Office;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Text;
@@ -17,19 +18,21 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         private readonly INotificationService _notificationService;
         private readonly ILogger<ObraChecklistService> _logger;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditoriaService _auditoriaService;
+        private readonly IUsuarioLogadoService _usuarioLogadoService;
 
 
-
-        public ObraChecklistService(IMapper mapper, IHttpContextAccessor httpContextAccessor, INotificationService notificationService, ILogger<ObraChecklistService> logger,  IUnitOfWork unitOfWork)
+        public ObraChecklistService(IMapper mapper, IHttpContextAccessor httpContextAccessor, INotificationService notificationService, ILogger<ObraChecklistService> logger, IUnitOfWork unitOfWork, IAuditoriaService auditoriaService, IUsuarioLogadoService usuarioLogadoService)
         {
             _mapper = mapper;
             _httpContextAccessor = httpContextAccessor;
             _notificationService = notificationService;
             _logger = logger;
             _unitOfWork = unitOfWork;
+            _auditoriaService = auditoriaService;
+            _usuarioLogadoService = usuarioLogadoService;
         }
 
-        private string UsuarioLogado => _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
 
         public async Task<List<ObraEtapaDto>> ObterChecklistAsync(long obraId)
         {
@@ -45,9 +48,12 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         /// </summary>
         public async Task SalvarChecklistAsync(long obraId, List<ObraEtapaDto> etapasDto)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
             var obraParaNotificacao = await _unitOfWork.ObraRepository.FindOneWithIncludesAsync(x => x.Id == obraId, x => x.Projeto);
             var projeto = _unitOfWork.ProjetoRepository.FindOneWithIncludesAsync(x => x.Id == obraParaNotificacao.ProjetoId, x => x.Cliente).Result;
             obraParaNotificacao.Projeto.Cliente = projeto.Cliente;
+
             if (obraParaNotificacao?.Projeto?.Cliente == null)
             {
                 _logger.LogWarning("Dados da obra {ObraId} ou cliente associado não encontrados. Nenhuma notificação será enviada.", obraId);
@@ -62,6 +68,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             foreach (var etapa in etapasParaRemover)
             {
                 _unitOfWork.ObraEtapaRepository.Remove(etapa);
+                await _auditoriaService.RegistrarExclusaoAsync(etapa, usuarioLogadoId);
+
             }
 
             // ADIÇÃO/ATUALIZAÇÃO de etapas
@@ -79,6 +87,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                         var novoItem = _mapper.Map<ObraItemEtapa>(itemDto);
                         novoItem.ObraEtapa = novaEtapa;
                         _unitOfWork.ObraItemEtapaRepository.Add(novoItem);
+                        await _auditoriaService.RegistrarCriacaoAsync(novoItem, usuarioLogadoId);
+
                     }
                 }
                 else // Etapa existente
@@ -96,6 +106,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
                     _unitOfWork.ObraEtapaRepository.Update(etapaExistente);
 
+                    var etapaNovo = _mapper.Map<ObraEtapa>(etapaExistente);
+                    await _auditoriaService.RegistrarAtualizacaoAsync(etapaExistente, etapaNovo, usuarioLogadoId);
+
+
                     // Use a coleção de itens que já está em memória e sendo rastreada.
                     // Não consulte o banco de dados novamente aqui.
                     var itensAtuaisDaEtapa = etapaExistente.Itens.ToList();
@@ -106,6 +120,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     foreach (var item in itensParaRemover)
                     {
                         _unitOfWork.ObraItemEtapaRepository.Remove(item);
+                        await _auditoriaService.RegistrarExclusaoAsync(item, usuarioLogadoId);
+
                     }
 
                     // Adicionar ou atualizar itens
@@ -116,6 +132,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                             var novoItem = _mapper.Map<ObraItemEtapa>(itemDto);
                             novoItem.ObraEtapa = etapaExistente;
                             _unitOfWork.ObraItemEtapaRepository.Add(novoItem);
+
+                            await _auditoriaService.RegistrarCriacaoAsync(novoItem, usuarioLogadoId);
+
 
                             bool foiConcluidoAgora = novoItem.Concluido;
                             if (foiConcluidoAgora && obraParaNotificacao?.Projeto?.ClienteId != null)
@@ -130,8 +149,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                             if (itemExistente != null)
                             {
                                 bool eraConcluido = itemExistente.Concluido;
-                                _mapper.Map(itemDto, itemExistente); // Mapeia para o item existente e rastreado
-                                _unitOfWork.ObraItemEtapaRepository.Update(itemExistente);
+                               var itemNovo = _mapper.Map(itemDto, itemExistente); // Mapeia para o item existente e rastreado
+                                _unitOfWork.ObraItemEtapaRepository.Update(itemNovo);
+                                await _auditoriaService.RegistrarAtualizacaoAsync(itemExistente, itemNovo, usuarioLogadoId);
+
 
                                 bool foiConcluidoAgora = itemExistente.Concluido && !eraConcluido;
                                 if (foiConcluidoAgora && obraParaNotificacao?.Projeto?.Cliente != null)

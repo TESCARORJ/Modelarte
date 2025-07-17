@@ -16,7 +16,7 @@
 
         public bool Ativo { get; set; }
         public DateTime DataHoraCadastro { get; set; }
-        public string UsuarioCadastro { get; set; } = string.Empty;
+        public string? UsuarioCadastro { get; set; } = string.Empty;
 
     }
 

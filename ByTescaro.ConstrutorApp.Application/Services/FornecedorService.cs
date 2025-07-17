@@ -14,28 +14,27 @@ namespace ByTescaro.ConstrutorApp.Application.Services
     public class FornecedorService : IFornecedorService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly ILogAuditoriaRepository _logRepo;
         private readonly IMapper _mapper;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IAuditoriaService _auditoriaService;
+        private readonly IUsuarioLogadoService _usuarioLogadoService;
 
 
         public FornecedorService(
-            ILogAuditoriaRepository logRepo,
             IMapper mapper,
-            IHttpContextAccessor httpContextAccessor,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IAuditoriaService auditoriaService,
+            IUsuarioLogadoService usuarioLogadoService)
         {
-            _logRepo = logRepo;
             _mapper = mapper;
-            _httpContextAccessor = httpContextAccessor;
             _unitOfWork = unitOfWork;
+            _auditoriaService = auditoriaService;
+            _usuarioLogadoService = usuarioLogadoService;
         }
 
-        private string UsuarioLogado => _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
 
         public async Task<IEnumerable<FornecedorDto>> ObterTodosAsync()
         {
-            var fornecedores = await _unitOfWork.FornecedorRepository.GetAllAsync();
+            var fornecedores = await _unitOfWork.FornecedorRepository.FindAllWithIncludesAsync(x => x.TipoEntidade == TipoEntidadePessoa.Fornecedor, x => x.Endereco);
             return _mapper.Map<IEnumerable<FornecedorDto>>(fornecedores);
         }
 
@@ -47,21 +46,18 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task CriarAsync(FornecedorDto dto)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var entity = _mapper.Map<Fornecedor>(dto);
             entity.DataHoraCadastro = DateTime.Now;
-            entity.UsuarioCadastro = UsuarioLogado;
+            entity.UsuarioCadastroId = usuarioLogadoId;
 
             entity.TipoEntidade = TipoEntidadePessoa.Fornecedor;
             _unitOfWork.FornecedorRepository.Add(entity);
 
-            await _logRepo.RegistrarAsync(new LogAuditoria
-            {
-                Usuario = UsuarioLogado,
-                Entidade = nameof(Fornecedor),
-                Acao = "Criado",
-                Descricao = $"Fornecedor '{entity.Nome}' criado",
-                DadosAtuais = JsonSerializer.Serialize(entity)
-            });
+            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
+
 
             await _unitOfWork.CommitAsync();
 
@@ -69,25 +65,21 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task AtualizarAsync(FornecedorDto dto)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var entityAntigo = await _unitOfWork.FornecedorRepository.GetByIdAsync(dto.Id);
             if (entityAntigo == null) return;
 
             var entityNovo = _mapper.Map<Fornecedor>(dto);
-            entityNovo.UsuarioCadastro = entityAntigo.UsuarioCadastro;
+            entityNovo.UsuarioCadastroId = usuarioLogadoId;
             entityNovo.DataHoraCadastro = entityAntigo.DataHoraCadastro;
 
             entityNovo.TipoEntidade = TipoEntidadePessoa.Fornecedor;
             _unitOfWork.FornecedorRepository.Update(entityNovo);
 
-            await _logRepo.RegistrarAsync(new LogAuditoria
-            {
-                Usuario = UsuarioLogado,
-                Entidade = nameof(Fornecedor),
-                Acao = "Atualizado",
-                Descricao = $"Fornecedor '{entityNovo.Nome}' atualizado",
-                DadosAnteriores = JsonSerializer.Serialize(entityAntigo),
-                DadosAtuais = JsonSerializer.Serialize(entityNovo)
-            });
+            await _auditoriaService.RegistrarAtualizacaoAsync(entityAntigo, entityNovo, usuarioLogadoId);
+
 
             await _unitOfWork.CommitAsync();
 
@@ -95,19 +87,16 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task RemoverAsync(long id)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var entity = await _unitOfWork.FornecedorRepository.GetByIdAsync(id);
             if (entity == null) return;
 
             _unitOfWork.FornecedorRepository.Remove(entity);
 
-            await _logRepo.RegistrarAsync(new LogAuditoria
-            {
-                Usuario = UsuarioLogado,
-                Entidade = nameof(Fornecedor),
-                Acao = "Excluído",
-                Descricao = $"Fornecedor '{entity.Nome}' removido",
-                DadosAnteriores = JsonSerializer.Serialize(entity)
-            });
+            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
+
 
             await _unitOfWork.CommitAsync();
 

@@ -8,7 +8,7 @@
         public DateTime? DataDemissao { get; set; }
 
         public long FuncaoId { get; set; }
-        public Funcao Funcao { get; set; } = default!;
+        public Funcao Funcao { get; set; } = null!;
 
         public ICollection<ObraFuncionario> ProjetoFuncionarios { get; set; } = new List<ObraFuncionario>();
 

@@ -5,19 +5,17 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
 {
     public class Projeto : EntidadeBase
     {
-        public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
-        public string? UsuarioCadastro { get; set; } = string.Empty;
         public string? Nome { get; set; } = string.Empty;
         public StatusProjeto Status { get; set; }
         public DateTime DataInicio { get; set; }
         public DateTime? DataFim { get; set; }
-        public string TelefonePrincipal { get; set; } = string.Empty;
+        public string? TelefonePrincipal { get; set; } = string.Empty;
         public long? EnderecoId { get; set; }
-        public Endereco? Endereco { get; set; } = new();
+        public Endereco? Endereco { get; set; } = null!;
         public long ClienteId { get; set; }
-        public Cliente Cliente { get; set; } = default!;
+        public Cliente Cliente { get; set; } = null!;
 
-  
+
 
         public ICollection<Obra> Obras { get; set; } = new List<Obra>();
     }

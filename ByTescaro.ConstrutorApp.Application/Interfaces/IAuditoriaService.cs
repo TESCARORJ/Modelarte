@@ -1,21 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ByTescaro.ConstrutorApp.Application.Interfaces
+﻿namespace ByTescaro.ConstrutorApp.Application.Interfaces
 {
     public interface IAuditoriaService
     {
-        Task RegistrarCriacaoAsync<T>(T entidadeNova, string usuario) where T : class;
+        Task RegistrarCriacaoAsync<T>(T entidadeNova, long usuarioId) where T : class;
         Task RegistrarAtualizacaoAsync<T>(
         T entidadeAntiga,
         T entidadeNova,
-        string usuario,
+        long usuarioId,
         Dictionary<string, Dictionary<long, string>>? colecoesNomes = null) where T : class;
 
-        Task RegistrarExclusaoAsync<T>(T entidadeAntiga, string usuario) where T : class;
+        Task RegistrarExclusaoAsync<T>(T entidadeAntiga, long usuarioId) where T : class;
     }
 
 

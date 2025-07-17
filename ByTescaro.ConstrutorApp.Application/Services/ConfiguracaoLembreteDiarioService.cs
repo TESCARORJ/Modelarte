@@ -2,7 +2,10 @@
 using ByTescaro.ConstrutorApp.Application.DTOs;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Entities;
+using ByTescaro.ConstrutorApp.Domain.Enums;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
+using DocumentFormat.OpenXml.Vml.Office;
+using System.Text.Json;
 
 namespace ByTescaro.ConstrutorApp.Application.Services
 {
@@ -11,12 +14,15 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IUsuarioLogadoService _usuarioLogadoService;
+        private readonly IAuditoriaService _auditoriaService;
 
-        public ConfiguracaoLembreteDiarioService(IUnitOfWork unitOfWork, IMapper mapper, IUsuarioLogadoService usuarioLogadoService)
+
+        public ConfiguracaoLembreteDiarioService(IUnitOfWork unitOfWork, IMapper mapper, IUsuarioLogadoService usuarioLogadoService, IAuditoriaService auditoriaService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _usuarioLogadoService = usuarioLogadoService;
+            _auditoriaService = auditoriaService;
         }
 
         public async Task<IEnumerable<ConfiguracaoLembreteDiarioDto>> GetAllAsync()
@@ -35,12 +41,18 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         {
             try
             {
-                var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
+                var usuarioLogado =  _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+                var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
                 var configuracao = _mapper.Map<ConfiguracaoLembreteDiario>(request);
                 configuracao.DataHoraCadastro = DateTime.Now;
                 configuracao.UsuarioCadastroId = usuarioLogado.Id; // Obtém o ID do usuário logado
 
                 _unitOfWork.ConfiguracaoLembreteDiarioRepository.Add(configuracao);
+
+                await _auditoriaService.RegistrarCriacaoAsync(configuracao, usuarioLogadoId);
+
+
                 await _unitOfWork.CommitAsync();
 
                 return _mapper.Map<ConfiguracaoLembreteDiarioDto>(configuracao);
@@ -55,21 +67,30 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task UpdateAsync(AtualizarConfiguracaoLembreteDiarioRequest request)
         {
-            var configuracaoExistente = await _unitOfWork.ConfiguracaoLembreteDiarioRepository.GetByIdAsync(request.Id);
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id; 
 
-            if (configuracaoExistente == null)
+            var configuracaoAntiga = await _unitOfWork.ConfiguracaoLembreteDiarioRepository.GetByIdAsync(request.Id);
+
+            if (configuracaoAntiga == null)
             {
                 throw new ApplicationException("Configuração de lembrete diário não encontrada.");
             }
 
-            _mapper.Map(request, configuracaoExistente); // Mapeia as propriedades atualizáveis
+           var configaracaoNova =  _mapper.Map(request, configuracaoAntiga); // Mapeia as propriedades atualizáveis
 
-            _unitOfWork.ConfiguracaoLembreteDiarioRepository.Update(configuracaoExistente); // Marca como modificado
+            _unitOfWork.ConfiguracaoLembreteDiarioRepository.Update(configaracaoNova);
+
+            await _auditoriaService.RegistrarAtualizacaoAsync(configuracaoAntiga, configaracaoNova, usuarioLogadoId);
+
             await _unitOfWork.CommitAsync();
         }
 
         public async Task DeleteAsync(long id)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var configuracao = await _unitOfWork.ConfiguracaoLembreteDiarioRepository.GetByIdAsync(id);
             if (configuracao == null)
             {
@@ -77,6 +98,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             }
 
             _unitOfWork.ConfiguracaoLembreteDiarioRepository.Remove(configuracao);
+            await _auditoriaService.RegistrarExclusaoAsync(configuracao, usuarioLogadoId);
+
             await _unitOfWork.CommitAsync();
         }
 

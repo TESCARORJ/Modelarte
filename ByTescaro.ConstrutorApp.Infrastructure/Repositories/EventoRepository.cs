@@ -22,7 +22,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
                     .ThenInclude(pe => pe.Usuario)
                 .Include(e => e.Criador)
                 .Where(e =>
-                    e.CriadorId == usuarioId || // O criador sempre vê seu próprio evento (Privado, Publico, SomenteConvidados)
+                    e.UsuarioCadastroId == usuarioId || // O criador sempre vê seu próprio evento (Privado, Publico, SomenteConvidados)
                     e.Visibilidade == Visibilidade.Publico || // QUALQUER usuário pode ver eventos públicos
                     (e.Visibilidade == Visibilidade.SomenteConvidados && e.Participantes.Any(pe => pe.UsuarioId == usuarioId)) // Usuários convidados veem eventos "Somente Convidados"
                 )
@@ -43,7 +43,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
                 // A lógica aqui seria um pouco diferente, talvez mais genérica para um calendário de visualização.
                 // Por enquanto, mantenho a lógica original baseada em userId se ele for fornecido,
                 // mas você pode estender isso para também incluir eventos públicos no range.
-                query = query.Where(e => e.CriadorId == userId.Value || e.Participantes.Any(p => p.UsuarioId == userId.Value));
+                query = query.Where(e => e.UsuarioCadastroId == userId.Value || e.Participantes.Any(p => p.UsuarioId == userId.Value));
             }
             // NOTA: Se esta busca for para um calendário público ou um "Todos os Eventos", você pode remover o filtro de userId.
             // Se for para um usuário específico, então a visibilidade também deve ser aplicada aqui.

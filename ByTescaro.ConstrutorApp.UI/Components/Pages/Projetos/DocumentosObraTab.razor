@@ -55,14 +55,16 @@
 
 @code {
     [Parameter] public ObraDto Obra { get; set; } = new();
-    private string? nomeUsuarioLogado;
+    private long usuarioLogadoId;
+    private string? usuarioLogadoNome;
 
     private string accepts => string.Join(", ", Enum.GetValues<ExtensaoDocumentoPermitida>().Select(e => $".{e.ToString().ToLower()}"));
 
     protected override async Task OnInitializedAsync()
     {
         var usuario = await UsuarioLogadoService.ObterUsuarioAtualAsync();
-        nomeUsuarioLogado = usuario?.Nome ?? "Sistema";
+        usuarioLogadoNome = usuario?.Nome ?? "Sistema";
+        usuarioLogadoId = usuario?.Id ?? 0;
     }
 
     private async void ProcessarUpload(UploadChangeEventArgs args)
@@ -99,7 +101,7 @@
                         Extensao = extensao,
                         TamanhoEmKb = tamanhoKb,
                         DataHoraCadastro = DateTime.Now,
-                        UsuarioCadastro = nomeUsuarioLogado ?? "Sistema"
+                        UsuarioCadastroNome = usuarioLogadoNome ?? "Sistema"
                     };
 
                 var entity = new ObraDocumento
@@ -110,11 +112,11 @@
                         Extensao = documento.Extensao,
                         TamanhoEmKb = documento.TamanhoEmKb,
                         DataHoraCadastro = documento.DataHoraCadastro,
-                        UsuarioCadastro = documento.UsuarioCadastro
+                        UsuarioCadastroId = documento.UsuarioCadastroId
                     };
 
                 UnitOfWork.ObraDocumentoRepository.Add(entity);
-                await AuditoriaService.RegistrarCriacaoAsync(documento, nomeUsuarioLogado);
+                await AuditoriaService.RegistrarCriacaoAsync(documento, usuarioLogadoId);
 
                 documento.Id = entity.Id;
                 Obra.Documentos.Add(documento);
@@ -161,7 +163,7 @@
             if (entity is not null)
             {
                 UnitOfWork.ObraDocumentoRepository.Remove(entity);
-                await AuditoriaService.RegistrarExclusaoAsync(doc, nomeUsuarioLogado);
+                await AuditoriaService.RegistrarExclusaoAsync(doc, usuarioLogadoId);
             }
 
             Obra.Documentos.Remove(doc);

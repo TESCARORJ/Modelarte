@@ -5,29 +5,15 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
 
     public class Obra : EntidadeBase
     {
-        public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
-        public string UsuarioCadastro { get; set; } = string.Empty;
         public long ProjetoId { get; set; }
-        public Projeto Projeto { get; set; } = default!;
-        public string Nome { get; set; } = string.Empty;
+        public Projeto Projeto { get; set; } = null!;
+        public string? Nome { get; set; } = string.Empty;
         public StatusObra Status { get; set; }
-        public DateTime? DataInicioExecucao { get; set; }
-
-
-
-        // Endereço alternativo (se necessário)
-        public string? Logradouro { get; set; }
-        public string? Numero { get; set; }
-        public string? Bairro { get; set; }
-        public string? Cidade { get; set; }
-        public string? Estado { get; set; }
-        public string? UF { get; set; }
-        public string? CEP { get; set; }
-        public string? Complemento { get; set; }
+        public DateTime? DataInicioExecucao { get; set; }    
 
         public ResponsavelMaterialEnum ResponsavelMaterial { get; set; }
         public long? ResponsavelObraId { get; set; }
-        public Funcionario? ResponsavelObra { get; set; } = default;
+        public Funcionario? ResponsavelObra { get; set; } = null!;
 
         public ICollection<ObraEtapa> Etapas { get; set; } = new List<ObraEtapa>();
         public ICollection<ObraFuncionario> Funcionarios { get; set; } = new List<ObraFuncionario>();

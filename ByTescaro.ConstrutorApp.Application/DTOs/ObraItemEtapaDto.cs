@@ -9,7 +9,7 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
     public class ObraItemEtapaDto
     {
         public long Id { get; set; }
-        public string Nome { get; set; } = string.Empty;
+        public string? Nome { get; set; } = string.Empty;
         public long ObraEtapaId { get; set; }
         public int Ordem { get; set; }
 
@@ -21,7 +21,7 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
         public DateTime? DataPrazoCalculada { get; set; }
 
         public DateTime DataHoraCadastro { get; set; }
-        public string UsuarioCadastro { get; set; } = string.Empty;
+        public string? UsuarioCadastro { get; set; } = string.Empty;
     }
 
 }

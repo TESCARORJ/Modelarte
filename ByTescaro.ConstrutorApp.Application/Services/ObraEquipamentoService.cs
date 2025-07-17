@@ -8,22 +8,22 @@ using Microsoft.AspNetCore.Http;
 namespace ByTescaro.ConstrutorApp.Application.Services
 {
     public class ObraEquipamentoService : IObraEquipamentoService
-    {        
+    {
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _httpContextAccessor;
         public readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditoriaService _auditoriaService;
+        private readonly IUsuarioLogadoService _usuarioLogadoService;
 
 
-        public ObraEquipamentoService(IMapper mapper, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
+        public ObraEquipamentoService(IMapper mapper, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork, IAuditoriaService auditoriaService, IUsuarioLogadoService usuarioLogadoService)
         {
             _mapper = mapper;
             _httpContextAccessor = httpContextAccessor;
             _unitOfWork = unitOfWork;
+            _auditoriaService = auditoriaService;
+            _usuarioLogadoService = usuarioLogadoService;
         }
-
-
-        private string UsuarioLogado =>
-            _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
 
         public async Task<List<ObraEquipamentoDto>> ObterPorObraIdAsync(long obraId)
         {
@@ -33,28 +33,43 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task CriarAsync(ObraEquipamentoDto dto)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var entity = _mapper.Map<ObraEquipamento>(dto);
             entity.DataHoraCadastro = DateTime.Now;
-            entity.UsuarioCadastro = UsuarioLogado;
+            entity.UsuarioCadastroId = usuarioLogadoId;
             _unitOfWork.ObraEquipamentoRepository.Add(entity);
+            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
             await _unitOfWork.CommitAsync();
         }
 
         public async Task AtualizarAsync(ObraEquipamentoDto dto)
         {
-            var entity = await _unitOfWork.ObraEquipamentoRepository.GetByIdAsync(dto.Id);
-            if (entity == null) return;
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
 
-            _mapper.Map(dto, entity);
-            _unitOfWork.ObraEquipamentoRepository.Update(entity);
+            var entityAntigo = await _unitOfWork.ObraEquipamentoRepository.GetByIdAsync(dto.Id);
+            if (entityAntigo == null) return;
+
+            var entityNovo = _mapper.Map(dto, entityAntigo);
+            _unitOfWork.ObraEquipamentoRepository.Update(entityNovo);
+            await _auditoriaService.RegistrarAtualizacaoAsync(entityAntigo, entityNovo, usuarioLogadoId);
+
             await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var entity = await _unitOfWork.ObraEquipamentoRepository.GetByIdAsync(id);
             if (entity != null)
                 _unitOfWork.ObraEquipamentoRepository.Remove(entity);
+
+            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
+
             await _unitOfWork.CommitAsync();
         }
 

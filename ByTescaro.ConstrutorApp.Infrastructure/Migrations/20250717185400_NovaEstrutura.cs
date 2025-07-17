@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class Agenda : Migration
+    public partial class NovaEstrutura : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -24,7 +24,10 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     Estado = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     UF = table.Column<string>(type: "nvarchar(2)", maxLength: 2, nullable: true),
                     CEP = table.Column<string>(type: "nvarchar(9)", maxLength: 9, nullable: true),
-                    Complemento = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Complemento = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -37,14 +40,14 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Nome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Ativo = table.Column<bool>(type: "bit", nullable: false),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Descricao = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Patrimonio = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Nome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    Descricao = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Patrimonio = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     Status = table.Column<int>(type: "int", nullable: false),
-                    CustoLocacaoDiaria = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false)
+                    CustoLocacaoDiaria = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -57,10 +60,10 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Nome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Ativo = table.Column<bool>(type: "bit", nullable: false),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Nome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -73,12 +76,12 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Nome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Descricao = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Nome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    Descricao = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     UnidadeMedida = table.Column<int>(type: "int", nullable: false),
-                    Ativo = table.Column<bool>(type: "bit", nullable: false),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -91,14 +94,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Usuario = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Entidade = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Acao = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Descricao = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UsuarioId = table.Column<long>(type: "bigint", nullable: false),
+                    UsuarioNome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    Entidade = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    TipoLogAuditoria = table.Column<int>(type: "int", nullable: false),
+                    Descricao = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     DataHora = table.Column<DateTime>(type: "datetime2", nullable: false),
                     DadosAnteriores = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     DadosAtuais = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    IdEntidade = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    IdEntidade = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -111,11 +115,12 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Nome = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
+                    Nome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     Ordem = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false)
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -128,10 +133,10 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Nome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Ativo = table.Column<bool>(type: "bit", nullable: false),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Nome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -144,11 +149,11 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Ativo = table.Column<bool>(type: "bit", nullable: false),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Nome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Descricao = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Nome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    Descricao = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -161,17 +166,18 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Ativo = table.Column<bool>(type: "bit", nullable: false),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Nome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    Nome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    Sobrenome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     CpfCnpj = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
                     TipoPessoa = table.Column<int>(type: "int", nullable: false),
                     TipoEntidade = table.Column<int>(type: "int", nullable: false),
-                    TelefonePrincipal = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    TelefoneWhatsApp = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    EnderecoId = table.Column<long>(type: "bigint", nullable: true)
+                    TelefonePrincipal = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    TelefoneWhatsApp = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    Email = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    EnderecoId = table.Column<long>(type: "bigint", nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -180,8 +186,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         name: "FK_Pessoa_Endereco_EnderecoId",
                         column: x => x.EnderecoId,
                         principalTable: "Endereco",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -191,12 +196,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ObraEtapaPadraoId = table.Column<long>(type: "bigint", nullable: false),
-                    Nome = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Nome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     Ordem = table.Column<int>(type: "int", nullable: false),
                     IsDataPrazo = table.Column<bool>(type: "bit", nullable: false),
                     DiasPrazo = table.Column<int>(type: "int", nullable: true),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -276,8 +282,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false),
-                    SenhaHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Sobrenome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    SenhaHash = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     PerfilUsuarioId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
@@ -288,7 +293,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         column: x => x.PerfilUsuarioId,
                         principalTable: "PerfilUsuario",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Usuario_Pessoa_Id",
                         column: x => x.Id,
@@ -298,28 +303,29 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ObraItemEtapaPadraoInsumos",
+                name: "ObraItemEtapaPadraoInsumo",
                 columns: table => new
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ObraItemEtapaPadraoId = table.Column<long>(type: "bigint", nullable: false),
                     InsumoId = table.Column<long>(type: "bigint", nullable: false),
-                    QuantidadeSugerida = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                    QuantidadeSugerida = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ObraItemEtapaPadraoInsumos", x => x.Id);
+                    table.PrimaryKey("PK_ObraItemEtapaPadraoInsumo", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ObraItemEtapaPadraoInsumos_Insumo_InsumoId",
+                        name: "FK_ObraItemEtapaPadraoInsumo_Insumo_InsumoId",
                         column: x => x.InsumoId,
                         principalTable: "Insumo",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_ObraItemEtapaPadraoInsumos_ObraItemEtapaPadrao_ObraItemEtapaPadraoId",
+                        name: "FK_ObraItemEtapaPadraoInsumo_ObraItemEtapaPadrao_ObraItemEtapaPadraoId",
                         column: x => x.ObraItemEtapaPadraoId,
                         principalTable: "ObraItemEtapaPadrao",
                         principalColumn: "Id",
@@ -332,15 +338,16 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Nome = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Nome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     Status = table.Column<int>(type: "int", nullable: false),
                     DataInicio = table.Column<DateTime>(type: "datetime2", nullable: false),
                     DataFim = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    TelefonePrincipal = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TelefonePrincipal = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
                     EnderecoId = table.Column<long>(type: "bigint", nullable: true),
-                    ClienteId = table.Column<long>(type: "bigint", nullable: false)
+                    ClienteId = table.Column<long>(type: "bigint", nullable: false),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -356,7 +363,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         column: x => x.EnderecoId,
                         principalTable: "Endereco",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
@@ -365,14 +372,14 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Ativo = table.Column<bool>(type: "bit", nullable: false),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     FornecedorId = table.Column<long>(type: "bigint", nullable: false),
                     InsumoId = table.Column<long>(type: "bigint", nullable: false),
-                    PrecoUnitario = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    PrecoUnitario = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     PrazoEntregaDias = table.Column<int>(type: "int", nullable: false),
-                    Observacao = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Observacao = table.Column<string>(type: "nvarchar(max)", maxLength: 5000, nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -382,13 +389,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         column: x => x.FornecedorId,
                         principalTable: "Fornecedor",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_FornecedorInsumo_Insumo_InsumoId",
                         column: x => x.InsumoId,
                         principalTable: "Insumo",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -397,14 +404,14 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Ativo = table.Column<bool>(type: "bit", nullable: false),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     FornecedorId = table.Column<long>(type: "bigint", nullable: false),
                     ServicoId = table.Column<long>(type: "bigint", nullable: false),
-                    PrecoUnitario = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    PrecoUnitario = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     PrazoEntregaDias = table.Column<int>(type: "int", nullable: false),
-                    Observacao = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Observacao = table.Column<string>(type: "nvarchar(max)", maxLength: 5000, nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -414,17 +421,40 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         column: x => x.FornecedorId,
                         principalTable: "Fornecedor",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_FornecedorServico_Servico_ServicoId",
                         column: x => x.ServicoId,
                         principalTable: "Servico",
                         principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ConfiguracaoLembreteDiario",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    HoraDoDia = table.Column<TimeSpan>(type: "time", nullable: false),
+                    Descricao = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ConfiguracaoLembreteDiario", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ConfiguracaoLembreteDiario_Usuario_UsuarioCadastroId",
+                        column: x => x.UsuarioCadastroId,
+                        principalTable: "Usuario",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Eventos",
+                name: "Evento",
                 columns: table => new
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
@@ -436,20 +466,20 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     IsRecorrente = table.Column<bool>(type: "bit", nullable: false),
                     FrequenciaRecorrencia = table.Column<int>(type: "int", nullable: true),
                     DataFimRecorrencia = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CriadorId = table.Column<long>(type: "bigint", nullable: false),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false),
                     Visibilidade = table.Column<int>(type: "int", nullable: true),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Eventos", x => x.Id);
+                    table.PrimaryKey("PK_Evento", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Eventos_Usuario_CriadorId",
-                        column: x => x.CriadorId,
+                        name: "FK_Evento_Usuario_UsuarioCadastroId",
+                        column: x => x.UsuarioCadastroId,
                         principalTable: "Usuario",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -458,22 +488,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ProjetoId = table.Column<long>(type: "bigint", nullable: false),
-                    Nome = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Nome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     Status = table.Column<int>(type: "int", nullable: false),
                     DataInicioExecucao = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Logradouro = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Numero = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Bairro = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Cidade = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Estado = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UF = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CEP = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Complemento = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ResponsavelMaterial = table.Column<int>(type: "int", nullable: false),
-                    ResponsavelObraId = table.Column<long>(type: "bigint", nullable: true)
+                    ResponsavelObraId = table.Column<long>(type: "bigint", nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -482,17 +505,19 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         name: "FK_Obra_Funcionario_ResponsavelObraId",
                         column: x => x.ResponsavelObraId,
                         principalTable: "Funcionario",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
                         name: "FK_Obra_Projeto_ProjetoId",
                         column: x => x.ProjetoId,
                         principalTable: "Projeto",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
+                  
                 });
 
             migrationBuilder.CreateTable(
-                name: "LembretesEvento",
+                name: "LembreteEvento",
                 columns: table => new
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
@@ -501,16 +526,17 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     TempoAntes = table.Column<int>(type: "int", nullable: false),
                     UnidadeTempo = table.Column<int>(type: "int", nullable: true),
                     Enviado = table.Column<bool>(type: "bit", nullable: false),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_LembretesEvento", x => x.Id);
+                    table.PrimaryKey("PK_LembreteEvento", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_LembretesEvento_Eventos_EventoId",
+                        name: "FK_LembreteEvento_Evento_EventoId",
                         column: x => x.EventoId,
-                        principalTable: "Eventos",
+                        principalTable: "Evento",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -525,16 +551,17 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     UsuarioId = table.Column<long>(type: "bigint", nullable: false),
                     StatusParticipacao = table.Column<int>(type: "int", nullable: true),
                     DataResposta = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true)
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ParticipantesEvento", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ParticipantesEvento_Eventos_EventoId",
+                        name: "FK_ParticipantesEvento_Evento_EventoId",
                         column: x => x.EventoId,
-                        principalTable: "Eventos",
+                        principalTable: "Evento",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -542,7 +569,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         column: x => x.UsuarioId,
                         principalTable: "Usuario",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -551,13 +578,14 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     ObraId = table.Column<long>(type: "bigint", nullable: false),
-                    NomeOriginal = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    CaminhoRelativo = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    Extensao = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
-                    TamanhoEmKb = table.Column<long>(type: "bigint", precision: 18, scale: 2, nullable: false)
+                    NomeOriginal = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    CaminhoRelativo = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Extensao = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true),
+                    TamanhoEmKb = table.Column<long>(type: "bigint", nullable: false),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -576,13 +604,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     ObraId = table.Column<long>(type: "bigint", nullable: false),
                     EquipamentoId = table.Column<long>(type: "bigint", nullable: false),
-                    EquipamentoNome = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    EquipamentoNome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     DataInicioUso = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    DataFimUso = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    DataFimUso = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    EquipamentoId1 = table.Column<long>(type: "bigint", nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -594,11 +624,16 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
+                        name: "FK_ObraEquipamento_Equipamento_EquipamentoId1",
+                        column: x => x.EquipamentoId1,
+                        principalTable: "Equipamento",
+                        principalColumn: "Id");
+                    table.ForeignKey(
                         name: "FK_ObraEquipamento_Obra_ObraId",
                         column: x => x.ObraId,
                         principalTable: "Obra",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -607,14 +642,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ObraId = table.Column<long>(type: "bigint", nullable: false),
-                    Nome = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
+                    Nome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     Ordem = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
                     DataInicio = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DataConclusao = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    DataConclusao = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -633,13 +669,14 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     ObraId = table.Column<long>(type: "bigint", nullable: false),
                     FornecedorId = table.Column<long>(type: "bigint", nullable: false),
-                    FornecedorNome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    FornecedorNome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     DataInicio = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    DataFim = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    DataFim = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -664,15 +701,16 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     ObraId = table.Column<long>(type: "bigint", nullable: false),
                     FuncionarioId = table.Column<long>(type: "bigint", nullable: false),
-                    FuncionarioNome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    FuncaoNoObra = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    FuncionarioNome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    FuncaoNoObra = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     DataInicio = table.Column<DateTime>(type: "datetime2", nullable: false),
                     DataFim = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    FuncionarioId1 = table.Column<long>(type: "bigint", nullable: true)
+                    FuncionarioId1 = table.Column<long>(type: "bigint", nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -702,12 +740,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     ObraId = table.Column<long>(type: "bigint", nullable: false),
-                    NomeOriginal = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    CaminhoRelativo = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    TamanhoEmKb = table.Column<long>(type: "bigint", precision: 18, scale: 2, nullable: false)
+                    NomeOriginal = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    CaminhoRelativo = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    TamanhoEmKb = table.Column<long>(type: "bigint", nullable: false),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -726,11 +765,12 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ObraId = table.Column<long>(type: "bigint", nullable: false),
                     ResponsavelId = table.Column<long>(type: "bigint", nullable: false),
-                    Data = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Data = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -740,13 +780,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         column: x => x.ResponsavelId,
                         principalTable: "Funcionario",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_ObraInsumoLista_Obra_ObraId",
                         column: x => x.ObraId,
                         principalTable: "Obra",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -756,14 +796,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ObraId = table.Column<long>(type: "bigint", nullable: false),
-                    Titulo = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
-                    Descricao = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Titulo = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    Descricao = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     Status = table.Column<int>(type: "int", nullable: false),
                     ResponsavelId = table.Column<long>(type: "bigint", nullable: true),
                     DataInicio = table.Column<DateTime>(type: "datetime2", nullable: true),
                     DataConclusao = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -772,7 +813,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         name: "FK_ObraPendencia_Funcionario_ResponsavelId",
                         column: x => x.ResponsavelId,
                         principalTable: "Funcionario",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
                         name: "FK_ObraPendencia_Obra_ObraId",
                         column: x => x.ObraId,
@@ -788,14 +830,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ObraId = table.Column<long>(type: "bigint", nullable: false),
-                    Titulo = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
-                    Descricao = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Titulo = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    Descricao = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     Status = table.Column<int>(type: "int", nullable: false),
                     ResponsavelId = table.Column<long>(type: "bigint", nullable: true),
                     DataInicio = table.Column<DateTime>(type: "datetime2", nullable: true),
                     DataConclusao = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -804,7 +847,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         name: "FK_ObraRetrabalho_Funcionario_ResponsavelId",
                         column: x => x.ResponsavelId,
                         principalTable: "Funcionario",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
                         name: "FK_ObraRetrabalho_Obra_ObraId",
                         column: x => x.ObraId,
@@ -822,8 +866,9 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     ObraId = table.Column<long>(type: "bigint", nullable: false),
                     ResponsavelId = table.Column<long>(type: "bigint", nullable: false),
                     Data = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -833,13 +878,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         column: x => x.ResponsavelId,
                         principalTable: "Funcionario",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_ObraServicoLista_Obra_ObraId",
                         column: x => x.ObraId,
                         principalTable: "Obra",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -849,11 +894,12 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ObraId = table.Column<long>(type: "bigint", nullable: false),
-                    Responsavel = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Responsavel = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     DataReferencia = table.Column<DateTime>(type: "datetime2", nullable: false),
                     TotalEstimado = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -874,12 +920,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ObraId = table.Column<long>(type: "bigint", nullable: false),
                     DataReferencia = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Responsavel = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Responsavel = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     Observacoes = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Status = table.Column<int>(type: "int", nullable: false),
                     TotalEstimado = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -899,15 +946,16 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ObraEtapaId = table.Column<long>(type: "bigint", nullable: false),
-                    Nome = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Nome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     Ordem = table.Column<int>(type: "int", nullable: false),
                     Concluido = table.Column<bool>(type: "bit", nullable: false),
                     IsDataPrazo = table.Column<bool>(type: "bit", nullable: false),
                     DiasPrazo = table.Column<int>(type: "int", nullable: true),
                     PrazoAtivo = table.Column<bool>(type: "bit", nullable: false),
                     DataConclusao = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -926,12 +974,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    ObraId = table.Column<long>(type: "bigint", nullable: false),
                     ObraInsumoListaId = table.Column<long>(type: "bigint", nullable: false),
                     InsumoId = table.Column<long>(type: "bigint", nullable: false),
-                    Quantidade = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    ObraId = table.Column<long>(type: "bigint", nullable: true)
+                    Quantidade = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -941,7 +990,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         column: x => x.InsumoId,
                         principalTable: "Insumo",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_ObraInsumo_ObraInsumoLista_ObraInsumoListaId",
                         column: x => x.ObraInsumoListaId,
@@ -952,7 +1001,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         name: "FK_ObraInsumo_Obra_ObraId",
                         column: x => x.ObraId,
                         principalTable: "Obra",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -961,12 +1011,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    ObraId = table.Column<long>(type: "bigint", nullable: false),
                     ObraServicoListaId = table.Column<long>(type: "bigint", nullable: false),
                     ServicoId = table.Column<long>(type: "bigint", nullable: false),
-                    Quantidade = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    ObraId = table.Column<long>(type: "bigint", nullable: true)
+                    Quantidade = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -981,13 +1032,14 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         name: "FK_ObraServico_Obra_ObraId",
                         column: x => x.ObraId,
                         principalTable: "Obra",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_ObraServico_Servico_ServicoId",
                         column: x => x.ServicoId,
                         principalTable: "Servico",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1002,9 +1054,10 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     FornecedorId = table.Column<long>(type: "bigint", nullable: true),
                     Quantidade = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     PrecoUnitario = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCadastro = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    OrcamentoId = table.Column<long>(type: "bigint", nullable: true)
+                    OrcamentoId = table.Column<long>(type: "bigint", nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -1013,12 +1066,14 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         name: "FK_OrcamentoItem_Fornecedor_FornecedorId",
                         column: x => x.FornecedorId,
                         principalTable: "Fornecedor",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_OrcamentoItem_Insumo_InsumoId",
                         column: x => x.InsumoId,
                         principalTable: "Insumo",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_OrcamentoItem_OrcamentoObra_OrcamentoObraId",
                         column: x => x.OrcamentoObraId,
@@ -1034,13 +1089,24 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         name: "FK_OrcamentoItem_Servico_ServicoId",
                         column: x => x.ServicoId,
                         principalTable: "Servico",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Eventos_CriadorId",
-                table: "Eventos",
-                column: "CriadorId");
+                name: "IX_ConfiguracaoLembreteDiario_UsuarioCadastroId",
+                table: "ConfiguracaoLembreteDiario",
+                column: "UsuarioCadastroId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Equipamento_Patrimonio",
+                table: "Equipamento",
+                column: "Patrimonio");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Evento_UsuarioCadastroId",
+                table: "Evento",
+                column: "UsuarioCadastroId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_FornecedorInsumo_FornecedorId",
@@ -1068,14 +1134,36 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 column: "FuncaoId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_LembretesEvento_EventoId",
-                table: "LembretesEvento",
+                name: "IX_LembreteEvento_EventoId",
+                table: "LembreteEvento",
                 column: "EventoId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LogAuditoria_DataHora",
+                table: "LogAuditoria",
+                column: "DataHora");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LogAuditoria_Entidade",
+                table: "LogAuditoria",
+                column: "Entidade");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LogAuditoria_TipoLogAuditoria",
+                table: "LogAuditoria",
+                column: "TipoLogAuditoria");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LogAuditoria_UsuarioId",
+                table: "LogAuditoria",
+                column: "UsuarioId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Obra_ProjetoId",
                 table: "Obra",
                 column: "ProjetoId");
+
+           
 
             migrationBuilder.CreateIndex(
                 name: "IX_Obra_ResponsavelObraId",
@@ -1091,6 +1179,11 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 name: "IX_ObraEquipamento_EquipamentoId",
                 table: "ObraEquipamento",
                 column: "EquipamentoId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ObraEquipamento_EquipamentoId1",
+                table: "ObraEquipamento",
+                column: "EquipamentoId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ObraEquipamento_ObraId",
@@ -1168,13 +1261,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 column: "ObraEtapaPadraoId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ObraItemEtapaPadraoInsumos_InsumoId",
-                table: "ObraItemEtapaPadraoInsumos",
+                name: "IX_ObraItemEtapaPadraoInsumo_InsumoId",
+                table: "ObraItemEtapaPadraoInsumo",
                 column: "InsumoId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ObraItemEtapaPadraoInsumos_ObraItemEtapaPadraoId",
-                table: "ObraItemEtapaPadraoInsumos",
+                name: "IX_ObraItemEtapaPadraoInsumo_ObraItemEtapaPadraoId",
+                table: "ObraItemEtapaPadraoInsumo",
                 column: "ObraItemEtapaPadraoId");
 
             migrationBuilder.CreateIndex(
@@ -1253,9 +1346,10 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 column: "ServicoId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OrcamentoObra_ObraId",
+                name: "IX_OrcamentoObra_ObraId_DataReferencia",
                 table: "OrcamentoObra",
-                column: "ObraId");
+                columns: new[] { "ObraId", "DataReferencia" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ParticipantesEvento_EventoId",
@@ -1266,6 +1360,11 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 name: "IX_ParticipantesEvento_UsuarioId",
                 table: "ParticipantesEvento",
                 column: "UsuarioId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Pessoa_Email",
+                table: "Pessoa",
+                column: "Email");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Pessoa_EnderecoId",
@@ -1292,13 +1391,16 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "ConfiguracaoLembreteDiario");
+
+            migrationBuilder.DropTable(
                 name: "FornecedorInsumo");
 
             migrationBuilder.DropTable(
                 name: "FornecedorServico");
 
             migrationBuilder.DropTable(
-                name: "LembretesEvento");
+                name: "LembreteEvento");
 
             migrationBuilder.DropTable(
                 name: "LogAuditoria");
@@ -1325,7 +1427,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 name: "ObraItemEtapa");
 
             migrationBuilder.DropTable(
-                name: "ObraItemEtapaPadraoInsumos");
+                name: "ObraItemEtapaPadraoInsumo");
 
             migrationBuilder.DropTable(
                 name: "ObraPendencia");
@@ -1373,7 +1475,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 name: "Servico");
 
             migrationBuilder.DropTable(
-                name: "Eventos");
+                name: "Evento");
 
             migrationBuilder.DropTable(
                 name: "ObraEtapaPadrao");

@@ -11,93 +11,76 @@ namespace ByTescaro.ConstrutorApp.Application.Services;
 
 public class PerfilUsuarioService : IPerfilUsuarioService
 {
-    private readonly IPerfilUsuarioRepository _repo;
-    private readonly ILogAuditoriaRepository _logRepo;
     private readonly IMapper _mapper;
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IAuditoriaService _auditoriaService;
+    private readonly IUsuarioLogadoService _usuarioLogadoService;
 
-    public PerfilUsuarioService(
-        IPerfilUsuarioRepository repo,
-        ILogAuditoriaRepository logRepo,
-        IMapper mapper,
-        IHttpContextAccessor httpContextAccessor)
+    public PerfilUsuarioService(IMapper mapper, IUnitOfWork unitOfWork, IAuditoriaService auditoriaService, IUsuarioLogadoService usuarioLogadoService)
     {
-        _repo = repo;
-        _logRepo = logRepo;
         _mapper = mapper;
-        _httpContextAccessor = httpContextAccessor;
+        _unitOfWork = unitOfWork;
+        _auditoriaService = auditoriaService;
+        _usuarioLogadoService = usuarioLogadoService;
     }
-
-    private string UsuarioLogado =>
-        _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
 
     public async Task<IEnumerable<PerfilUsuarioDto>> ObterTodosAsync()
     {
-        var perfilUsuarios = await _repo.GetAllAsync();
+        var perfilUsuarios = await _unitOfWork.PerfilUsuarioRepository.GetAllAsync();
         return _mapper.Map<IEnumerable<PerfilUsuarioDto>>(perfilUsuarios);
     }
 
     public async Task<PerfilUsuarioDto?> ObterPorIdAsync(long id)
     {
-        var perfilUsuario = await _repo.GetByIdAsync(id);
+        var perfilUsuario = await _unitOfWork.PerfilUsuarioRepository.GetByIdAsync(id);
         return perfilUsuario == null ? null : _mapper.Map<PerfilUsuarioDto>(perfilUsuario);
     }
 
     public async Task CriarAsync(PerfilUsuarioDto dto)
     {
+        var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+        var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
         var entity = _mapper.Map<PerfilUsuario>(dto);
         entity.DataHoraCadastro = DateTime.Now;
-        entity.UsuarioCadastro = UsuarioLogado;
+        entity.UsuarioCadastroId = usuarioLogadoId;
 
-        _repo.Add(entity);
+        _unitOfWork.PerfilUsuarioRepository.Add(entity);
 
-        await _logRepo.RegistrarAsync(new LogAuditoria
-        {
-            Usuario = UsuarioLogado,
-            Entidade = nameof(PerfilUsuario),
-            Acao = "Criado",
-            Descricao = $"PerfilUsuario '{entity.Nome}' criado",
-            DadosAtuais = JsonSerializer.Serialize(entity)
-        });
+        await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
+
+        await _unitOfWork.CommitAsync();
     }
 
     public async Task AtualizarAsync(PerfilUsuarioDto dto)
     {
-        var entityAntigo = await _repo.GetByIdAsync(dto.Id);
+        var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+        var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
+        var entityAntigo = await _unitOfWork.PerfilUsuarioRepository.GetByIdAsync(dto.Id);
         if (entityAntigo == null) return;
 
         var entityNovo = _mapper.Map<PerfilUsuario>(dto);
-        entityNovo.UsuarioCadastro = entityAntigo.UsuarioCadastro;
+        entityNovo.UsuarioCadastroId = entityAntigo.Id;
         entityNovo.DataHoraCadastro = entityAntigo.DataHoraCadastro;
 
-        _repo.Update(entityNovo);
+        _unitOfWork.PerfilUsuarioRepository.Update(entityNovo);
 
-        await _logRepo.RegistrarAsync(new LogAuditoria
-        {
-            Usuario = UsuarioLogado,
-            Entidade = nameof(PerfilUsuario),
-            Acao = "Atualizado",
-            Descricao = $"PerfilUsuario '{entityNovo.Nome}' atualizado",
-            DadosAnteriores = JsonSerializer.Serialize(entityAntigo),
-            DadosAtuais = JsonSerializer.Serialize(entityNovo)
-        });
+        await _auditoriaService.RegistrarAtualizacaoAsync(entityAntigo, entityNovo, usuarioLogadoId);
+        await _unitOfWork.CommitAsync();
     }
 
     public async Task RemoverAsync(long id)
     {
-        var entity = await _repo.GetByIdAsync(id);
+        var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+        var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
+        var entity = await _unitOfWork.PerfilUsuarioRepository.GetByIdAsync(id);
         if (entity == null) return;
 
-        _repo.Remove(entity);
-
-        await _logRepo.RegistrarAsync(new LogAuditoria
-        {
-            Usuario = UsuarioLogado,
-            Entidade = nameof(PerfilUsuario),
-            Acao = "Excluído",
-            Descricao = $"PerfilUsuario '{entity.Nome}' removido",
-            DadosAnteriores = JsonSerializer.Serialize(entity)
-        });
+        _unitOfWork.PerfilUsuarioRepository.Remove(entity);
+        await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
+        await _unitOfWork.CommitAsync();
     }
 
    

@@ -13,7 +13,7 @@
 </div>
 
 @code {
-    [Parameter] public string Message { get; set; } = "Tem certeza que deseja excluir?";
+    [Parameter] public string? Message { get; set; } = "Tem certeza que deseja excluir?";
     void OnConfirm() => DialogService.Close(true);
     void OnCancel() => DialogService.Close(false);
 }

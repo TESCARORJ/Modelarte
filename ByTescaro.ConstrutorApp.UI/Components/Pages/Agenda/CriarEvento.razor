@@ -170,7 +170,7 @@
 
         try
         {
-            await AgendaService.CriarEventoAsync(eventoRequest, usuarioLogadoId);
+            await AgendaService.CriarCompromissoAsync(eventoRequest, usuarioLogadoId);
             NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Evento criado com sucesso!" });
             DialogService.Close(true);
         }

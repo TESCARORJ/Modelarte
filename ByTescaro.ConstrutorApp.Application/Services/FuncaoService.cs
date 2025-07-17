@@ -14,21 +14,14 @@ namespace ByTescaro.ConstrutorApp.Application.Services
     public class FuncaoService : IFuncaoService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly ILogAuditoriaRepository _logRepo;
         private readonly IMapper _mapper;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-
-        public FuncaoService(ILogAuditoriaRepository logRepo, IMapper mapper, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
+        private readonly IAuditoriaService _auditoriaService;
+        private readonly IUsuarioLogadoService _usuarioLogadoService;
+        public FuncaoService(IMapper mapper, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
         {
-            
-            _logRepo = logRepo;
             _mapper = mapper;
-            _httpContextAccessor = httpContextAccessor;
             _unitOfWork = unitOfWork;
         }
-
-        private string UsuarioLogado =>
-            _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
 
         public async Task<IEnumerable<FuncaoDto>> ObterTodasAsync()
         {
@@ -50,23 +43,23 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task CriarAsync(FuncaoDto dto)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var entity = _mapper.Map<Funcao>(dto);
             _unitOfWork.FuncaoRepository.Add(entity);
 
-            await _logRepo.RegistrarAsync(new LogAuditoria
-            {
-                Usuario = UsuarioLogado,
-                Entidade = nameof(Funcao),
-                Acao = "Criado",
-                Descricao = $"Função '{entity.Nome}' criada",
-                DadosAtuais = JsonSerializer.Serialize(entity)
-            });
+            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
+
 
             await _unitOfWork.CommitAsync();
         }
 
         public async Task AtualizarAsync(FuncaoDto dto)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var antiga = await _unitOfWork.FuncaoRepository.GetByIdAsync(dto.Id);
             if (antiga == null) return;
 
@@ -74,34 +67,24 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
             _unitOfWork.FuncaoRepository.Update(nova);
 
-            await _logRepo.RegistrarAsync(new LogAuditoria
-            {
-                Usuario = UsuarioLogado,
-                Entidade = nameof(Funcao),
-                Acao = "Atualizado",
-                Descricao = $"Função '{nova.Nome}' atualizada",
-                DadosAnteriores = JsonSerializer.Serialize(antiga),
-                DadosAtuais = JsonSerializer.Serialize(nova)
-            });
+            await _auditoriaService.RegistrarAtualizacaoAsync(antiga, nova, usuarioLogadoId);
+
 
             await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var entity = await _unitOfWork.FuncaoRepository.GetByIdAsync(id);
             if (entity == null) return;
 
             _unitOfWork.FuncaoRepository.Remove(entity);
 
-            await _logRepo.RegistrarAsync(new LogAuditoria
-            {
-                Usuario = UsuarioLogado,
-                Entidade = nameof(Funcao),
-                Acao = "Excluído",
-                Descricao = $"Função '{entity.Nome}' removida",
-                DadosAnteriores = JsonSerializer.Serialize(entity)
-            });
+            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
+
 
             await _unitOfWork.CommitAsync();
         }

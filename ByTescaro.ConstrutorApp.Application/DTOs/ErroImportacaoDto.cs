@@ -2,8 +2,8 @@
 
 public class ErroImportacaoDto
 {
-    public string Mensagem { get; set; }
-    public string Referencia { get; set; }
+    public string? Mensagem { get; set; }
+    public string? Referencia { get; set; }
 
     public ErroImportacaoDto(string mensagem, string referencia)
     {

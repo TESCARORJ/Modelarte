@@ -3,6 +3,7 @@ using ByTescaro.ConstrutorApp.Application.DTOs.Auth;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Entities.Admin;
+using ByTescaro.ConstrutorApp.Domain.Enums;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -70,9 +71,9 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
             // Registro de log
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
-                Usuario = usuario.Nome,
+                UsuarioNome = usuario.Nome,
                 Entidade = nameof(Usuario),
-                Acao = "Login",
+                TipoLogAuditoria = TipoLogAuditoria.Login,
                 Descricao = $"Usuário {usuario.Nome} (ID: {usuario.Id}) entrou no sistema"
             });
 
@@ -89,9 +90,9 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
-                Usuario = nomeUsuario,
+                UsuarioNome = nomeUsuario,
                 Entidade = nameof(Usuario),
-                Acao = "Logout",
+                TipoLogAuditoria = TipoLogAuditoria.Logout,
                 Descricao = $"Usuário {nomeUsuario} saiu do sistema"
             });
 

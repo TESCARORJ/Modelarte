@@ -1,8 +1,10 @@
-﻿using System.Reflection;
-using System.Text.Json;
-using ByTescaro.ConstrutorApp.Application.Interfaces;
+﻿using ByTescaro.ConstrutorApp.Application.Interfaces;
+using ByTescaro.ConstrutorApp.Application.Utils;
 using ByTescaro.ConstrutorApp.Domain.Entities;
+using ByTescaro.ConstrutorApp.Domain.Enums;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
+using System.Reflection;
+using System.Text.Json;
 
 
 namespace ByTescaro.ConstrutorApp.Application.Services
@@ -11,48 +13,52 @@ namespace ByTescaro.ConstrutorApp.Application.Services
     public class AuditoriaService : IAuditoriaService
     {
         private readonly ILogAuditoriaRepository _logRepository;
+        private readonly IUsuarioRepository _usuarioRepository;
 
-        public AuditoriaService(ILogAuditoriaRepository logRepository)
+        public AuditoriaService(ILogAuditoriaRepository logRepository, IUsuarioRepository usuarioRepository)
         {
             _logRepository = logRepository;
+            _usuarioRepository = usuarioRepository;
         }
 
-        public async Task RegistrarCriacaoAsync<T>(T entidadeNova, string usuario) where T : class
+        public async Task RegistrarCriacaoAsync<T>(T entidadeNova, long usuarioId) where T : class
         {
-            var log = CriarLog(entidadeNova, null, usuario, "Criado");
+            var log = CriarLog(entidadeNova, null, usuarioId, TipoLogAuditoria.Criacao);
             await _logRepository.RegistrarAsync(log);
         }
 
         public async Task RegistrarAtualizacaoAsync<T>(
             T entidadeAntiga,
             T entidadeNova,
-            string usuario,
+            long usuarioId,
             Dictionary<string, Dictionary<long, string>>? colecoesNomes = null) where T : class
         {
-            var log = CriarLog(entidadeNova, entidadeAntiga, usuario, "Atualizado");
+            var log = CriarLog(entidadeNova, entidadeAntiga, usuarioId, TipoLogAuditoria.Atualizacao);
             log.Descricao = GerarDescricaoDiferencas(entidadeAntiga, entidadeNova, colecoesNomes);
             await _logRepository.RegistrarAsync(log);
         }
 
-        public async Task RegistrarExclusaoAsync<T>(T entidadeAntiga, string usuario) where T : class
+        public async Task RegistrarExclusaoAsync<T>(T entidadeAntiga, long usuarioId) where T : class
         {
-            var log = CriarLog(null, entidadeAntiga, usuario, "Excluído");
+            var log = CriarLog(null, entidadeAntiga, usuarioId, TipoLogAuditoria.Exclusao);
             await _logRepository.RegistrarAsync(log);
         }
 
-        private LogAuditoria CriarLog<T>(T? dadosNovos, T? dadosAntigos, string usuario, string acao) where T : class
+        private LogAuditoria CriarLog<T>(T? dadosNovos, T? dadosAntigos, long usuarioId, TipoLogAuditoria acao) where T : class
         {
             var entidade = typeof(T).Name;
             var entidadeFonte = dadosNovos ?? dadosAntigos!;
             string idEntidade = ObterIdEntidade(entidadeFonte);
+            var usuario = _usuarioRepository.GetByIdAsync(usuarioId).Result;
 
             return new LogAuditoria
             {
-                Usuario = usuario,
+                UsuarioId = usuario != null ? usuario.Id : 0,
+                UsuarioNome = usuario != null ? usuario.Nome : string.Empty,
                 Entidade = entidade,
                 IdEntidade = idEntidade,
-                Acao = acao,
-                Descricao = $"{entidade} foi {acao.ToLower()} por {usuario}",
+                TipoLogAuditoria = acao,
+                Descricao = $"{entidade} foi {EnumHelper.ObterDescricaoEnum(acao)} por {usuario}",
                 DataHora = DateTime.Now,
                 DadosAtuais = dadosNovos != null
                     ? JsonSerializer.Serialize(dadosNovos, new JsonSerializerOptions { WriteIndented = true })

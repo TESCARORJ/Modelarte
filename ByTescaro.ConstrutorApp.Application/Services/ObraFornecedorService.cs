@@ -9,63 +9,69 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 {
     public class ObraFornecedorService : IObraFornecedorService
     {
-        private readonly IObraFornecedorRepository _repo;
-        private readonly IFornecedorRepository _fornecedorRepository;
-        private readonly IObraRepository _obraRepository;
-        private readonly IProjetoRepository _projetoRepository;
-        private readonly IClienteRepository _clienteRepository;
-        private readonly IFuncaoRepository _funcaoRepository;
+
         private readonly IMapper _mapper;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditoriaService _auditoriaService;
+        private readonly IUsuarioLogadoService _usuarioLogadoService;
 
-        private string UsuarioLogado => _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
-
-        public ObraFornecedorService(IObraFornecedorRepository repo, IMapper mapper, IFornecedorRepository fornecedorRepository, IObraRepository obraRepository, IProjetoRepository projetoRepository, IClienteRepository clienteRepository, IFuncaoRepository funcaoRepository, IHttpContextAccessor httpContextAccessor)
+        public ObraFornecedorService(IMapper mapper, IUnitOfWork unitOfWork, IAuditoriaService auditoriaService, IUsuarioLogadoService usuarioLogadoService)
         {
-            _repo = repo;
             _mapper = mapper;
-            _fornecedorRepository = fornecedorRepository;
-            _obraRepository = obraRepository;
-            _projetoRepository = projetoRepository;
-            _clienteRepository = clienteRepository;
-            _funcaoRepository = funcaoRepository;
-            _httpContextAccessor = httpContextAccessor;
+            _unitOfWork = unitOfWork;
+            _auditoriaService = auditoriaService;
+            _usuarioLogadoService = usuarioLogadoService;
         }
 
         public async Task<List<ObraFornecedorDto>> ObterPorObraIdAsync(long obraId)
         {
-            var list = await _repo.GetByObraIdAsync(obraId);
+            var list = await _unitOfWork.ObraFornecedorRepository.GetByObraIdAsync(obraId);
             return _mapper.Map<List<ObraFornecedorDto>>(list);
         }
 
         public async Task CriarAsync(ObraFornecedorDto dto)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
             var entity = _mapper.Map<ObraFornecedor>(dto);
             entity.DataHoraCadastro = DateTime.Now;
-            entity.UsuarioCadastro = UsuarioLogado;
-            _repo.Add(entity);
+            entity.UsuarioCadastroId = usuarioLogadoId;
+            _unitOfWork.ObraFornecedorRepository.Add(entity);
+            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
+            await _unitOfWork.CommitAsync();
+
         }
 
         public async Task AtualizarAsync(ObraFornecedorDto dto)
         {
-            var entity = await _repo.GetByIdAsync(dto.Id);
-            if (entity == null) return;
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+            var entityAntigo = await _unitOfWork.ObraFornecedorRepository.GetByIdAsync(dto.Id);
+            if (entityAntigo == null) return;
 
-            _mapper.Map(dto, entity);
-            _repo.Update(entity);
+            var entityNovo = _mapper.Map(dto, entityAntigo);
+            _unitOfWork.ObraFornecedorRepository.Update(entityNovo);
+            await _auditoriaService.RegistrarAtualizacaoAsync(entityAntigo, entityNovo, usuarioLogadoId);
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
         {
-            var entity = await _repo.GetByIdAsync(id);
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
+            var entity = await _unitOfWork.ObraFornecedorRepository.GetByIdAsync(id);
             if (entity != null)
-                _repo.Remove(entity);
+                _unitOfWork.ObraFornecedorRepository.Remove(entity);
+
+            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task<List<FornecedorDto>> ObterFornecedoresDisponiveisAsync(long obraId)
         {
-            var todosFornecedores = await _fornecedorRepository.GetAllAsync();
-            var fornecedoresAlocados = await _repo.GetAllAsync(); // Todos alocados em qualquer obra
+            var todosFornecedores = await _unitOfWork.FornecedorRepository.GetAllAsync();
+            var fornecedoresAlocados = await _unitOfWork.ObraFornecedorRepository.GetAllAsync(); // Todos alocados em qualquer obra
 
             var idsAlocadosEmOutrasObras = fornecedoresAlocados
                 .Where(f => f.ObraId != obraId)
@@ -82,7 +88,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         //public async Task<List<FornecedorDto>> ObterFornecedoresTotalDisponiveisAsync()
         //{
         //    var todosFornecedores = await _fornecedorRepository.GetAllAsync();
-        //    var fornecedoresAlocados = await _repo.GetAllAsync(); // Todos alocados em qualquer obra
+        //    var fornecedoresAlocados = await _unitOfWork.ObraFornecedorRepository.GetAllAsync(); // Todos alocados em qualquer obra
 
         //    var idsAlocadosEmOutrasObras = fornecedoresAlocados
         //        .Where(f => f.ObraId > 0)
@@ -99,7 +105,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task<List<FornecedorDto>> ObterFornecedoresTotalDisponiveisAsync()
         {
-            var todosFornecedores = await _fornecedorRepository.GetAllAsync(); 
+            var todosFornecedores = await _unitOfWork.FornecedorRepository.GetAllAsync();
 
 
             return _mapper.Map<List<FornecedorDto>>(todosFornecedores);
@@ -109,12 +115,12 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         public async Task<List<FornecedorDto>> ObterFornecedoresTotalAlocadosAsync()
         {
             // Busca todos os fornecedores alocados em alguma obra
-            var fornecedoresAlocados = await _repo.GetAllAsync(); // ObraFornecedor
-            var obras = await _obraRepository.GetAllAsync();
-            var proejtos = await _projetoRepository.GetAllAsync();
-            var clientes = await _clienteRepository.GetAllAsync();
-            var fornecedores = await _fornecedorRepository.GetAllAsync();
-            var funcoes = await _funcaoRepository.GetAllAsync();
+            var fornecedoresAlocados = await _unitOfWork.ObraFornecedorRepository.GetAllAsync(); // ObraFornecedor
+            var obras = await _unitOfWork.ObraRepository.GetAllAsync();
+            var proejtos = await _unitOfWork.ProjetoRepository.GetAllAsync();
+            var clientes = await _unitOfWork.ClienteRepository.GetAllAsync();
+            var fornecedores = await _unitOfWork.FornecedorRepository.GetAllAsync();
+            var funcoes = await _unitOfWork.FuncaoRepository.GetAllAsync();
 
             var resultado = fornecedoresAlocados
                 .Select(eqAlocado =>
@@ -128,7 +134,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     {
                         Id = fornecedor?.Id ?? 0,
                         Nome = fornecedor?.Nome ?? string.Empty,
-                       
+
                     };
                 }).ToList();
 

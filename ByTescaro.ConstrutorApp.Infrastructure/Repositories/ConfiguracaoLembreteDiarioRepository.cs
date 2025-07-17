@@ -16,7 +16,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         {
             return await _dbSet
                          .Include(c => c.UsuarioCadastro) // Inclui o usuário para que o nome possa ser mapeado
-                         .Where(c => c.Ativo)
+                         .Where(c => c.Ativo == true)
                          .ToListAsync();
         }
 

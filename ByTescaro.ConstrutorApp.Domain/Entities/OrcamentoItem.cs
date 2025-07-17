@@ -12,10 +12,8 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public decimal PrecoUnitario { get; set; }
         public decimal Total => Quantidade * PrecoUnitario;
         public OrcamentoObra? OrcamentoObra { get; set; }
-        public Insumo Insumo { get; set; } = default!;
-        public Servico Servico { get; set; } = default!;
-        public Fornecedor Fornecedor { get; set; } = default!;
-        public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
-        public string UsuarioCadastro { get; set; } = string.Empty;
+        public Insumo Insumo { get; set; } = null!;
+        public Servico Servico { get; set; } = null!;
+        public Fornecedor Fornecedor { get; set; } = null!;
     }
 }

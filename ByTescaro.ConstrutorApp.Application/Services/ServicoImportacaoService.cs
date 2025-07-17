@@ -6,7 +6,7 @@ using ByTescaro.ConstrutorApp.Domain.Enums;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
 using ByTescaro.ConstrutorApp.Infrastructure.Data;
 using ClosedXML.Excel;
-using System.Text;
+using System.Text.Json;
 
 namespace ByTescaro.ConstrutorApp.Application.Services;
 
@@ -14,13 +14,22 @@ public class ServicoImportacaoService : IServicoImportacaoService
 {
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
-    private readonly IServicoRepository _repo;
+    private readonly IUsuarioLogadoService _usuarioLogadoService;
+    private readonly ILogAuditoriaRepository _logRepo;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public ServicoImportacaoService(ApplicationDbContext context, IMapper mapper, IServicoRepository repo)
+    public ServicoImportacaoService(
+        ApplicationDbContext context,
+        IMapper mapper,
+        IUsuarioLogadoService usuarioLogadoService,
+        ILogAuditoriaRepository logRepo,
+        IUnitOfWork unitOfWork)
     {
         _context = context;
         _mapper = mapper;
-        _repo = repo;
+        _usuarioLogadoService = usuarioLogadoService;
+        _logRepo = logRepo;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<List<ServicoDto>> CarregarPreviewAsync(Stream excelStream)
@@ -65,9 +74,11 @@ public class ServicoImportacaoService : IServicoImportacaoService
 
     public async Task<List<ErroImportacaoDto>> ImportarServicosAsync(List<ServicoDto> servicos, string usuario)
     {
+        var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+
         var erros = new List<ErroImportacaoDto>();
 
-        var nomesExistentes = (await _repo.GetAllAsync())
+        var nomesExistentes = (await _unitOfWork.ServicoRepository.GetAllAsync())
             .Select(i => i.Nome.Trim().ToLower())
             .ToHashSet();
 
@@ -92,10 +103,20 @@ public class ServicoImportacaoService : IServicoImportacaoService
             dto.Ativo = true;
 
             var entidade = _mapper.Map<Servico>(dto);
-            _repo.Add(entidade);
+            _unitOfWork.ServicoRepository.Add(entidade);
+          
+            await _logRepo.RegistrarAsync(new LogAuditoria
+            {
+                UsuarioId = usuarioLogado == null ? 0 : usuarioLogado.Id,
+                UsuarioNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome,
+                Entidade = nameof(Servico),
+                TipoLogAuditoria = TipoLogAuditoria.Criacao,
+                Descricao = $"Serviço {entidade.Nome} importado por '{usuarioLogado}' em {DateTime.Now}. ",
+                DadosAtuais = JsonSerializer.Serialize(entidade) // Serializa o DTO para o log
+            });
         }
 
-        await _context.SaveChangesAsync();
+        await _unitOfWork.CommitAsync();
         return erros;
     }
 

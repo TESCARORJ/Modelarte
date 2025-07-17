@@ -7,6 +7,7 @@ using ByTescaro.ConstrutorApp.Domain.Interfaces;
 using ByTescaro.ConstrutorApp.Infrastructure.Data;
 using ClosedXML.Excel;
 using System.Text;
+using System.Text.Json;
 
 namespace ByTescaro.ConstrutorApp.Application.Services
 {
@@ -15,13 +16,16 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
         private readonly IClienteRepository _repo;
+        private readonly ILogAuditoriaRepository _logRepo;
+        private readonly IUsuarioLogadoService _usuarioLogadoService;
 
-
-        public ClienteImportacaoService(ApplicationDbContext context, IMapper mapper, IClienteRepository repo)
+        public ClienteImportacaoService(ApplicationDbContext context, IMapper mapper, IClienteRepository repo, ILogAuditoriaRepository logRepo, IUsuarioLogadoService usuarioLogadoService)
         {
             _context = context;
             _mapper = mapper;
             _repo = repo;
+            _logRepo = logRepo;
+            _usuarioLogadoService = usuarioLogadoService;
         }
 
         public async Task<List<ClienteDto>> CarregarPreviewAsync(Stream excelStream)
@@ -58,6 +62,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         public async Task<List<ErroImportacaoDto>> ImportarClientesAsync(List<ClienteDto> clientes, string usuario)
         {
             var erros = new List<ErroImportacaoDto>();
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+
 
             // 🔍 Buscar todos os CPFs já existentes antes do loop
             var cpfsExistentes = (await _repo.GetAllAsync())
@@ -82,7 +88,17 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 dto.DataHoraCadastro = DateTime.Now;
 
                 var cliente = _mapper.Map<Cliente>(dto);
-                _repo.Add(cliente); 
+                _repo.Add(cliente);
+
+                await _logRepo.RegistrarAsync(new LogAuditoria
+                {
+                    UsuarioId = usuarioLogado == null ? 0 : usuarioLogado.Id,
+                    UsuarioNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome,
+                    Entidade = nameof(Cliente),
+                    TipoLogAuditoria = TipoLogAuditoria.Criacao,
+                    Descricao = $"Cliente '{cliente.Nome}' importado por {usuarioLogado.Nome} em {DateTime.Now}",
+                    DadosAtuais = JsonSerializer.Serialize(dto) // Serializa o DTO para o log
+                });
             }
 
             await _context.SaveChangesAsync();

@@ -60,6 +60,6 @@ namespace ByTescaro.ConstrutorApp.Application.Utils
     public class EnumOption<T>
     {
         public T Value { get; set; } = default!;
-        public string Label { get; set; } = string.Empty;
+        public string? Label { get; set; } = string.Empty;
     }
 }

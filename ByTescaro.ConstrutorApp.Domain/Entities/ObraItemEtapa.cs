@@ -5,8 +5,8 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
     public class ObraItemEtapa : EntidadeBase
     {
         public long ObraEtapaId { get; set; }
-        public ObraEtapa ObraEtapa { get; set; } = default!;
-        public string Nome { get; set; } = string.Empty;
+        public ObraEtapa ObraEtapa { get; set; } = null!;
+        public string? Nome { get; set; } = string.Empty;
         public int Ordem { get; set; }
 
         public bool Concluido { get; set; }
@@ -14,8 +14,6 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public int? DiasPrazo { get; set; }
         public bool PrazoAtivo { get; set; }
         public DateTime? DataConclusao { get; set; }
-        public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
-        public string UsuarioCadastro { get; set; } = string.Empty;
     }
 
 }

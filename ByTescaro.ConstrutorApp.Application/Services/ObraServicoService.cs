@@ -3,25 +3,28 @@ using ByTescaro.ConstrutorApp.Application.DTOs;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
-using Microsoft.AspNetCore.Http;
 
 namespace ByTescaro.ConstrutorApp.Application.Services
 {
     public class ObraServicoService : IObraServicoService
     {
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditoriaService _auditoriaService;
+        private readonly IUsuarioLogadoService _usuarioLogadoService;
 
-        public ObraServicoService(IMapper mapper, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
+        public ObraServicoService(
+            IAuditoriaService auditoriaService,
+            IMapper mapper,
+            IUnitOfWork unitOfWork,
+            IUsuarioLogadoService usuarioLogadoService)
         {
+            _auditoriaService = auditoriaService;
             _mapper = mapper;
-            _httpContextAccessor = httpContextAccessor;
             _unitOfWork = unitOfWork;
+            _usuarioLogadoService = usuarioLogadoService;
+
         }
-
-        private string UsuarioLogado => _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
-
 
         public async Task<List<ObraServicoDto>> ObterPorListaIdAsync(long listaId)
         {
@@ -31,28 +34,43 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task CriarAsync(ObraServicoDto dto)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+            var usuarioLogadoNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome;
+
             dto.DataHoraCadastro = DateTime.Now;
-            dto.UsuarioCadastro = UsuarioLogado;
+            dto.UsuarioCadastroId = usuarioLogadoId;
+            dto.UsuarioCadastroNome = usuarioLogadoNome;
             var entity = _mapper.Map<ObraServico>(dto);
             _unitOfWork.ObraServicoRepository.Add(entity);
+            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
+
             await _unitOfWork.CommitAsync();
         }
 
         public async Task AtualizarAsync(ObraServicoDto dto)
         {
-            var entity = await _unitOfWork.ObraServicoRepository.GetByIdAsync(dto.Id);
-            if (entity == null) return;
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+            var entityAntigo = await _unitOfWork.ObraServicoRepository.GetByIdAsync(dto.Id);
+            if (entityAntigo == null) return;
 
-            _mapper.Map(dto, entity);
-            _unitOfWork.ObraServicoRepository.Update(entity);
+            var entityNovo = _mapper.Map(dto, entityAntigo);
+            _unitOfWork.ObraServicoRepository.Update(entityAntigo);
+            await _auditoriaService.RegistrarAtualizacaoAsync(entityAntigo, entityNovo, usuarioLogadoId);
             await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
             var entity = await _unitOfWork.ObraServicoRepository.GetByIdAsync(id);
             if (entity != null)
                 _unitOfWork.ObraServicoRepository.Remove(entity);
+
+            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
+
             await _unitOfWork.CommitAsync();
         }
 

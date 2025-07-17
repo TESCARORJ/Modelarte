@@ -124,7 +124,7 @@
 
 @code {
     [Parameter] public ObraDto Obra { get; set; } = new();
-    [Parameter] public string TituloObra { get; set; } = string.Empty;
+    [Parameter] public string? TituloObra { get; set; } = string.Empty;
     [Parameter] public List<object> ResponsavelOptions { get; set; } = new();
     [Parameter] public List<object> StatusOptions { get; set; } = new();
     [Parameter] public EventCallback<ObraDto> OnRemover { get; set; }

@@ -3,7 +3,6 @@ using ByTescaro.ConstrutorApp.Application.DTOs;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
-using ByTescaro.ConstrutorApp.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Http;
 
 namespace ByTescaro.ConstrutorApp.Application.Services
@@ -12,25 +11,23 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
     public class InsumoService : IInsumoService
     {
+        private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IAuditoriaService _auditoriaService;
-        private readonly IMapper _mapper;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IUsuarioLogadoService _usuarioLogadoService;
 
         public InsumoService(
             IAuditoriaService auditoriaService,
             IMapper mapper,
-            IHttpContextAccessor httpContextAccessor,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IUsuarioLogadoService usuarioLogadoService)
         {
             _auditoriaService = auditoriaService;
             _mapper = mapper;
-            _httpContextAccessor = httpContextAccessor;
             _unitOfWork = unitOfWork;
+            _usuarioLogadoService = usuarioLogadoService;
         }
 
-        private string UsuarioLogado =>
-            _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
 
         public async Task<IEnumerable<InsumoDto>> ObterTodosAsync()
         {
@@ -46,37 +43,46 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task CriarAsync(InsumoDto dto)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var entity = _mapper.Map<Insumo>(dto);
             entity.DataHoraCadastro = DateTime.Now;
-            entity.UsuarioCadastro = UsuarioLogado;
+            entity.UsuarioCadastroId = usuarioLogadoId;
 
             _unitOfWork.InsumoRepository.Add(entity);
-            await _auditoriaService.RegistrarCriacaoAsync(entity, UsuarioLogado);
+            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
 
             await _unitOfWork.CommitAsync();
         }
 
         public async Task AtualizarAsync(InsumoDto dto)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var entityAntigo = await _unitOfWork.InsumoRepository.GetByIdAsync(dto.Id);
             if (entityAntigo == null) return;
 
             var entityNovo = _mapper.Map<Insumo>(dto);
-            entityNovo.UsuarioCadastro = entityAntigo.UsuarioCadastro;
+            entityNovo.UsuarioCadastroId = entityAntigo.UsuarioCadastroId;
             entityNovo.DataHoraCadastro = entityAntigo.DataHoraCadastro;
 
             _unitOfWork.InsumoRepository.Update(entityNovo);
-            await _auditoriaService.RegistrarAtualizacaoAsync(entityAntigo, entityNovo, UsuarioLogado);
+            await _auditoriaService.RegistrarAtualizacaoAsync(entityAntigo, entityNovo, usuarioLogadoId);
             await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var entity = await _unitOfWork.InsumoRepository.GetByIdAsync(id);
             if (entity == null) return;
 
             _unitOfWork.InsumoRepository.Remove(entity);
-            await _auditoriaService.RegistrarExclusaoAsync(entity, UsuarioLogado);
+            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
             await _unitOfWork.CommitAsync();
         }
 

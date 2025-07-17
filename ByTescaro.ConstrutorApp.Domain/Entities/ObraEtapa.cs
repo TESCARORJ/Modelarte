@@ -5,11 +5,10 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
 {
     public class ObraEtapa : EntidadeBase
     {
-        public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
-        public string UsuarioCadastro { get; set; } = string.Empty;
+    
         public long ObraId { get; set; }
-        public Obra Obra { get; set; } = default!;
-        public string Nome { get; set; } = string.Empty;
+        public Obra Obra { get; set; } = null!;
+        public string? Nome { get; set; } = string.Empty;
         public int Ordem { get; set; }
         public StatusEtapa Status { get; set; }
 

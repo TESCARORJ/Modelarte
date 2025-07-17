@@ -4,7 +4,6 @@ using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Enums;
 using ByTescaro.ConstrutorApp.Domain.Interfaces; // Assumindo que IUnitOfWork está aqui
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace ByTescaro.ConstrutorApp.Application.Services;
@@ -15,22 +14,21 @@ public class ProjetoService : IProjetoService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IAuditoriaService _auditoriaService;
     private readonly IMapper _mapper;
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IUsuarioLogadoService _usuarioLogadoService;
+
 
     public ProjetoService(
         IUnitOfWork unitOfWork, // <- Injeção de múltiplos repositórios substituída pela Unit of Work
         IAuditoriaService auditoriaService,
         IMapper mapper,
-        IHttpContextAccessor httpContextAccessor)
+        IUsuarioLogadoService usuarioLogadoService)
     {
         _unitOfWork = unitOfWork;
         _auditoriaService = auditoriaService;
         _mapper = mapper;
-        _httpContextAccessor = httpContextAccessor;
+        _usuarioLogadoService = usuarioLogadoService;
     }
 
-    private string UsuarioLogado =>
-        _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
 
     public async Task<IEnumerable<ProjetoDto>> ObterTodosAsync()
     {
@@ -80,9 +78,11 @@ public class ProjetoService : IProjetoService
 
     public async Task<ProjetoDto> CriarAsync(ProjetoDto dto)
     {
+        var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+        var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
         var projeto = _mapper.Map<Projeto>(dto);
 
-        projeto.UsuarioCadastro = UsuarioLogado;
+        projeto.UsuarioCadastroId = usuarioLogadoId;
         projeto.DataHoraCadastro = DateTime.Now;
 
         // Lógica para Endereço (Criação)
@@ -95,7 +95,7 @@ public class ProjetoService : IProjetoService
 
         foreach (var obra in projeto.Obras)
         {
-            obra.UsuarioCadastro = UsuarioLogado;
+            obra.UsuarioCadastroId = usuarioLogadoId;
             obra.DataHoraCadastro = DateTime.Now;
 
             if (obra.ResponsavelObraId == 0)
@@ -115,12 +115,12 @@ public class ProjetoService : IProjetoService
 
             foreach (var etapa in obra.Etapas)
             {
-                etapa.UsuarioCadastro = UsuarioLogado;
+                etapa.UsuarioCadastroId = usuarioLogadoId;
                 etapa.DataHoraCadastro = DateTime.Now;
 
                 foreach (var item in etapa.Itens)
                 {
-                    item.UsuarioCadastro = UsuarioLogado;
+                    item.UsuarioCadastroId = usuarioLogadoId;
                     item.DataHoraCadastro = DateTime.Now;
                 }
             }
@@ -133,13 +133,16 @@ public class ProjetoService : IProjetoService
         await _unitOfWork.CommitAsync();
 
         // 3. Registra a auditoria após a confirmação da transação.
-        await _auditoriaService.RegistrarCriacaoAsync(_mapper.Map<ProjetoDto>(projeto), UsuarioLogado);
+        await _auditoriaService.RegistrarCriacaoAsync(_mapper.Map<ProjetoDto>(projeto), usuarioLogadoId);
 
         return _mapper.Map<ProjetoDto>(projeto);
     }
 
     public async Task AtualizarAsync(ProjetoDto dto)
     {
+        var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+        var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
         var projeto = await _unitOfWork.ProjetoRepository.FindOneWithIncludesAsync( p => p.Id == dto.Id, p => p.Endereco, p => p.Obras);
         if (projeto == null) return;
 
@@ -147,7 +150,7 @@ public class ProjetoService : IProjetoService
 
         // Mapeia os dados do DTO para a entidade principal
         _mapper.Map(dto, projeto);
-        projeto.UsuarioCadastro = UsuarioLogado;
+        projeto.UsuarioCadastroId = usuarioLogadoId;
         projeto.DataHoraCadastro = DateTime.Now;
 
         // 3. Lógica para ATUALIZAR/CRIAR/REMOVER a entidade Endereco
@@ -192,11 +195,14 @@ public class ProjetoService : IProjetoService
         await _unitOfWork.CommitAsync();
 
         // Registra a auditoria após a transação ser bem-sucedida.
-        await _auditoriaService.RegistrarAtualizacaoAsync(dtoOriginal, dto, UsuarioLogado);
+        await _auditoriaService.RegistrarAtualizacaoAsync(dtoOriginal, dto, usuarioLogadoId);
     }
 
     private async Task SincronizarObrasAsync(ProjetoDto dto, Projeto projeto)
     {
+        var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+        var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
         var obrasDtoIds = dto.Obras.Select(o => o.Id).ToHashSet();
 
         // Remover obras que não estão mais no DTO
@@ -215,7 +221,7 @@ public class ProjetoService : IProjetoService
             {
                 // Atualizar
                 _mapper.Map(obraDto, obraExistente);
-                obraExistente.UsuarioCadastro = UsuarioLogado;
+                obraExistente.UsuarioCadastroId = usuarioLogadoId;
                 obraExistente.DataHoraCadastro = DateTime.Now;
                 _unitOfWork.ObraRepository.Update(obraExistente);
             }
@@ -224,7 +230,7 @@ public class ProjetoService : IProjetoService
                 // Adicionar
                 var novaObra = _mapper.Map<Obra>(obraDto);
                 novaObra.ProjetoId = projeto.Id;
-                novaObra.UsuarioCadastro = UsuarioLogado;
+                novaObra.UsuarioCadastroId = usuarioLogadoId;
                 novaObra.DataHoraCadastro = DateTime.Now;
                 _unitOfWork.ObraRepository.Add(novaObra);
             }
@@ -234,6 +240,9 @@ public class ProjetoService : IProjetoService
 
     public async Task RemoverAsync(long id)
     {
+        var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+        var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
         var projeto = await _unitOfWork.ProjetoRepository.GetByIdAsync(id);
         if (projeto == null) return;
 
@@ -246,7 +255,7 @@ public class ProjetoService : IProjetoService
         await _unitOfWork.CommitAsync();
 
         // Registra a auditoria após a remoção bem-sucedida.
-        await _auditoriaService.RegistrarExclusaoAsync(dtoParaAuditoria, UsuarioLogado);
+        await _auditoriaService.RegistrarExclusaoAsync(dtoParaAuditoria, usuarioLogadoId);
     }
 
     // Os métodos de consulta por status podem ser otimizados para evitar o N+1

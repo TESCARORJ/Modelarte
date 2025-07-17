@@ -7,11 +7,12 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
         public long Id { get; set; }
         public long ObraServicoListaId { get; set; }
         public long ServicoId { get; set; }
-        public string ServicoNome { get; set; } = string.Empty;
-        public string FornecedorNome { get; set; } = string.Empty;
+        public string? ServicoNome { get; set; } = string.Empty;
+        public string? FornecedorNome { get; set; } = string.Empty;
         public decimal Quantidade { get; set; }
+        public long? UsuarioCadastroId { get; set; }
+        public string? UsuarioCadastroNome { get; set; } = string.Empty;
         public DateTime DataHoraCadastro { get; set; }
-        public string UsuarioCadastro { get; set; } = string.Empty;
 
     }
 

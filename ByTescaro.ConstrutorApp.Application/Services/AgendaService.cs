@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
+using Azure.Core;
 using ByTescaro.ConstrutorApp.Application.DTOs;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Entities.Admin;
 using ByTescaro.ConstrutorApp.Domain.Enums;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json; // Para logs ou serialização/desserialização
 
@@ -19,6 +21,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILembreteEventoRepository _lembreteEventoRepository;
+        private readonly ILogAuditoriaRepository _logRepo;
+        private readonly IUsuarioLogadoService _usuarioLogadoService;
 
         public AgendaService(IEventoRepository eventoRepository,
                              IParticipanteEventoRepository participanteEventoRepository,
@@ -26,7 +30,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                              INotificationService zApiNotificationService,
                              IUnitOfWork unitOfWork,
                              IMapper mapper,
-                             ILembreteEventoRepository lembreteEventoRepository)
+                             ILembreteEventoRepository lembreteEventoRepository,
+                             ILogAuditoriaRepository logRepo,
+                             IUsuarioLogadoService usuarioLogadoService)
         {
             _eventoRepository = eventoRepository;
             _participanteEventoRepository = participanteEventoRepository;
@@ -35,13 +41,18 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _lembreteEventoRepository = lembreteEventoRepository;
+            _logRepo = logRepo;
+            _usuarioLogadoService = usuarioLogadoService;
         }
 
-        public async Task<EventoDto> CriarEventoAsync(CriarEventoRequest request, long criadorId)
+        public async Task<EventoDto> CriarCompromissoAsync(CriarEventoRequest request, long UsuarioCadastroId)
         {
             var evento = _mapper.Map<Evento>(request);
-            evento.CriadorId = criadorId;
+            evento.UsuarioCadastroId = UsuarioCadastroId;
             evento.DataHoraCadastro = DateTime.Now;
+
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+
 
             try
             {
@@ -54,7 +65,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 }
 
                 var allParticipantIds = new List<long>(request.IdsParticipantesConvidados);
-                allParticipantIds.Add(criadorId);
+                allParticipantIds.Add(UsuarioCadastroId);
                 var allParticipantsUsers = new List<Usuario>();
 
                 foreach (var pId in allParticipantIds.Distinct())
@@ -78,7 +89,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 var criadorParticipante = new ParticipanteEvento
                 {
                     EventoId = evento.Id,
-                    UsuarioId = criadorId,
+                    UsuarioId = UsuarioCadastroId,
                     StatusParticipacao = StatusParticipacao.Aceito,
                     DataResposta = DateTime.Now
                 };
@@ -86,7 +97,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
                 foreach (var participanteId in request.IdsParticipantesConvidados)
                 {
-                    if (participanteId == criadorId) continue;
+                    if (participanteId == UsuarioCadastroId) continue;
 
                     var participante = new ParticipanteEvento
                     {
@@ -96,6 +107,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                         DataResposta = default(DateTime) // Nulo até que o usuário responda
                     };
                     _unitOfWork.ParticipanteEventoRepository.Add(participante);
+
+
+                  
 
                     var usuarioConvidado = allParticipantsUsers.FirstOrDefault(u => u.Id == participanteId);
                     if (usuarioConvidado != null && !string.IsNullOrEmpty(usuarioConvidado.TelefoneWhatsApp))
@@ -120,6 +134,16 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                         );
                     }
                 }
+
+                await _logRepo.RegistrarAsync(new LogAuditoria
+                {
+                    UsuarioId = usuarioLogado == null ? 0 : usuarioLogado.Id,
+                    UsuarioNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome,
+                    Entidade = nameof(Evento),
+                    TipoLogAuditoria = TipoLogAuditoria.Criacao,
+                    Descricao = $"Compromisso criado por '{usuarioLogado}' em {DateTime.Now}. Título: {evento.Titulo} --- Início: {evento.DataHoraInicio} - Fim: {evento.DataHoraFim} ---  Descrição: {evento.Descricao} --- Paticipantes: {participantesString} ",
+                    DadosAtuais = JsonSerializer.Serialize(request) // Serializa o DTO para o log
+                });
 
                 await _unitOfWork.CommitAsync();
 
@@ -148,7 +172,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             await _unitOfWork.CommitAsync();
 
             var evento = await _eventoRepository.GetByIdAsync(request.EventoId);
-            var organizador = await _usuarioRepository.GetByIdAsync(evento.CriadorId);
+            var organizador = await _usuarioRepository.GetByIdAsync(evento.UsuarioCadastroId);
             var respondente = await _usuarioRepository.GetByIdAsync(usuarioId);
 
             if (organizador != null && !string.IsNullOrEmpty(organizador.TelefoneWhatsApp))
@@ -208,7 +232,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                             var evento = await _eventoRepository.GetByIdAsync(eventoId);
                             if (evento != null)
                             {
-                                var criadorEvento = await _usuarioRepository.GetByIdAsync(evento.CriadorId);
+                                var criadorEvento = await _usuarioRepository.GetByIdAsync(evento.UsuarioCadastroId);
                                 if (criadorEvento != null && !string.IsNullOrEmpty(criadorEvento.TelefoneWhatsApp))
                                 {
                                     var respondente = await _usuarioRepository.GetByIdAsync(usuarioId); // Busca o nome do respondente
@@ -275,13 +299,14 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             try
             {
                 var eventoExistente = await _unitOfWork.EventoRepository.GetByIdTrackingAsync(request.Id);
+                var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
 
                 if (eventoExistente == null)
                 {
                     throw new ApplicationException("Evento não encontrado para atualização.");
                 }
 
-                if (eventoExistente.CriadorId != usuarioId)
+                if (eventoExistente.UsuarioCadastroId != usuarioId)
                 {
                     throw new UnauthorizedAccessException("Você não tem permissão para editar este evento.");
                 }
@@ -368,6 +393,18 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     }
                 }
 
+
+                await _logRepo.RegistrarAsync(new LogAuditoria
+                {
+                    UsuarioId = usuarioLogado == null ? 0 : usuarioLogado.Id,
+                    UsuarioNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome,
+                    Entidade = nameof(Evento),
+                    TipoLogAuditoria = TipoLogAuditoria.Atualizacao,
+                    Descricao = $"Compromisso atualizado por '{usuarioLogado}' em {DateTime.Now}. Título: {eventoExistente.Titulo} --- Início: {eventoExistente.DataHoraInicio} - Fim: {eventoExistente.DataHoraFim} ---  Descrição: {eventoExistente.Descricao} --- Paticipantes: {participantesString} ",
+                    DadosAtuais = JsonSerializer.Serialize(eventoExistente) // Serializa o DTO para o log
+                });
+
+
                 await _unitOfWork.CommitAsync();
 
                 return _mapper.Map<EventoDto>(eventoExistente);
@@ -382,19 +419,27 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         public async Task ExcluirEventoAsync(long eventoId, long usuarioId)
         {
             var evento = await _unitOfWork.EventoRepository.GetByIdTrackingAsync(eventoId);
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+
 
             if (evento == null)
             {
                 throw new Exception("Evento não encontrado.");
             }
 
-            if (evento.CriadorId != usuarioId)
+            if (evento.UsuarioCadastroId != usuarioId)
             {
                 throw new UnauthorizedAccessException("Você não tem permissão para excluir este evento.");
             }
 
             var participantes = await _unitOfWork.ParticipanteEventoRepository.GetParticipantesByEventoIdAsync(evento.Id);
             var lembretesDoEvento = await _unitOfWork.LembreteEventoRepository.GetLembretesByEventoIdAsync(evento.Id);
+
+            var participantesNomes = participantes
+                 .OrderBy(u => u.Usuario.Nome)
+                 .Select(u => u.Usuario.Nome)
+                 .ToList();
+            string participantesString = participantes.Any() ? string.Join(", ", participantesNomes) : "Nenhum participante adicionado (além do criador).";
 
             foreach (var participante in participantes)
             {
@@ -416,7 +461,18 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 _unitOfWork.ParticipanteEventoRepository.RemoveRange(participantes);
             }
 
+            await _logRepo.RegistrarAsync(new LogAuditoria
+            {
+                UsuarioId = usuarioLogado == null ? 0 : usuarioLogado.Id,
+                UsuarioNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome,
+                Entidade = nameof(Evento),
+                TipoLogAuditoria = TipoLogAuditoria.Criacao,
+                Descricao = $"Compromisso excluído por '{usuarioLogado}' em {DateTime.Now}. Título: {evento.Titulo} --- Início: {evento.DataHoraInicio} - Fim: {evento.DataHoraFim} ---  Descrição: {evento.Descricao} --- Paticipantes: {participantesString} ",
+                DadosAtuais = JsonSerializer.Serialize(evento) // Serializa o DTO para o log
+            });
             _unitOfWork.EventoRepository.Remove(evento);
+
+
 
             await _unitOfWork.CommitAsync();
         }
@@ -429,7 +485,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             foreach (var evento in eventos)
             {
                 var eventoDto = _mapper.Map<EventoDto>(evento);
-                eventoDto.NomeCriador = (await _unitOfWork.UsuarioRepository.GetByIdAsync(evento.CriadorId))?.Nome;
+                eventoDto.NomeCriador = (await _unitOfWork.UsuarioRepository.GetByIdAsync(evento.UsuarioCadastroId))?.Nome;
 
                 var participantes = await _unitOfWork.ParticipanteEventoRepository.GetParticipantesByEventoIdAsync(evento.Id);
                 eventoDto.Participantes = new List<ParticipanteEventoDto>();
@@ -453,7 +509,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 return null;
             }
 
-            var ehCriador = evento.CriadorId == usuarioId;
+            var ehCriador = evento.UsuarioCadastroId == usuarioId;
             var ehParticipante = (await _unitOfWork.ParticipanteEventoRepository.GetByEventoAndUsuarioAsync(eventoId, usuarioId)) != null;
             var ehPublico = evento.Visibilidade == Visibilidade.Publico;
 
@@ -463,7 +519,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             }
 
             var eventoDto = _mapper.Map<EventoDto>(evento);
-            eventoDto.NomeCriador = (await _unitOfWork.UsuarioRepository.GetByIdAsync(evento.CriadorId))?.Nome;
+            eventoDto.NomeCriador = (await _unitOfWork.UsuarioRepository.GetByIdAsync(evento.UsuarioCadastroId))?.Nome;
 
             var participantes = await _participanteEventoRepository.GetParticipantesByEventoIdAsync(evento.Id);
             eventoDto.Participantes = new List<ParticipanteEventoDto>();

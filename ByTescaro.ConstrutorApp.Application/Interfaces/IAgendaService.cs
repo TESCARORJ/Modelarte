@@ -4,7 +4,7 @@ namespace ByTescaro.ConstrutorApp.Application.Interfaces
 {
     public interface IAgendaService
     {
-        Task<EventoDto> CriarEventoAsync(CriarEventoRequest request, long criadorId);
+        Task<EventoDto> CriarCompromissoAsync(CriarEventoRequest request, long UsuarioCadastroId);
         Task<EventoDto> AtualizarEventoAsync(AtualizarEventoRequest request, long usuarioId);
         Task ExcluirEventoAsync(long eventoId, long usuarioId);
         Task<IEnumerable<EventoDto>> ObterEventosDoUsuarioAsync(long usuarioId);

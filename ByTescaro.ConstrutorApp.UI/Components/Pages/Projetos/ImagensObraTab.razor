@@ -49,12 +49,14 @@
 
 @code {
     [Parameter] public ObraDto Obra { get; set; } = new();
-    private string? nomeUsuarioLogado;
+    private string? usuarioLogadoNome;
+    private long usuarioLogadoId;
 
     protected override async Task OnInitializedAsync()
     {
         var usuario = await UsuarioLogadoService.ObterUsuarioAtualAsync();
-        nomeUsuarioLogado = usuario?.Nome ?? "Sistema";
+        usuarioLogadoNome = usuario?.Nome ?? "Sistema";
+        usuarioLogadoId = usuario?.Id ?? 0;
     }
 
     private async void OnUpload(UploadChangeEventArgs args)
@@ -87,12 +89,12 @@
                         CaminhoRelativo = caminhoRelativo,
                         TamanhoEmKb = tamanhoKb,
                         DataHoraCadastro = DateTime.Now,
-                        UsuarioCadastro = nomeUsuarioLogado ?? "Sistema"
+                        UsuarioCadastro = usuarioLogadoNome ?? "Sistema"
                     };
 
                 var entidade = Mapper.Map<ObraImagem>(imagemDto);
                 UnitOfWork.ObraImagemRepository.Add(entidade);
-                await AuditoriaService.RegistrarCriacaoAsync(imagemDto, nomeUsuarioLogado);
+                await AuditoriaService.RegistrarCriacaoAsync(imagemDto, usuarioLogadoId);
 
                 imagemDto.Id = entidade.Id;
                 Obra.Imagens.Add(imagemDto);
@@ -141,7 +143,7 @@
                 if (entidade != null)
                 {
                     UnitOfWork.ObraImagemRepository.Remove(entidade);
-                    await AuditoriaService.RegistrarExclusaoAsync(imagem, nomeUsuarioLogado);
+                    await AuditoriaService.RegistrarExclusaoAsync(imagem, usuarioLogadoId);
                 }
 
                 Obra.Imagens.Remove(imagem);

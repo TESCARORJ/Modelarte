@@ -6,7 +6,7 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
     {
         public long Id { get; set; }
         public long ProjetoId { get; set; }
-        public string Nome { get; set; } = string.Empty;
+        public string? Nome { get; set; } = string.Empty;
         public StatusObra? Status { get; set; }
         public DateTime? DataInicioExecucao { get; set; }
 
@@ -24,7 +24,7 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
         public ResponsavelMaterialEnum? ResponsavelMaterial { get; set; }
         public long? ResponsavelObraId { get; set; }
         public FuncionarioDto? ResponsavelObra { get; set; } = default;
-        public string UsuarioCadastro { get; set; } = string.Empty;
+        public string? UsuarioCadastro { get; set; } = string.Empty;
         public DateTime DataHoraCadastro { get; set; }
 
         // Relacionamentos

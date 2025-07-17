@@ -25,10 +25,7 @@ public class UsuarioLogadoService : IUsuarioLogadoService
     public async Task<Usuario?> ObterUsuarioAtualAsync()
     {
         var email = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Email)?.Value;
-        if (string.IsNullOrEmpty(email))
-        {
-            return null;
-        }
+      
 
         // Cria uma UnitOfWork nova e de curta duração para esta operação específica.
         // O 'using' garante que o DbContext interno seja descartado ao final.

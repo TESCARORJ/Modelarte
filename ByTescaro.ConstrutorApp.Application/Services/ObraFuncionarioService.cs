@@ -12,8 +12,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IUnitOfWork _unitOfWork;
-
-        private string UsuarioLogado => _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
+        private readonly IAuditoriaService _auditoriaService;
+        private readonly IUsuarioLogadoService _usuarioLogadoService;
 
         public ObraFuncionarioService(IMapper mapper, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
         {
@@ -30,33 +30,49 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task CriarAsync(ObraFuncionarioDto dto)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
             var entity = _mapper.Map<ObraFuncionario>(dto);
             entity.DataHoraCadastro = DateTime.Now;
-            entity.UsuarioCadastro = UsuarioLogado;
+            entity.UsuarioCadastroId = usuarioLogadoId;
             _unitOfWork.ObraFuncionarioRepository.Add(entity);
+            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
             await _unitOfWork.CommitAsync();
         }
 
         public async Task AtualizarAsync(ObraFuncionarioDto dto)
         {
-            var entity = await _unitOfWork.ObraFuncionarioRepository.GetByIdAsync(dto.Id);
-            if (entity == null) return;
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
 
-            _mapper.Map(dto, entity);
-            _unitOfWork.ObraFuncionarioRepository.Update(entity);
+            var entityAntigo = await _unitOfWork.ObraFuncionarioRepository.GetByIdAsync(dto.Id);
+            if (entityAntigo == null) return;
+
+            var entityNovo = _mapper.Map(dto, entityAntigo);
+            _unitOfWork.ObraFuncionarioRepository.Update(entityNovo);
+            await _auditoriaService.RegistrarAtualizacaoAsync(entityAntigo, entityNovo, usuarioLogadoId);
+
             await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var entity = await _unitOfWork.ObraFuncionarioRepository.GetByIdAsync(id);
             if (entity != null)
                 _unitOfWork.ObraFuncionarioRepository.Remove(entity);
+
+            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
+
+
             await _unitOfWork.CommitAsync();
         }
 
         public async Task<List<FuncionarioDto>> ObterFuncionariosDisponiveisAsync(long obraId)
         {
+
             var todosFuncionarios = await _unitOfWork.FuncionarioRepository.GetAllAsync();
             var funcionariosAlocados = await _unitOfWork.ObraFuncionarioRepository.GetAllAsync(); // Todos alocados em qualquer obra
 

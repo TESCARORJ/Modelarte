@@ -1,14 +1,11 @@
 ﻿using ByTescaro.ConstrutorApp.Application.Interfaces;
+using ByTescaro.ConstrutorApp.Domain.Interfaces; // Certificar que está presente
 using ByTescaro.ConstrutorApp.Infrastructure.Services; // Certifique-se de que este namespace está correto para ZApiSettings
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Text.RegularExpressions;
-using System.Text; // Para StringBuilder
-using System.Text.Json; // Para JsonSerializer
-using System.Linq; // Para .Select
 using RestSharp; // <--- NOVO: Importar RestSharp
-using System.Threading.Tasks;
-using ByTescaro.ConstrutorApp.Domain.Interfaces; // Certificar que está presente
+using System.Text.Json; // Para JsonSerializer
+using System.Text.RegularExpressions;
 
 namespace ByTescaro.ConstrutorApp.Application.Services
 {
@@ -171,7 +168,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
             // Filtra usuários que possuem um número de telefone e que estão ativos (se houver o campo Ativo na entidade Usuario)
             // Assumindo que Usuario tem uma propriedade Telefone (string) e Ativo (bool)
-            var usersToNotify = allUsers.Where(u => !string.IsNullOrWhiteSpace(u.TelefoneWhatsApp) && u.Ativo).ToList(); //
+            var usersToNotify = allUsers.Where(u => !string.IsNullOrWhiteSpace(u.TelefoneWhatsApp) && u.Ativo == true).ToList(); //
 
             if (!usersToNotify.Any()) //
             {
@@ -220,8 +217,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 return;
             }
 
-            // Supondo que a entidade Usuario tenha uma propriedade 'Ativo'
-            if (!user.Ativo) //
+            if (user.Ativo == false) //
             {
                 _logger.LogWarning("Z-API: Usuário {UserName} (ID: {UserId}) está inativo e não receberá notificações.", user.Nome, userId); //
                 return;

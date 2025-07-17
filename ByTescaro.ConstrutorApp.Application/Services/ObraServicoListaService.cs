@@ -11,17 +11,18 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 {
     public class ObraServicoListaService : IObraServicoListaService
     {
-        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditoriaService _auditoriaService;
+        private readonly IUsuarioLogadoService _usuarioLogadoService;
 
-        public ObraServicoListaService(IMapper mapper, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
+        public ObraServicoListaService(IMapper mapper, IUnitOfWork unitOfWork, IAuditoriaService auditoriaService, IUsuarioLogadoService usuarioLogadoService)
         {
             _mapper = mapper;
-            _httpContextAccessor = httpContextAccessor;
             _unitOfWork = unitOfWork;
+            _auditoriaService = auditoriaService;
+            _usuarioLogadoService = usuarioLogadoService;
         }
-        private string UsuarioLogado => _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
 
         public async Task<List<ObraServicoListaDto>> ObterPorObraIdAsync(long obraId)
         {
@@ -37,20 +38,25 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task<ObraServicoListaDto> CriarAsync(ObraServicoListaDto dto)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var entity = _mapper.Map<ObraServicoLista>(dto);
             entity.DataHoraCadastro = DateTime.Now;
-            entity.UsuarioCadastro = UsuarioLogado;
+            entity.UsuarioCadastroId = usuarioLogadoId;
 
             // Se o DTO já vem com itens, o AutoMapper deve associá-los
             // Garantindo que a FK para a lista principal seja nula para que o EF possa preenchê-la.
             foreach (var item in entity.Itens)
             {
                 item.ObraServicoListaId = 0;
-                item.UsuarioCadastro = UsuarioLogado;
+                item.UsuarioCadastroId = usuarioLogadoId;
                 item.DataHoraCadastro = DateTime.Now;
             }
 
             _unitOfWork.ObraServicoListaRepository.Add(entity);
+            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
+
             await _unitOfWork.CommitAsync();
 
             // O 'entity.Id' agora tem o valor gerado pelo banco.
@@ -63,6 +69,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task AtualizarAsync(ObraServicoListaDto dto)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var entity = await _unitOfWork.ObraServicoListaRepository.GetByIdWithItensAsync(dto.Id);
             if (entity == null) return;
 
@@ -80,19 +89,27 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     ServicoId = itemDto.ServicoId,
                     Quantidade = itemDto.Quantidade,
                     DataHoraCadastro = DateTime.Now,
-                    UsuarioCadastro = UsuarioLogado
+                    UsuarioCadastroId = usuarioLogadoId
                 });
             }
 
             _unitOfWork.ObraServicoListaRepository.Update(entity);
+            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
+            // Não é necessário registrar uma atualização, pois estamos tratando como uma nova criação
             await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var entity = await _unitOfWork.ObraServicoListaRepository.GetByIdAsync(id);
             if (entity != null)
                 _unitOfWork.ObraServicoListaRepository.Remove(entity);
+
+            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
+
             await _unitOfWork.CommitAsync();
         }
     }

@@ -27,7 +27,7 @@
 //        return GerarToken(usuario);
 //    }
 
-//    public string GerarToken(Usuario usuario)
+//    public string? GerarToken(Usuario usuario)
 //    {
 //        var claims = new[]
 //        {

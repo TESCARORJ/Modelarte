@@ -5,8 +5,7 @@ using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Enums;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
-using ByTescaro.ConstrutorApp.Infrastructure.Repositories;
-using Microsoft.AspNetCore.Http;
+using DocumentFormat.OpenXml.Vml.Office;
 using System.Text.Json;
 
 namespace ByTescaro.ConstrutorApp.Application.Services
@@ -14,29 +13,22 @@ namespace ByTescaro.ConstrutorApp.Application.Services
     public class ClienteService : IClienteService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly ILogAuditoriaRepository _logRepo;
         private readonly IMapper _mapper;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly IRepository<Cliente> _clienteRepository;
-        private readonly IRepository<Endereco> _enderecoRepository;
+        private readonly IAuditoriaService _auditoriaService;
+        private readonly IUsuarioLogadoService _usuarioLogadoService;
 
         public ClienteService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
-            IHttpContextAccessor httpContextAccessor,
-            ILogAuditoriaRepository logRepo,
-            IRepository<Cliente> clienteRepository,
-            IRepository<Endereco> enderecoRepository)
+            IUsuarioLogadoService usuarioLogadoService,
+            IAuditoriaService auditoriaService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
-            _httpContextAccessor = httpContextAccessor;
-            _logRepo = logRepo;
-            _clienteRepository = clienteRepository;
-            _enderecoRepository = enderecoRepository;
+            _usuarioLogadoService = usuarioLogadoService;
+            _auditoriaService = auditoriaService;
         }
 
-        private string UsuarioLogado => _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Sistema";
 
         public async Task<IEnumerable<ClienteDto>> ObterTodosAsync()
         {
@@ -52,9 +44,12 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task CriarAsync(ClienteDto dto)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var clienteEntity = _mapper.Map<Cliente>(dto);
             clienteEntity.DataHoraCadastro = DateTime.Now; // Use UtcNow para consistência
-            clienteEntity.UsuarioCadastro = UsuarioLogado;
+            clienteEntity.UsuarioCadastroId = usuarioLogado == null ? 0 : usuarioLogado.Id;
             clienteEntity.Ativo = true; // Clientes novos são ativos por padrão
             clienteEntity.TipoEntidade = TipoEntidadePessoa.Cliente;
 
@@ -62,22 +57,15 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             if (!string.IsNullOrWhiteSpace(dto.CEP))
             {
                 var enderecoEntity = _mapper.Map<Endereco>(dto); // Mapeia DTO para nova entidade Endereco
-                _enderecoRepository.Add(enderecoEntity); // Adiciona o novo endereço ao contexto
+                _unitOfWork.EnderecoRepository.Add(enderecoEntity); // Adiciona o novo endereço ao contexto
                 // O EnderecoId será populado após o SaveChangesAsync principal
                 clienteEntity.Endereco = enderecoEntity; // Associa a entidade Endereco criada ao Cliente
             }
 
-            _clienteRepository.Add(clienteEntity); // Adiciona o cliente ao contexto
+            _unitOfWork.ClienteRepository.Add(clienteEntity); // Adiciona o cliente ao contexto
 
-            // Adiciona o log de auditoria ao contexto
-            await _logRepo.RegistrarAsync(new LogAuditoria
-            {
-                Usuario = UsuarioLogado,
-                Entidade = nameof(Cliente),
-                Acao = "Criado",
-                Descricao = $"Cliente '{clienteEntity.Nome}' criado",
-                DadosAtuais = JsonSerializer.Serialize(dto) // Serializa o DTO para o log
-            });
+            await _auditoriaService.RegistrarCriacaoAsync(clienteEntity, usuarioLogadoId);
+
 
             // Salva TODAS as alterações (Cliente, Endereco (se houver) e Log) em uma única transação
             await _unitOfWork.CommitAsync();
@@ -85,69 +73,66 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task AtualizarAsync(ClienteDto dto)
         {
-            // 1. Busque a entidade Cliente COM O ENDEREÇO INCLUÍDO e rastreado
-            var clienteToUpdate = await _clienteRepository.FindOneWithIncludesAsync(c => c.Id == dto.Id, c => c.Endereco);
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
 
-            if (clienteToUpdate == null)
+
+            // 1. Busque a entidade Cliente COM O ENDEREÇO INCLUÍDO e rastreado
+            var entityAntigo = await _unitOfWork.ClienteRepository.FindOneWithIncludesAsync(c => c.Id == dto.Id, c => c.Endereco);
+
+            if (entityAntigo == null)
             {
                 throw new KeyNotFoundException($"Cliente com ID {dto.Id} não encontrado.");
             }
 
             // Armazena uma cópia do estado antigo para o log de auditoria ANTES de modificar
-            var dadosAnteriores = JsonSerializer.Serialize(_mapper.Map<ClienteDto>(clienteToUpdate));
+            var dadosAnteriores = JsonSerializer.Serialize(_mapper.Map<ClienteDto>(entityAntigo));
 
             // 2. Mapeie as propriedades do DTO para a entidade Cliente existente (exceto Endereco)
-            // O AutoMapper por padrão não sobrescreve relacionamentos complexos como Endereco
-            _mapper.Map(dto, clienteToUpdate);
 
             // Garante que campos de auditoria e discriminador não sejam sobrescritos
-            clienteToUpdate.TipoEntidade = TipoEntidadePessoa.Cliente;
+            entityAntigo.TipoEntidade = TipoEntidadePessoa.Cliente;
+
+            // O AutoMapper por padrão não sobrescreve relacionamentos complexos como Endereco
+            var entityNovo = _mapper.Map(dto, entityAntigo);
 
             // 3. Lógica para ATUALIZAR/CRIAR/REMOVER a entidade Endereco
             if (!string.IsNullOrWhiteSpace(dto.CEP)) // Se o DTO tem dados de endereço
             {
-                if (clienteToUpdate.Endereco == null) // Se o cliente NÃO tinha endereço ANTES
+                if (entityNovo.Endereco == null) // Se o cliente NÃO tinha endereço ANTES
                 {
                     var novoEndereco = _mapper.Map<Endereco>(dto);
-                    _enderecoRepository.Add(novoEndereco); // Adiciona o novo endereço
-                    clienteToUpdate.Endereco = novoEndereco; // Associa o novo endereço ao cliente
+                    _unitOfWork.EnderecoRepository.Add(novoEndereco); // Adiciona o novo endereço
+                    entityNovo.Endereco = novoEndereco; // Associa o novo endereço ao cliente
                 }
                 else // Se o cliente JÁ tinha endereço
                 {
-                    _mapper.Map(dto, clienteToUpdate.Endereco); // Mapeia DTO para o endereço existente (rastreado)
+                    _mapper.Map(dto, entityAntigo.Endereco); // Mapeia DTO para o endereço existente (rastreado)
                     // Não é preciso _enderecoRepository.Update(clienteToUpdate.Endereco);
                     // O EF detectará as mudanças automaticamente porque ele já está rastreado.
                 }
             }
             else // Se o DTO NÃO tem CEP, e o cliente TINHA endereço, REMOVER/DESVINCULAR o Endereço existente
             {
-                if (clienteToUpdate.Endereco != null)
+                if (entityNovo.Endereco != null)
                 {
-                    _enderecoRepository.Remove(clienteToUpdate.Endereco); // Marca o endereço para remoção
-                    clienteToUpdate.Endereco = null; // Desvincula o endereço do cliente
-                    clienteToUpdate.EnderecoId = null; // Garante que a FK também seja nullificada
+                    _unitOfWork.EnderecoRepository.Remove(entityNovo.Endereco); // Marca o endereço para remoção
+                    entityNovo.Endereco = null; // Desvincula o endereço do cliente
+                    entityNovo.EnderecoId = null; // Garante que a FK também seja nullificada
                 }
             }
 
-            if (clienteToUpdate.EnderecoId == null)
+            if (entityNovo.EnderecoId == null)
             {
                 var novoEndereco = _mapper.Map<Endereco>(dto);
-                _enderecoRepository.Add(novoEndereco); // Adiciona o novo endereço ao contexto
-                clienteToUpdate.Endereco = novoEndereco; // Associa o novo endereço ao funcionário
+                _unitOfWork.EnderecoRepository.Add(novoEndereco); // Adiciona o novo endereço ao contexto
+                entityNovo.Endereco = novoEndereco; // Associa o novo endereço ao funcionário
             }
 
-            _clienteRepository.Update(clienteToUpdate); // Marca o cliente como modificado (ou as mudanças já foram detectadas)
+            _unitOfWork.ClienteRepository.Update(entityNovo); // Marca o cliente como modificado (ou as mudanças já foram detectadas)
 
-            // 4. Adiciona o log de auditoria
-            await _logRepo.RegistrarAsync(new LogAuditoria
-            {
-                Usuario = UsuarioLogado,
-                Entidade = nameof(Cliente),
-                Acao = "Atualizado",
-                Descricao = $"Cliente '{clienteToUpdate.Nome}' atualizado",
-                DadosAnteriores = dadosAnteriores,
-                DadosAtuais = JsonSerializer.Serialize(dto) // Serializa o DTO atual para o log
-            });
+            await _auditoriaService.RegistrarAtualizacaoAsync(entityAntigo, entityNovo, usuarioLogadoId);
+
 
             // 5. Salva TODAS as alterações (Cliente, Endereço e Log) em uma única transação
             await _unitOfWork.CommitAsync();
@@ -155,24 +140,21 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task RemoverAsync(long id)
         {
-            var clienteToRemove = await _clienteRepository.FindOneWithIncludesAsync(c => c.Id == id, c => c.Endereco);
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
+            var clienteToRemove = await _unitOfWork.ClienteRepository.FindOneWithIncludesAsync(c => c.Id == id, c => c.Endereco);
             if (clienteToRemove == null) return;
 
             // Remove o endereço associado primeiro, se existir
             if (clienteToRemove.Endereco != null)
             {
-                _enderecoRepository.Remove(clienteToRemove.Endereco);
+                _unitOfWork.EnderecoRepository.Remove(clienteToRemove.Endereco);
             }
-            _clienteRepository.Remove(clienteToRemove);
+            _unitOfWork.ClienteRepository.Remove(clienteToRemove);
 
-            await _logRepo.RegistrarAsync(new LogAuditoria
-            {
-                Usuario = UsuarioLogado,
-                Entidade = nameof(Cliente),
-                Acao = "Excluído",
-                Descricao = $"Cliente '{clienteToRemove.Nome}' removido",
-                DadosAnteriores = JsonSerializer.Serialize(_mapper.Map<ClienteDto>(clienteToRemove))
-            });
+
+            await _auditoriaService.RegistrarExclusaoAsync(clienteToRemove, usuarioLogadoId);
 
             await _unitOfWork.CommitAsync();
         }
@@ -192,7 +174,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         public async Task<bool> TelefonePrincipalExistsAsync(string telefonePrincipal, long? ignoreId = null)
         {
             if (string.IsNullOrWhiteSpace(telefonePrincipal)) return false;
-            
+
             return await _unitOfWork.ClienteRepository.ExistsAsync(c => c.TipoEntidade == TipoEntidadePessoa.Cliente &&
                 c.TelefonePrincipal == telefonePrincipal && (ignoreId == null || c.Id != ignoreId.Value));
         }

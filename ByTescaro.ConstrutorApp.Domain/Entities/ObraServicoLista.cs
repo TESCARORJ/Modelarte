@@ -1,9 +1,4 @@
 ﻿using ByTescaro.ConstrutorApp.Domain.Common;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ByTescaro.ConstrutorApp.Domain.Entities
 {
@@ -17,7 +12,5 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public Obra Obra { get; set; } = null!;
         public Funcionario Responsavel { get; set; } = null!;
         public ICollection<ObraServico> Itens { get; set; } = new List<ObraServico>();
-        public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
-        public string UsuarioCadastro { get; set; } = string.Empty;
     }
 }

@@ -8,6 +8,6 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
 {
     public class ErrorResponse 
     { 
-        public string message { get; set; } 
+        public string? message { get; set; } 
     }
 }

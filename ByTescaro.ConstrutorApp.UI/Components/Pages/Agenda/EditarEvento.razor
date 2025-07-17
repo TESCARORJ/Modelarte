@@ -154,7 +154,7 @@
     private ValidationMessageStore? messageStore; // Adicionado para exibir erros customizados no ValidationSummary
     private IEnumerable<UsuarioDto> usuariosDisponiveis = new List<UsuarioDto>();
     private long usuarioLogadoId;
-    private bool IsCriador => eventoSelecionado?.CriadorId == usuarioLogadoId;
+    private bool IsCriador => eventoSelecionado?.UsuarioCadastroId == usuarioLogadoId;
 
     // A lista de visibilidade não deve incluir nulo se queremos garantir uma seleção padrão
     private List<EnumOption<Visibilidade>> VisibilidadeList = EnumHelper.ListarOpcoes<Visibilidade>(incluirNulo: false);

@@ -4,8 +4,8 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
 {
     public class ObraInsumo : EntidadeBase
     {
-        public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
-        public string UsuarioCadastro { get; set; } = string.Empty;
+        public long ObraId { get; set; }
+        public Obra Obra { get; set; } = null!;
         public long ObraInsumoListaId { get; set; }
         public long InsumoId { get; set; }
         public decimal Quantidade { get; set; }

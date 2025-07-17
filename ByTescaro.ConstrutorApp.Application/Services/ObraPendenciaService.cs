@@ -12,23 +12,17 @@ namespace ByTescaro.ConstrutorApp.Application.Services
     public class ObraPendenciaService : IObraPendenciaService
     {
         private readonly IMapper _mapper;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly ILogAuditoriaRepository _logRepo;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditoriaService _auditoriaService;
+        private readonly IUsuarioLogadoService _usuarioLogadoService;
 
-
-
-
-        public ObraPendenciaService(IMapper mapper, IHttpContextAccessor httpContextAccessor, ILogAuditoriaRepository logRepo, IUnitOfWork unitOfWork)
+        public ObraPendenciaService(IMapper mapper, IUnitOfWork unitOfWork, IAuditoriaService auditoriaService, IUsuarioLogadoService usuarioLogadoService)
         {
             _mapper = mapper;
-            _httpContextAccessor = httpContextAccessor;
-            _logRepo = logRepo;
             _unitOfWork = unitOfWork;
+            _auditoriaService = auditoriaService;
+            _usuarioLogadoService = usuarioLogadoService;
         }
-
-        private string UsuarioLogado => _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "Desconhecido";
-
 
         public async Task<List<ObraPendenciaDto>> ObterPorObraIdAsync(long obraId)
         {
@@ -38,20 +32,17 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task CriarAsync(ObraPendenciaDto dto)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var entity = _mapper.Map<ObraPendencia>(dto); 
             entity.DataHoraCadastro = DateTime.Now;
-            entity.UsuarioCadastro = UsuarioLogado;
+            entity.UsuarioCadastroId = usuarioLogadoId;
 
             _unitOfWork.ObraPendenciaRepository.Add(entity);
 
-            await _logRepo.RegistrarAsync(new LogAuditoria
-            {
-                Usuario = UsuarioLogado,
-                Entidade = nameof(Cliente),
-                Acao = "Criado",
-                Descricao = $"Pendência '{entity.Descricao}' criado",
-                DadosAtuais = JsonSerializer.Serialize(entity)
-            });
+            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
+
 
             await _unitOfWork.CommitAsync();
 
@@ -59,34 +50,31 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task AtualizarAsync(ObraPendenciaDto dto)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var entityAntigo = await _unitOfWork.ObraPendenciaRepository.GetByIdAsync(dto.Id);
             if (entityAntigo == null) return;
 
             var entityNovo = _mapper.Map<ObraPendencia>(dto);
-            entityNovo.UsuarioCadastro = entityAntigo.UsuarioCadastro;
+            entityNovo.UsuarioCadastroId = entityAntigo.UsuarioCadastroId;
             entityNovo.DataHoraCadastro = entityAntigo.DataHoraCadastro;
 
-            _unitOfWork.ObraPendenciaRepository.Remove(entityNovo);
-
-            await _logRepo.RegistrarAsync(new LogAuditoria
-            {
-                Usuario = UsuarioLogado,
-                Entidade = nameof(ObraPendencia),
-                Acao = "Atualizado",
-                Descricao = $"Pendência '{entityNovo.Descricao}' atualizado",
-                DadosAnteriores = JsonSerializer.Serialize(entityAntigo),
-                DadosAtuais = JsonSerializer.Serialize(entityNovo)
-            });
-
+            _unitOfWork.ObraPendenciaRepository.Update(entityNovo);
+            await _auditoriaService.RegistrarAtualizacaoAsync(entityAntigo, entityNovo, usuarioLogadoId);
             await _unitOfWork.CommitAsync();
 
         }
 
         public async Task RemoverAsync(long id)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
+
             var entity = await _unitOfWork.ObraPendenciaRepository.GetByIdAsync(id);
             if (entity != null)
                 _unitOfWork.ObraPendenciaRepository.Remove(entity);
+            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
 
             await _unitOfWork.CommitAsync();
 

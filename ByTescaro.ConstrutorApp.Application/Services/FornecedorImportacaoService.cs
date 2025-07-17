@@ -6,22 +6,29 @@ using ByTescaro.ConstrutorApp.Domain.Enums;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
 using ByTescaro.ConstrutorApp.Infrastructure.Data;
 using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Vml.Office;
 using System.Text;
+using System.Text.Json;
 
 namespace ByTescaro.ConstrutorApp.Application.Services
 {
     public class FornecedorImportacaoService : IFornecedorImportacaoService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        private readonly IFornecedorRepository _repo;
+        private readonly IAuditoriaService _auditoriaService;
+        private readonly IUsuarioLogadoService _usuarioLogadoService;
+        private readonly ILogAuditoriaRepository _logRepo;
 
 
-        public FornecedorImportacaoService(ApplicationDbContext context, IMapper mapper, IFornecedorRepository repo)
+
+        public FornecedorImportacaoService(IUnitOfWork unitOfWork, IMapper mapper, IAuditoriaService auditoriaService, IUsuarioLogadoService usuarioLogadoService, ILogAuditoriaRepository logRepo)
         {
-            _context = context;
+            _unitOfWork = unitOfWork;
             _mapper = mapper;
-            _repo = repo;
+            _auditoriaService = auditoriaService;
+            _usuarioLogadoService = usuarioLogadoService;
+            _logRepo = logRepo;
         }
 
         public async Task<List<FornecedorDto>> CarregarPreviewAsync(Stream excelStream)
@@ -50,10 +57,12 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task<List<ErroImportacaoDto>> ImportarFornecedoresAsync(List<FornecedorDto> fornecedores, string usuario)
         {
+            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
             var erros = new List<ErroImportacaoDto>();
 
             // 🔍 Buscar todos os CPFs já existentes antes do loop
-            var cpfsExistentes = (await _repo.GetAllAsync())
+            var cpfsExistentes = (await _unitOfWork.FornecedorRepository.GetAllAsync())
                 .Select(c => c.CpfCnpj)
                 .ToHashSet();
 
@@ -75,10 +84,20 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 dto.DataHoraCadastro = DateTime.Now;
 
                 var fornecedor = _mapper.Map<Fornecedor>(dto);
-                _repo.Add(fornecedor); 
+                _unitOfWork.FornecedorRepository.Add(fornecedor);
+               
+                await _logRepo.RegistrarAsync(new LogAuditoria
+                {
+                    UsuarioId = usuarioLogado == null ? 0 : usuarioLogado.Id,
+                    UsuarioNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome,
+                    Entidade = nameof(Fornecedor),
+                    TipoLogAuditoria = TipoLogAuditoria.Criacao,
+                    Descricao = $"Fornecedor {fornecedor.Nome} importado por '{usuarioLogado}' em {DateTime.Now}. ",
+                    DadosAtuais = JsonSerializer.Serialize(fornecedor) // Serializa o DTO para o log
+                });
             }
 
-            await _context.SaveChangesAsync();
+            await _unitOfWork.CommitAsync();
             return erros;
         }
 

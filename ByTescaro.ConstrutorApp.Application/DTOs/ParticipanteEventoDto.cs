@@ -10,7 +10,7 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
     public class ParticipanteEventoDto
     {
         public long UsuarioId { get; set; }
-        public string NomeUsuario { get; set; }
+        public string? NomeUsuario { get; set; }
         public StatusParticipacao StatusParticipacao { get; set; }
     }
 }
