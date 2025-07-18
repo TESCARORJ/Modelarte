@@ -114,7 +114,8 @@ public class ApplicationProfile : Profile
 
         CreateMap<Funcionario, FuncionarioDto>()
            .ForMember(dest => dest.FuncaoNome, opt => opt.MapFrom(src => src.Funcao != null ? src.Funcao.Nome : string.Empty)) // CORRIGIDO: Tratamento de nulo para Funcao
-                                                                                                                               // CORRIGIDO: Adicionado tratamento de nulo para Endereco
+           .ForMember(dest => dest.UsuarioCadastroNome, opt => opt.MapFrom(src => src.UsuarioCadastro != null ? src.UsuarioCadastro.Nome : string.Empty))
+           // CORRIGIDO: Adicionado tratamento de nulo para Endereco
            .ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Logradouro : string.Empty))
            .ForMember(dest => dest.Numero, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Numero : string.Empty))
            .ForMember(dest => dest.Bairro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Bairro : string.Empty))

@@ -46,6 +46,9 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
             {
                 query = query.Include(include);
             }
+
+            query = query.Include(f => f.UsuarioCadastro);
+
             return await query.ToListAsync();
         }
 

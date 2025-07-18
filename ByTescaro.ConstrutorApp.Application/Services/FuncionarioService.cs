@@ -40,9 +40,26 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task<FuncionarioDto?> ObterPorIdAsync(long id)
         {
-            // Carrega com Endereco e Funcao para o DTO
-            var funcionario = await _unitOfWork.FuncionarioRepository.FindOneWithIncludesAsync(f => f.Id == id, f => f.Endereco, f => f.Funcao);
-            return funcionario == null ? null : _mapper.Map<FuncionarioDto>(funcionario);
+            // Carrega com Endereco, Funcao E UsuarioCadastro (e UsuarioAtualizacao se existir)
+            // Uma única consulta ao banco de dados para obter todos os dados necessários.
+            var funcionario = await _unitOfWork.FuncionarioRepository.FindOneWithIncludesAsync(
+                f => f.Id == id,
+                f => f.Endereco,
+                f => f.Funcao,
+                f => f.UsuarioCadastro // <<--- Inclua aqui!
+                                       // f => f.UsuarioAtualizacao // <<--- Inclua aqui se necessário!
+            );
+
+            if (funcionario == null)
+            {
+                return null; // Retorna null se não encontrar o funcionário
+            }
+
+            // O mapeamento agora preencherá UsuarioCadastroNome (e UsuarioAtualizacaoNome) automaticamente
+            // porque a propriedade de navegação UsuarioCadastro (e UsuarioAtualizacao) foi incluída na busca.
+            var dto = _mapper.Map<FuncionarioDto>(funcionario);
+
+            return dto;
         }
 
         public async Task CriarAsync(FuncionarioDto dto)

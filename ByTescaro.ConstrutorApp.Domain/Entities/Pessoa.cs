@@ -1,4 +1,5 @@
 ﻿using ByTescaro.ConstrutorApp.Domain.Common;
+using ByTescaro.ConstrutorApp.Domain.Entities.Admin;
 using ByTescaro.ConstrutorApp.Domain.Enums;
 
 namespace ByTescaro.ConstrutorApp.Domain.Entities
@@ -14,6 +15,8 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public string? TelefonePrincipal { get; set; } = string.Empty;
         public string? TelefoneWhatsApp { get; set; } = string.Empty;
         public string? Email { get; set; } = string.Empty;
+
+        public Usuario? UsuarioCadastro { get; set; }
 
         public Endereco? Endereco { get; set; } = null!;
         public long? EnderecoId { get; set; }

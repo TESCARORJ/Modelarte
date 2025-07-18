@@ -17,10 +17,12 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         private readonly IMapper _mapper;
         private readonly IAuditoriaService _auditoriaService;
         private readonly IUsuarioLogadoService _usuarioLogadoService;
-        public FuncaoService(IMapper mapper, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
+        public FuncaoService(IMapper mapper, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork, IAuditoriaService auditoriaService, IUsuarioLogadoService usuarioLogadoService)
         {
             _mapper = mapper;
             _unitOfWork = unitOfWork;
+            _auditoriaService = auditoriaService;
+            _usuarioLogadoService = usuarioLogadoService;
         }
 
         public async Task<IEnumerable<FuncaoDto>> ObterTodasAsync()
@@ -60,49 +62,33 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
             var usuarioLogadoId = usuarioLogado?.Id ?? 0;
 
-            // 1. Busque a entidade antiga SOMENTE PARA FINS DE AUDITORIA, SEM RASTREAMENTO.
-            // Essa instância 'antigaParaAuditoria' NÃO será modificada pelo AutoMapper,
-            // preservando o estado original para o log.
-            var antigaParaAuditoria = await _unitOfWork.FuncaoRepository.GetByIdNoTrackingAsync(dto.Id);
+            
+            var antigaParaAuditoria = await _unitOfWork.FuncaoRepository.GetByIdNoTrackingAsync(dto.Id); //
 
             if (antigaParaAuditoria == null)
             {
-                // Se não encontrou, não há o que atualizar ou auditar para um ID existente.
                 throw new KeyNotFoundException($"Função com ID {dto.Id} não encontrada para auditoria.");
             }
 
-            // 2. Busque a entidade que REALMENTE SERÁ ATUALIZADA, COM RASTREAMENTO.
-            // Essa instância 'funcaoParaAtualizar' é a que o EF Core está monitorando
-            // e que terá suas propriedades alteradas.
-            var funcaoParaAtualizar = await _unitOfWork.FuncaoRepository.GetByIdAsync(dto.Id);
+            var dadosAnteriores = JsonSerializer.Serialize(_mapper.Map<FuncaoDto>(antigaParaAuditoria)); //
+
+            
+            var funcaoParaAtualizar = await _unitOfWork.FuncaoRepository.GetByIdTrackingAsync(dto.Id); //
 
             if (funcaoParaAtualizar == null)
             {
-                // Isso deve ser raro se 'antigaParaAuditoria' foi encontrado,
-                // mas é uma boa verificação de segurança.
                 throw new KeyNotFoundException($"Função com ID {dto.Id} não encontrada para atualização.");
             }
 
-            // 3. Mapeie as propriedades do DTO para a entidade 'funcaoParaAtualizar' (a rastreada).
-            // O AutoMapper irá aplicar as mudanças DIRETAMENTE nesta instância.
+           
             _mapper.Map(dto, funcaoParaAtualizar);
 
-            // Se houver campos de auditoria de criação (UsuarioCadastroId, DataHoraCadastro)
-            // que não devem ser alterados pelo DTO, você pode reatribuí-los aqui,
-            // usando os valores de 'antigaParaAuditoria':
-            // funcaoParaAtualizar.UsuarioCadastroId = antigaParaAuditoria.UsuarioCadastroId;
-            // funcaoParaAtualizar.DataHoraCadastro = antigaParaAuditoria.DataHoraCadastro;
+           
+            funcaoParaAtualizar.UsuarioCadastroId = antigaParaAuditoria.UsuarioCadastroId;
+            funcaoParaAtualizar.DataHoraCadastro = antigaParaAuditoria.DataHoraCadastro;
 
-            // A chamada a .Update() no repositório é geralmente redundante se a entidade já está
-            // rastreada e suas propriedades foram alteradas diretamente. O EF Core detecta isso.
-            // _unitOfWork.FuncaoRepository.Update(funcaoParaAtualizar);
-
-            // 4. Registre a auditoria, passando a cópia original e a entidade atualizada.
-            // 'antigaParaAuditoria' tem os dados ANTES da mudança.
-            // 'funcaoParaAtualizar' tem os dados DEPOIS da mudança.
             await _auditoriaService.RegistrarAtualizacaoAsync(antigaParaAuditoria, funcaoParaAtualizar, usuarioLogadoId);
 
-            // 5. Salve as alterações no banco de dados.
             await _unitOfWork.CommitAsync();
         }
 

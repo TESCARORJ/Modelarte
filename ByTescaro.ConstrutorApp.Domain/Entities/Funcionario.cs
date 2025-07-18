@@ -1,4 +1,6 @@
-﻿namespace ByTescaro.ConstrutorApp.Domain.Entities
+﻿using ByTescaro.ConstrutorApp.Domain.Entities.Admin;
+
+namespace ByTescaro.ConstrutorApp.Domain.Entities
 {
     public class Funcionario : Pessoa
     {
@@ -9,6 +11,8 @@
 
         public long FuncaoId { get; set; }
         public Funcao Funcao { get; set; } = null!;
+
+
 
         public ICollection<ObraFuncionario> ProjetoFuncionarios { get; set; } = new List<ObraFuncionario>();
 
