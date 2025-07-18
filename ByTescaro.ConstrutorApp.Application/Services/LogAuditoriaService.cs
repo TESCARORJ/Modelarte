@@ -14,12 +14,12 @@
                 _repo = repo;
             }
 
-            public async Task<List<LogAuditoriaDTO>> ObterTodosAsync()
+            public async Task<List<LogAuditoriaDto>> ObterTodosAsync()
             {
                 var logs = await _repo.ObterTodosAsync();
 
-                // Mapeamento de LogAuditoria para LogAuditoriaDTO
-                var dtos = logs.Select(log => new LogAuditoriaDTO
+                // Mapeamento de LogAuditoria para LogAuditoriaDto
+                var dtos = logs.Select(log => new LogAuditoriaDto
                 {
                     Id = log.Id,
                     UsuarioId = log.UsuarioId,

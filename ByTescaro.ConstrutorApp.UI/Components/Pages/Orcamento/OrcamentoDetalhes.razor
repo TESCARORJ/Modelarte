@@ -10,6 +10,7 @@
 @using ByTescaro.ConstrutorApp.Application.DTOs
 @using ByTescaro.ConstrutorApp.UI.Services
 @using Radzen
+@using Radzen.Blazor
 
 <PageTitle>Orçamento da Obra</PageTitle>
 
@@ -24,16 +25,39 @@
     }
     else
     {
+        @* Informações gerais do Orçamento (se existirem) *@
+        <RadzenFieldset Text="Dados do Orçamento" Style="margin-bottom: 1.5rem;">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>ID do Orçamento:</strong> <span>@orcamento.Id</span>
+                    </RadzenText>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Data do Orçamento:</strong> <span>@orcamento.DataReferencia?.ToString("dd/MM/yyyy")</span>
+                    </RadzenText>
+                </RadzenColumn>
+                @* Adicione outras propriedades do orçamento principal aqui, se houver *@
+            </RadzenRow>
+        </RadzenFieldset>
+
+        <RadzenHeading Size="H5" Text="Itens do Orçamento" Class="rz-mb-3 rz-mt-4" />
+
         <RadzenDataGrid TItem="OrcamentoItemDto" Data="@orcamento.Itens" @ref="grid"
                         EditMode="DataGridEditMode.Single"
                         Editable="true"
                         RowUpdate="@SalvarItem"
                         RowCreate="@SalvarItem"
+                        AllowPaging="true" PageSize="10"
+                        AllowSorting="true"
                         Style="margin-top:2rem;">
 
             <Columns>
                 <RadzenDataGridColumn TItem="OrcamentoItemDto" Property="InsumoId" Title="Insumo">
-                    <Template Context="item">@(item.InsumoNome ?? "-")</Template>
+                    <Template Context="item">
+                        <RadzenText Text="@(item.InsumoNome ?? "-")" />
+                    </Template>
                     <EditTemplate Context="item">
                         <RadzenDropDown @bind-Value="item.InsumoId" Data="@insumos"
                                         TextProperty="Nome" ValueProperty="Id" Style="width:100%;" />
@@ -41,7 +65,9 @@
                 </RadzenDataGridColumn>
 
                 <RadzenDataGridColumn TItem="OrcamentoItemDto" Property="ServicoId" Title="Serviço">
-                    <Template Context="item">@(item.ServicoNome ?? "-")</Template>
+                    <Template Context="item">
+                        <RadzenText Text="@(item.ServicoNome ?? "-")" />
+                    </Template>
                     <EditTemplate Context="item">
                         <RadzenDropDown @bind-Value="item.ServicoId" Data="@servicos"
                                         TextProperty="Nome" ValueProperty="Id" Style="width:100%;" />
@@ -49,7 +75,9 @@
                 </RadzenDataGridColumn>
 
                 <RadzenDataGridColumn TItem="OrcamentoItemDto" Property="FornecedorId" Title="Fornecedor">
-                    <Template Context="item">@(item.FornecedorNome ?? "-")</Template>
+                    <Template Context="item">
+                        <RadzenText Text="@(item.FornecedorNome ?? "-")" />
+                    </Template>
                     <EditTemplate Context="item">
                         <RadzenDropDown @bind-Value="item.FornecedorId" Data="@fornecedores"
                                         TextProperty="Nome" ValueProperty="Id" Style="width:100%;" />
@@ -57,29 +85,37 @@
                 </RadzenDataGridColumn>
 
                 <RadzenDataGridColumn TItem="OrcamentoItemDto" Property="Quantidade" Title="Qtd">
+                    <Template Context="item">
+                        <RadzenText Text="@item.Quantidade.ToString("N0")" /> @* Formatação para números inteiros ou com casas decimais mínimas *@
+                    </Template>
                     <EditTemplate Context="item">
                         <RadzenNumeric TValue="decimal" @bind-Value="item.Quantidade" Style="width:100%;" />
                     </EditTemplate>
                 </RadzenDataGridColumn>
 
                 <RadzenDataGridColumn TItem="OrcamentoItemDto" Property="PrecoUnitario" Title="Preço Unit.">
+                    <Template Context="item">
+                        <RadzenText Text="@item.PrecoUnitario.ToString("C")" />
+                    </Template>
                     <EditTemplate Context="item">
                         <RadzenNumeric TValue="decimal" @bind-Value="item.PrecoUnitario" Style="width:100%;" />
                     </EditTemplate>
                 </RadzenDataGridColumn>
 
                 <RadzenDataGridColumn TItem="OrcamentoItemDto" Title="Total">
-                    <Template Context="item">@item.Total.ToString("C")</Template>
+                    <Template Context="item">
+                        <RadzenText Text="@item.Total.ToString("C")" />
+                    </Template>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="OrcamentoItemDto" Title="Ações">
+                <RadzenDataGridColumn TItem="OrcamentoItemDto" Title="Ações" Width="120px" TextAlign="TextAlign.Center">
                     <Template Context="item">
-                        <RadzenButton Icon="edit" Click="() => grid.EditRow(item)" Size="ButtonSize.Small" />
+                        <RadzenButton Icon="edit" Click="() => grid.EditRow(item)" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Info" Class="rz-mr-1" />
                         <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
                                       Click="@(() => RemoverItem(item))" />
                     </Template>
                     <EditTemplate Context="item">
-                        <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small" Type="submit" />
+                        <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small" Type="submit" Class="rz-mr-1" />
                         <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
                                       Click="() => grid.CancelEditRow(item)" />
                     </EditTemplate>
@@ -89,14 +125,14 @@
 
         <RadzenButton Icon="add" Text="Adicionar Item" Style="margin-top:1rem;"
                       ButtonStyle="ButtonStyle.Primary"
-                      Click="@(() => grid.InsertRow(new OrcamentoItemDto { OrcamentoObraId = ObraId }))" />
+                      Click="@(() => grid.InsertRow(new OrcamentoItemDto { OrcamentoObraId = orcamento.Id }))" /> @* Usar orcamento.Id, que é o ID real do orçamento *@
 
         <RadzenDivider Style="margin:2rem 0;" />
 
-        <RadzenLabel Text="@($"Total Geral: {orcamento.Itens?.Sum(i => i.Total):C}")" Style="font-weight: bold;" />
+        <RadzenText Text="@($"Total Geral do Orçamento: {orcamento.Itens?.Sum(i => i.Total):C}")" TextStyle="TextStyle.H6" Style="font-weight: bold; margin-bottom: 1rem;" />
     }
 
-    <RadzenButton Text="Voltar" ButtonStyle="ButtonStyle.Light" Style="margin-top:2rem;"
+    <RadzenButton Text="Voltar para Detalhes da Obra" ButtonStyle="ButtonStyle.Light" Style="margin-top:2rem;"
                   Click="@(() => Navigation.NavigateTo($"/obra/detalhes/{ObraId}"))" />
 </RadzenCard>
 
@@ -116,43 +152,126 @@
 
     private async Task CarregarDadosAsync()
     {
-        orcamento = await OrcamentoApiService.GetByObraAsync(ObraId) ?? new OrcamentoDto { ObraId = ObraId };
+        // Tenta buscar o orçamento existente, se não encontrar, cria um novo DTO para começar
+        orcamento = await OrcamentoApiService.GetByObraAsync(ObraId);
+
+        // Se o orçamento for nulo (não existia para esta obra), crie um novo DTO de orçamento
+        // e certifique-se de que ele tenha a ObraId e uma lista de itens vazia.
+        if (orcamento == null)
+        {
+            orcamento = new OrcamentoDto { ObraId = ObraId, Itens = new List<OrcamentoItemDto>() };
+        }
+        else
+        {
+            // Garante que a lista de itens nunca seja nula se o orçamento existir
+            orcamento.Itens ??= new List<OrcamentoItemDto>();
+        }
+
         insumos = await InsumoApiService.GetAllAsync();
         servicos = await ServicoApiService.GetAllAsync();
         fornecedores = await FornecedorApiService.GetAllAsync();
 
-        orcamento.Itens ??= new();
+        // Garanta que os nomes de insumo/serviço/fornecedor sejam preenchidos
+        // Se eles vêm nulos do API ou não estão populados para exibição
+        foreach (var item in orcamento.Itens)
+        {
+            if (item.InsumoId.HasValue)
+                item.InsumoNome = insumos.FirstOrDefault(i => i.Id == item.InsumoId)?.Nome;
+            if (item.ServicoId.HasValue)
+                item.ServicoNome = servicos.FirstOrDefault(s => s.Id == item.ServicoId)?.Nome;
+            if (item.FornecedorId.HasValue)
+                item.FornecedorNome = fornecedores.FirstOrDefault(f => f.Id == item.FornecedorId)?.Nome;
+            
+            // Recalcula o total do item para garantir consistência
+            item.Total = item.Quantidade * item.PrecoUnitario;
+        }
+
+        StateHasChanged(); // Força a renderização após o carregamento dos dados
     }
 
     private async Task SalvarItem(OrcamentoItemDto item)
     {
         try
         {
-            if (item.Id == 0)
-                await OrcamentoItemApiService.CreateAsync(item);
-            else
-                await OrcamentoItemApiService.UpdateAsync(item);
+            // Garante que o item esteja associado ao ID do Orçamento principal
+            // Isso é crucial se o Orcamento.Id não for definido no InsertRow (que agora está).
+            item.OrcamentoId = orcamento.Id;
 
+            if (item.Id == 0) // Novo item
+            {
+                // Se o orçamento principal ainda não existe (foi criado um DTO vazio no CarregarDadosAsync),
+                // precisamos criar o orçamento principal primeiro.
+                if (orcamento!.Id == 0)
+                {
+                    orcamento.Itens.Add(item); // Adiciona o item à lista do novo orçamento
+                    await OrcamentoApiService.CreateAsync(orcamento); // Cria o orçamento principal
+                    // O item.OrcamentoId agora será populado após a criação do orçamento pai
+                    NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Orçamento e item criados com sucesso.");
+                }
+                else
+                {
+                    // Se o orçamento pai já existe, apenas cria o novo item
+                    await OrcamentoItemApiService.CreateAsync(item);
+                    NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Item adicionado ao orçamento.");
+                }
+            }
+            else // Item existente, atualizar
+            {
+                await OrcamentoItemApiService.UpdateAsync(item);
+                NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Item do orçamento atualizado.");
+            }
+
+            // Após a operação, recarrega todos os dados para refletir as mudanças e recalcular totais
             await CarregarDadosAsync();
-            StateHasChanged();
+            grid?.Reload(); // Recarrega o grid para garantir que ele exiba os dados mais recentes
         }
         catch (Exception ex)
         {
             NotificationService.Notify(new NotificationMessage
             {
                 Severity = NotificationSeverity.Error,
-                Summary = "Erro",
-                Detail = $"Erro ao salvar item: {ex.Message}"
+                Summary = "Erro ao salvar",
+                Detail = $"Ocorreu um erro ao salvar o item: {ex.Message}"
             });
+            grid?.CancelEditRow(item); // Cancela a edição em caso de erro
         }
     }
 
     private async Task RemoverItem(OrcamentoItemDto item)
     {
-        if (item.Id > 0)
-            await OrcamentoItemApiService.DeleteAsync(item.Id);
+        try
+        {
+            if (item.Id > 0)
+            {
+                await OrcamentoItemApiService.DeleteAsync(item.Id);
+                NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Item removido do orçamento.");
+            }
+            // Remove o item da lista local.
+            orcamento?.Itens?.Remove(item);
+            
+            // Se não houver mais itens, e o orçamento for recém-criado (ID=0), talvez queira removê-lo.
+            // Ou se for um orçamento existente, recalcule o total e salve.
+            if (orcamento != null)
+            {
+                // Recalcular o total do orçamento principal e atualizar
+                orcamento.Total = orcamento.Itens.Sum(i => i.Total);
+                if (orcamento.Id > 0) // Só tenta atualizar o orçamento principal se ele já existe no DB
+                {
+                    await OrcamentoApiService.UpdateAsync(orcamento);
+                }
+            }
 
-        orcamento?.Itens?.Remove(item);
-        StateHasChanged();
+            StateHasChanged();
+            grid?.Reload(); // Recarrega o grid para refletir a remoção
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Erro ao remover",
+                Detail = $"Ocorreu um erro ao remover o item: {ex.Message}"
+            });
+        }
     }
 }

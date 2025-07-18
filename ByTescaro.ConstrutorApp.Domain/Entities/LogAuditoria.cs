@@ -11,7 +11,6 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
     public class LogAuditoria
     {
         public long Id { get; set; }
-
         public long UsuarioId { get; set; }
         public string? UsuarioNome { get; set; } = string.Empty;
         public string? Entidade { get; set; } = string.Empty;

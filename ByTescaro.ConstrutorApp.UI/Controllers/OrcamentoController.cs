@@ -1,5 +1,6 @@
 ﻿using ByTescaro.ConstrutorApp.Application.DTOs;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
+using ByTescaro.ConstrutorApp.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -43,6 +44,14 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
         public async Task<IActionResult> Post([FromBody] OrcamentoDto dto)
         {
             await _orcamentoService.CriarAsync(dto);
+            return Ok();
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Put(long id, [FromBody] OrcamentoDto dto)
+        {
+            if (id != dto.Id) return BadRequest();
+            await _orcamentoService.AtualizarAsync(dto);
             return Ok();
         }
 

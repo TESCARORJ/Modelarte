@@ -5,7 +5,7 @@ namespace ByTescaro.ConstrutorApp.Application.Interfaces
 {
     public interface ILogAuditoriaService
     {
-        Task<List<LogAuditoriaDTO>> ObterTodosAsync();
+        Task<List<LogAuditoriaDto>> ObterTodosAsync();
     }
 
 }

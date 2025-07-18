@@ -26,34 +26,38 @@
         <RadzenFieldset Text="Identificação" Style="margin-bottom: 1.5rem;">
             <RadzenRow>
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Nome" />
-                    <RadzenTextBox Value="@insumo.Nome" ReadOnly Style="width: 100%;" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Nome:</strong> <span>@insumo.Nome</span>
+                    </RadzenText>
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Unidade de Medida" />
-                    @* Exibe o texto amigável do enum, se disponível *@
-                    <RadzenTextBox Value="@(insumo.UnidadeMedida.HasValue ? EnumHelper.ObterDescricaoEnum(insumo.UnidadeMedida.Value) : string.Empty)" ReadOnly Style="width: 100%;" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Unidade de Medida:</strong> <span>@(insumo.UnidadeMedida.HasValue? EnumHelper.ObterDescricaoEnum(insumo.UnidadeMedida.Value) : string.Empty)</span>
+                    </RadzenText>
                 </RadzenColumn>
 
                 <RadzenColumn Size="12">
-                    <RadzenLabel Text="Descrição" />
-                    <RadzenTextBox Value="@insumo.Descricao" ReadOnly Multiline="true" Rows="3" Style="width: 100%;" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Descrição:</strong> <span>@insumo.Descricao</span>
+                    </RadzenText>
                 </RadzenColumn>
             </RadzenRow>
         </RadzenFieldset>
 
-        @* Você pode adicionar mais Fieldsets para dados de auditoria, se existirem no DTO *@
         <RadzenFieldset Text="Dados de Auditoria" Style="margin-bottom: 1.5rem;">
             <RadzenRow>
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Usuário Cadastro" />
-                    <RadzenTextBox Value="@insumo.UsuarioCadastro" ReadOnly Style="width: 100%;" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Usuário Cadastro:</strong> <span>@insumo.UsuarioCadastroNome</span> @* Assumindo que UsuarioCadastro é o nome do usuário *@
+                    </RadzenText>
                 </RadzenColumn>
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Data/Hora Cadastro" />
-                    <RadzenTextBox Value="@insumo.DataHoraCadastro.ToString("dd/MM/yyyy HH:mm:ss")" ReadOnly Style="width: 100%;" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Data/Hora Cadastro:</strong> <span>@insumo.DataHoraCadastro.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                    </RadzenText>
                 </RadzenColumn>
+              
             </RadzenRow>
         </RadzenFieldset>
 

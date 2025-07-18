@@ -10,6 +10,7 @@ public class EquipamentoDto
     public string? Patrimonio { get; set; } = string.Empty;
     public StatusEquipamento Status { get; set; }
     public decimal? CustoLocacaoDiaria { get; set; }
+    public long UsuarioCadastroId { get; set; }
     public string? UsuarioCadastroNome { get; set; } = string.Empty;
     public DateTime DataHoraCadastro { get; set; }
     public string? ObraNome { get; set; } = string.Empty;

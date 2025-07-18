@@ -20,6 +20,10 @@ namespace ByTescaro.ConstrutorApp.UI.Services
         {
             await _http.PostAsJsonAsync("api/orcamento", dto);
         }
+        public async Task UpdateAsync(OrcamentoDto dto)
+        {
+            await _http.PutAsJsonAsync($"api/orcamento/{dto.Id}", dto);
+        }
 
         public async Task<List<OrcamentoDto>> GetAllAsync()
         {

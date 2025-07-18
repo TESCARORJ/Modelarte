@@ -20,9 +20,10 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
         public string? DescricaoConclusao { get; set; } = string.Empty;
         public string? DescricaoCancelamento { get; set; } = string.Empty;
 
-       
 
-        public string? UsuarioCadastro { get; set; } = string.Empty;
+
+        public long UsuarioCadastroId { get; set; }
+        public string? UsuarioCadastroNome { get; set; } = string.Empty;
         public DateTime DataHoraCadastro { get; set; }
 
         public List<ObraDto> Obras { get; set; } = new();

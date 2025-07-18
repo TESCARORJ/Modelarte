@@ -63,6 +63,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         {
             var erros = new List<ErroImportacaoDto>();
             var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogadoId = usuarioLogado?.Id ?? 0;
+            var usuarioLogadoNome = usuarioLogado?.Nome ?? "Usuário Desconhecido";
 
 
             // 🔍 Buscar todos os CPFs já existentes antes do loop
@@ -84,7 +86,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     continue;
                 }
 
-                dto.UsuarioCadastro = usuario;
+                dto.UsuarioCadastroId = usuarioLogadoId;
+                dto.UsuarioCadastroNome = usuarioLogadoNome;
                 dto.DataHoraCadastro = DateTime.Now;
 
                 var cliente = _mapper.Map<Cliente>(dto);

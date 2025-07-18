@@ -12,6 +12,7 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
 
         public decimal Quantidade { get; set; }
         public DateTime DataHoraCadastro { get; set; }
-        public string? UsuarioCadastro { get; set; } = string.Empty;
+        public long UsuarioCadastroId { get; set; }
+        public string? UsuarioCadastroNome { get; set; } = string.Empty;
     }
 }

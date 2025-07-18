@@ -29,27 +29,27 @@
         <RadzenFieldset Text="Dados do Fornecedor" Style="margin-bottom: 1.5rem">
             <RadzenRow>
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenLabel Text="Nome" />
-                    <RadzenTextBox Value="@fornecedor.Nome" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Nome:</strong> <span>@fornecedor.Nome</span>
+                    </RadzenText>
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="3">
-                    <RadzenLabel Text="Tipo de Fornecedor" />
-                    @* Exibe o texto amigável do enum, se disponível *@
-                    <RadzenTextBox Value="@(fornecedor.Tipo.HasValue ? EnumHelper.ObterDescricaoEnum(fornecedor.Tipo.Value) : string.Empty)" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Tipo de Fornecedor:</strong> <span>@(fornecedor.Tipo.HasValue ? EnumHelper.ObterDescricaoEnum(fornecedor.Tipo.Value) : string.Empty)</span>
+                    </RadzenText>
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="2">
-                    <RadzenLabel Text="Tipo de Pessoa" />
-                    @* Exibe o texto amigável do enum, se disponível *@
-                    <RadzenTextBox Value="@(fornecedor.TipoPessoa.HasValue ? EnumHelper.ObterDescricaoEnum(fornecedor.TipoPessoa.Value) : string.Empty)" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Tipo de Pessoa:</strong> <span>@(fornecedor.TipoPessoa.HasValue ? EnumHelper.ObterDescricaoEnum(fornecedor.TipoPessoa.Value) : string.Empty)</span>
+                    </RadzenText>
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="3">
-                    <RadzenLabel Text="CPF/CNPJ" />
-                    @* Para RadzenMask, não tem ReadOnly direto. Usamos RadzenTextBox.
-                       Para formatar, você precisaria de uma lógica de formatação em C# ou no DTO. *@
-                    <RadzenTextBox Value="@fornecedor.CpfCnpj" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>CPF/CNPJ:</strong> <span>@fornecedor.CpfCnpj</span>
+                    </RadzenText>
                 </RadzenColumn>
             </RadzenRow>
         </RadzenFieldset>
@@ -57,23 +57,73 @@
         <RadzenFieldset Text="Contato" Style="margin-bottom: 1.5rem">
             <RadzenRow>
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenLabel Text="Telefone Principal" />
-                    <RadzenTextBox Value="@fornecedor.TelefonePrincipal" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Telefone Principal:</strong> <span>@fornecedor.TelefonePrincipal</span>
+                    </RadzenText>
                 </RadzenColumn>
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenLabel Text="WhatsApp" />
-                    <RadzenTextBox Value="@fornecedor.TelefoneWhatsApp" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>WhatsApp:</strong> <span>@fornecedor.TelefoneWhatsApp</span>
+                    </RadzenText>
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenLabel Text="Email" />
-                    <RadzenTextBox Value="@fornecedor.Email" ReadOnly Style="width:100%" />
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Email:</strong> <span>@fornecedor.Email</span>
+                    </RadzenText>
                 </RadzenColumn>
             </RadzenRow>
         </RadzenFieldset>
 
-        
-
+        @* Você pode adicionar um Fieldset de Endereço aqui, se o DTO tiver esses campos *@
+      @*   @if (!string.IsNullOrWhiteSpace(fornecedor.CEP))
+        {
+            <RadzenFieldset Text="Endereço" Style="margin-bottom: 1.5rem">
+                <RadzenRow>
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenText TextStyle="TextStyle.Body1">
+                            <strong>CEP:</strong> <span>@fornecedor.CEP</span>
+                        </RadzenText>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenText TextStyle="TextStyle.Body1">
+                            <strong>Logradouro:</strong> <span>@fornecedor.Logradouro</span>
+                        </RadzenText>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenText TextStyle="TextStyle.Body1">
+                            <strong>Número:</strong> <span>@fornecedor.Numero</span>
+                        </RadzenText>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenText TextStyle="TextStyle.Body1">
+                            <strong>Complemento:</strong> <span>@fornecedor.Complemento</span>
+                        </RadzenText>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenText TextStyle="TextStyle.Body1">
+                            <strong>Bairro:</strong> <span>@fornecedor.Bairro</span>
+                        </RadzenText>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenText TextStyle="TextStyle.Body1">
+                            <strong>Cidade:</strong> <span>@fornecedor.Cidade</span>
+                        </RadzenText>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenText TextStyle="TextStyle.Body1">
+                            <strong>Estado:</strong> <span>@fornecedor.Estado</span>
+                        </RadzenText>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="2">
+                        <RadzenText TextStyle="TextStyle.Body1">
+                            <strong>UF:</strong> <span>@fornecedor.UF</span>
+                        </RadzenText>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenFieldset>
+        }
+ *@
 
         @* Grid de Insumos fornecidos *@        
         @if (fornecedor.Tipo.HasValue && (fornecedor.Tipo.Value == TipoFornecedor.Material || fornecedor.Tipo.Value == TipoFornecedor.Misto))
@@ -82,10 +132,11 @@
 
             <RadzenCard Style="margin-top: 2rem;">
                 <RadzenHeading Size="H6" Text="Resumo de Insumos" />
-                <RadzenRow Class="rz-p-2">
+                <RadzenRow Class="rz-p-2">                    
                     <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenLabel Text="Total de Insumos:" />
-                        <RadzenText Text="@($"{qtdeInsumos} itens - R$ {totalInsumos:N2}")" Style="font-weight: bold;" />
+                        <RadzenText TextStyle="TextStyle.Body1">
+                            <strong>Total de Insumos:</strong> <span>@($"{qtdeInsumos} itens - R$ {totalInsumos:N2}")</span>
+                        </RadzenText>
                     </RadzenColumn>
                 </RadzenRow>
             </RadzenCard>
@@ -100,8 +151,9 @@
                 <RadzenHeading Size="H6" Text="Resumo de Serviços" />
                 <RadzenRow Class="rz-p-2">                    
                     <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenLabel Text="Total de Serviços:" />
-                        <RadzenText Text="@($"{qtdeServicos} itens - R$ {totalServicos:N2}")" Style="font-weight: bold;" />
+                        <RadzenText TextStyle="TextStyle.Body1">
+                            <strong>Total de Serviços:</strong> <span>@($"{qtdeServicos} itens - R$ {totalServicos:N2}")</span>
+                        </RadzenText>
                     </RadzenColumn>
                 </RadzenRow>
             </RadzenCard>
@@ -123,7 +175,8 @@
 </RadzenCard>
 
 @code {
-    [Parameter] public long Id { get; set; }
+    [Parameter]
+    public long Id { get; set; }
     
     private FornecedorDto? fornecedor;
     private string Titulo => $"Detalhes do Fornecedor: {fornecedor?.Nome ?? "Carregando..."}";

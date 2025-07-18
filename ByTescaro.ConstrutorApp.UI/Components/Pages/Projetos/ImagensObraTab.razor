@@ -89,7 +89,7 @@
                         CaminhoRelativo = caminhoRelativo,
                         TamanhoEmKb = tamanhoKb,
                         DataHoraCadastro = DateTime.Now,
-                        UsuarioCadastro = usuarioLogadoNome ?? "Sistema"
+                        UsuarioCadastroNome = usuarioLogadoNome ?? "Sistema"
                     };
 
                 var entidade = Mapper.Map<ObraImagem>(imagemDto);

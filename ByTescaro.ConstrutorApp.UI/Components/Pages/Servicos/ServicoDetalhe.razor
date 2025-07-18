@@ -4,38 +4,65 @@
 @using ByTescaro.ConstrutorApp.UI.Services
 @using System.Globalization
 @using Microsoft.AspNetCore.Authorization
+@using Radzen
+@using Radzen.Blazor
 @inject ServicoApiService ServicoApiService
 @inject NavigationManager Navigation
 @attribute [Authorize]
 
 <PageTitle>Detalhes do Serviço</PageTitle>
 
-<RadzenCard Style="max-width: 900px; margin: 2rem auto;">
-    <RadzenHeading Size="H5" Style="padding: 1rem;">Detalhes do Serviço</RadzenHeading>
+<RadzenCard Class="rz-mt-5 rz-p-4 rz-shadow-md rz-rounded-md rz-mx-auto" Style="max-width: 900px; width: 100%;">
+    <RadzenHeading Size="H4" Text="Detalhes do Serviço" Class="rz-mb-3" />
 
     @if (servico == null)
     {
-        <RadzenText Text="Servico não encontrado." Style="color: red; padding: 1rem;" />
+        <RadzenText Text="Carregando detalhes do serviço ou serviço não encontrado..." Style="color: gray; padding: 1rem;" />
+        <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" Style="margin-top: 10px;" />
     }
     else
     {
-        <RadzenRow Class="rz-p-4" Style="row-gap: 1rem;">
-            <RadzenColumn Size="12" SizeMD="6">
-                <RadzenLabel Text="Nome" />
-                <RadzenTextBox Value="@servico.Nome" ReadOnly Style="width: 100%" />
-            </RadzenColumn>
+        <RadzenFieldset Text="Informações do Serviço" Style="margin-bottom: 1.5rem;">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Nome:</strong> <span>@servico.Nome</span>
+                    </RadzenText>
+                </RadzenColumn>
 
-                      
-
-            <RadzenColumn Size="12" SizeMD="6">
-                <RadzenLabel Text="Cadastro em" />
-                <RadzenTextBox Value="@servico.DataHoraCadastro.ToString("dd/MM/yyyy HH:mm")" ReadOnly Style="width: 100%" />
-            </RadzenColumn>
-        </RadzenRow>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Data/Hora Cadastro:</strong> <span>@servico.DataHoraCadastro.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                    </RadzenText>
+                </RadzenColumn>
+                @* Adicione aqui outros campos de auditoria, se existirem no seu DTO, como UsuarioCadastroNome, DataHoraAtualizacao e UsuarioAtualizacaoNome *@
+                @if (!string.IsNullOrWhiteSpace(servico.UsuarioCadastroNome))
+                {
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenText TextStyle="TextStyle.Body1">
+                            <strong>Usuário Cadastro:</strong> <span>@servico.UsuarioCadastroNome</span>
+                        </RadzenText>
+                    </RadzenColumn>
+                }
+                @* @if (servico.DataHoraAtualizacao.HasValue)
+                {
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenText TextStyle="TextStyle.Body1">
+                            <strong>Última Atualização Por:</strong> <span>@servico.UsuarioAtualizacaoNome</span>
+                        </RadzenText>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenText TextStyle="TextStyle.Body1">
+                            <strong>Data/Hora Última Atualização:</strong> <span>@servico.DataHoraAtualizacao?.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                        </RadzenText>
+                    </RadzenColumn>
+                } *@
+            </RadzenRow>
+        </RadzenFieldset>
 
         <RadzenDivider Style="margin: 2rem 0;" />
 
-        <RadzenRow Class="rz-px-4 rz-mb-2" JustifyContent="JustifyContent.End" Style="gap: 1rem;">
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-3">
             <RadzenButton Text="Voltar"
                           ButtonStyle="ButtonStyle.Light"
                           Click="@(() => Navigation.NavigateTo("/servicos"))" />
@@ -44,15 +71,17 @@
                           Icon="edit"
                           ButtonStyle="ButtonStyle.Primary"
                           Click="@(() => Navigation.NavigateTo($"/servicos/editar/{servico.Id}"))" />
-        </RadzenRow>
+        </RadzenStack>
     }
 </RadzenCard>
 
 @code {
-    [Parameter] public long Id { get; set; }
+    [Parameter]
+    public long Id { get; set; }
 
     private ServicoDto? servico;
-    private readonly CultureInfo _br = CultureInfo.GetCultureInfo("pt-BR");
+    // Removi _br, pois o ToString("dd/MM/yyyy HH:mm:ss") já usa a cultura atual,
+    // que é pt-BR por padrão em sistemas configurados assim ou pode ser definida globalmente no Blazor.
 
     protected override async Task OnInitializedAsync()
     {

@@ -10,6 +10,7 @@
         public List<ObraServicoDto> Itens { get; set; } = new();
 
         public DateTime DataHoraCadastro { get; set; }
-        public string? UsuarioCadastro { get; set; } = string.Empty;
+        public long UsuarioCadastroId { get; set; }
+        public string? UsuarioCadastroNome { get; set; } = string.Empty;
     }
 }

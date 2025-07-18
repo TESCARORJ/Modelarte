@@ -29,14 +29,33 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         }
 
         public async Task RegistrarAtualizacaoAsync<T>(
-            T entidadeAntiga,
-            T entidadeNova,
-            long usuarioId,
-            Dictionary<string, Dictionary<long, string>>? colecoesNomes = null) where T : class
+     T entidadeAntiga,
+     T entidadeNova,
+     long usuarioId,
+     Dictionary<string, Dictionary<long, string>>? colecoesNomes = null) where T : class
         {
-            var log = CriarLog(entidadeNova, entidadeAntiga, usuarioId, TipoLogAuditoria.Atualizacao);
-            log.Descricao = GerarDescricaoDiferencas(entidadeAntiga, entidadeNova, colecoesNomes);
-            await _logRepository.RegistrarAsync(log);
+            // A logica atual de GerarDescricaoDiferencas retorna uma string, nao uma lista de strings.
+            // Você precisaria adaptar GerarDescricaoDiferencas para retornar uma lista de LogAuditoria ou uma lista de descrições individuais.
+
+            // Opção 1: GerarDescricaoDiferencas retorna List<string> com as mensagens individuais
+            var alteracoesIndividuais = GerarDescricaoDiferencasDetalhadas(entidadeAntiga, entidadeNova, colecoesNomes); // Novo método
+
+            if (!alteracoesIndividuais.Any())
+            {
+                // Se não houver alterações significativas, não registra log ou registra um log de "nenhuma alteração".
+                var log = CriarLog(entidadeNova, entidadeAntiga, usuarioId, TipoLogAuditoria.Atualizacao);
+                log.Descricao = "Nenhuma alteração significativa detectada.";
+                await _logRepository.RegistrarAsync(log);
+                return;
+            }
+
+            foreach (var descricaoAlteracao in alteracoesIndividuais)
+            {
+                // Cria um novo log para CADA alteração de atributo
+                var log = CriarLog(entidadeNova, entidadeAntiga, usuarioId, TipoLogAuditoria.Atualizacao);
+                log.Descricao = descricaoAlteracao; // A descrição será apenas a mudança de um atributo
+                await _logRepository.RegistrarAsync(log); // Persiste CADA log individualmente
+            }
         }
 
         public async Task RegistrarExclusaoAsync<T>(T entidadeAntiga, long usuarioId) where T : class
@@ -78,20 +97,13 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             return tipo.Name.ToString()!;
         }
 
-        public string GerarDescricaoDiferencas<T>(
-        T antigo,
-        T novo,
-        Dictionary<string, Dictionary<long, string>>? colecoesNomes = null) where T : class
+        private List<string> GerarDescricaoDiferencasDetalhadas<T>(
+    T antigo,
+    T novo,
+    Dictionary<string, Dictionary<long, string>>? colecoesNomes = null) where T : class
         {
-            // Garante que ambos os objetos não são nulos antes de tentar comparar.
-            // Se ambos forem nulos, não há diferença.
-            if (antigo == null && novo == null)
-                return "Nenhuma alteração significativa detectada.";
-            // Se um for nulo e o outro não, há uma alteração drástica (objeto adicionado/removido).
-            if (antigo == null)
-                return "Objeto novo foi adicionado.";
-            if (novo == null)
-                return "Objeto antigo foi removido.";
+           
+           
 
             var tipo = typeof(T);
             var propriedades = tipo.GetProperties(BindingFlags.Public | BindingFlags.Instance);
@@ -145,9 +157,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 CompararPropriedadeSimples(nomeProp, valorAntigo, valorNovo, alteracoes);
             }
 
-            return alteracoes.Any()
-                ? string.Join("; ", alteracoes)
-                : "Nenhuma alteração significativa detectada.";
+            return alteracoes;
         }
 
         /// <summary>

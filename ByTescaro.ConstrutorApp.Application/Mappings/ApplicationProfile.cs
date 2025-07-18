@@ -16,7 +16,7 @@ public class ApplicationProfile : Profile
         // Isso é para criar/atualizar a entidade Endereco em si.
         // =========================================================================
 
-        CreateMap<LogAuditoriaDTO, LogAuditoria>().ReverseMap();
+        CreateMap<LogAuditoriaDto, LogAuditoria>().ReverseMap();
 
 
         CreateMap<ClienteDto, Endereco>()

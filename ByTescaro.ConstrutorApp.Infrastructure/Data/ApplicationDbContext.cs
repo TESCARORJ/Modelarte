@@ -1071,8 +1071,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
         }
     }
 
-
-
     #endregion
 
 }

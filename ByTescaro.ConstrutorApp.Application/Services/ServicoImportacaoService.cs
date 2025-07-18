@@ -75,6 +75,8 @@ public class ServicoImportacaoService : IServicoImportacaoService
     public async Task<List<ErroImportacaoDto>> ImportarServicosAsync(List<ServicoDto> servicos, string usuario)
     {
         var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+        var usuarioLogadoId = usuarioLogado?.Id ?? 0;
+        var usuarioLogadoNome = usuarioLogado?.Nome ?? "Usuário Desconhecido";
 
         var erros = new List<ErroImportacaoDto>();
 
@@ -98,7 +100,8 @@ public class ServicoImportacaoService : IServicoImportacaoService
                 continue;
             }
 
-            dto.UsuarioCadastro = usuario;
+            dto.UsuarioCadastroId = usuarioLogadoId;
+            dto.UsuarioCadastroNome = usuarioLogadoNome;
             dto.DataHoraCadastro = DateTime.Now;
             dto.Ativo = true;
 

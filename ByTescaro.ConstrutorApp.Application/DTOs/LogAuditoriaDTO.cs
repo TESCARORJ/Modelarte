@@ -2,10 +2,9 @@
 
 namespace ByTescaro.ConstrutorApp.Application.DTOs
 {
-    public class LogAuditoriaDTO
+    public class LogAuditoriaDto
     {
         public long Id { get; set; }
-
         public long UsuarioId { get; set; }
         public string? UsuarioNome { get; set; } = string.Empty;
         public string? Entidade { get; set; } = string.Empty;

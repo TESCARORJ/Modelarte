@@ -9,36 +9,79 @@
 
 <PageTitle>Detalhes do Perfil</PageTitle>
 
-<RadzenCard Class="rz-pa-4">
-    <RadzenHeading Size="H5" Text="Detalhes do Perfil de Usuário" />
+<RadzenCard Class="rz-pa-4 rz-mt-5 rz-shadow-md rz-rounded-md rz-mx-auto" Style="max-width: 900px; width: 100%;">
+    <RadzenHeading Size="H5" Text="Detalhes do Perfil de Usuário" Class="rz-mb-3" />
 
     @if (perfilUsuario is null)
     {
-        <RadzenAlert Severity="AlertSeverity.Error" Summary="Erro" Detail="Perfil não encontrado." />
+        <RadzenAlert Severity="AlertSeverity.Error" Summary="Erro" Detail="Perfil não encontrado ou carregando..." />
+        <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" Style="margin-top: 10px;" />
     }
     else
     {
-        <RadzenFieldset Text="Informações">
+        <RadzenFieldset Text="Informações do Perfil" Style="margin-bottom: 1.5rem;">
             <RadzenRow>
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenTextBox Name="Nome" @bind-Value="perfilUsuario.Nome" ReadOnly="true" Style="width: 100%;" />
+                <RadzenColumn Size="12"> @* Ocupa toda a largura ou metade, dependendo do design *@
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Nome do Perfil:</strong> <span>@perfilUsuario.Nome</span>
+                    </RadzenText>
                 </RadzenColumn>
             </RadzenRow>
+            @* Se o seu DTO de PerfilUsuario tiver outros campos de auditoria ou descrição, adicione-os aqui, por exemplo: *@
+            @* <RadzenRow Class="rz-mt-3">
+                <RadzenColumn Size="12">
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Descrição:</strong> <span>@perfilUsuario.Descricao</span>
+                    </RadzenText>
+                </RadzenColumn>
+            </RadzenRow>
+            <RadzenRow Class="rz-mt-3">
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Usuário Cadastro:</strong> <span>@perfilUsuario.UsuarioCadastroNome</span> @* Assumindo que você tem um nome de usuário para o ID *@
+      @*               </RadzenText>
+                </RadzenColumn> *@
+ @*                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Data/Hora Cadastro:</strong> <span>@perfilUsuario.DataHoraCadastro.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                    </RadzenText>
+                </RadzenColumn>
+            </RadzenRow> *@
+         @*    @if (perfilUsuario.DataHoraAtualizacao.HasValue)
+            {
+                <RadzenRow Class="rz-mt-3">
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenText TextStyle="TextStyle.Body1">
+                            <strong>Última Atualização Por:</strong> <span>@perfilUsuario.UsuarioAtualizacaoNome</span>
+                        </RadzenText>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenText TextStyle="TextStyle.Body1">
+                            <strong>Data/Hora Última Atualização:</strong> <span>@perfilUsuario.DataHoraAtualizacao?.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                        </RadzenText>
+                    </RadzenColumn>
+                </RadzenRow>
+            }  *@
         </RadzenFieldset>
 
-        <RadzenSeparator />
+        <RadzenDivider Style="margin: 2rem 0;" />
 
-        <RadzenRow class="rz-mt-4">
-            <RadzenColumn Size="12" class="rz-text-align-end">
-                <RadzenButton Text="Voltar" ButtonStyle="ButtonStyle.Light" Click="@(() => Navigation.NavigateTo("/perfilUsuarios"))" Class="rz-mr-2" />
-                <RadzenButton Text="Editar" Icon="edit" ButtonStyle="ButtonStyle.Primary" Click="@(() => Navigation.NavigateTo($"/perfilUsuarios/editar/{perfilUsuario.Id}"))" />
-            </RadzenColumn>
-        </RadzenRow>
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-3">
+            <RadzenButton Text="Voltar"
+                          ButtonStyle="ButtonStyle.Light"
+                          Click="@(() => Navigation.NavigateTo("/perfilUsuarios"))" />
+
+            <RadzenButton Text="Editar"
+                          Icon="edit"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Click="@(() => Navigation.NavigateTo($"/perfilUsuario/editar/{perfilUsuario.Id}"))" />
+        </RadzenStack>
     }
 </RadzenCard>
 
 @code {
-    [Parameter] public long Id { get; set; }
+    [Parameter]
+    public long Id { get; set; }
 
     private PerfilUsuarioDto? perfilUsuario;
 

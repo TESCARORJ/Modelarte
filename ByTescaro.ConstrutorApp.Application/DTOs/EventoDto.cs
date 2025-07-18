@@ -18,6 +18,9 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
         public FrequenciaRecorrencia FrequenciaRecorrencia { get; set; }
         public DateTime? DataFimRecorrencia { get; set; }
         public long UsuarioCadastroId { get; set; }
+        public string? UsuarioCadastroNome { get; set; } = string.Empty;
+        public DateTime DataHoraCadastro { get; set; }
+
         public string? NomeCriador { get; set; }
         public Visibilidade Visibilidade { get; set; }
         public List<ParticipanteEventoDto> Participantes { get; set; } = new List<ParticipanteEventoDto>();

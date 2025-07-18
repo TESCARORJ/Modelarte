@@ -11,7 +11,7 @@
 <RadzenCard Style="margin: 1rem;">
     <RadzenHeading Size="H5" Text="Registros de Auditoria" />
 
-    <RadzenDataGrid TItem="LogAuditoriaDTO" Data="@_logs" Class="mt-4"
+    <RadzenDataGrid TItem="LogAuditoriaDto" Data="@_logs" Class="mt-4"
                     AllowFiltering="true"
                     AllowColumnResize="true"
                     AllowSorting="true"
@@ -24,26 +24,26 @@
                     ColumnWidth="300px">
 
         <Columns>
-            <RadzenDataGridColumn TItem="LogAuditoriaDTO" Property="Id" Title="ID" Width="80px" TextAlign="TextAlign.Center" />
-            <RadzenDataGridColumn TItem="LogAuditoriaDTO" Title="Data" Width="160px">
+            <RadzenDataGridColumn TItem="LogAuditoriaDto" Property="Id" Title="ID" Width="80px" TextAlign="TextAlign.Center" />
+            <RadzenDataGridColumn TItem="LogAuditoriaDto" Title="Data" Width="160px">
                 <Template Context="log">
                     @log.DataHora.ToString("dd/MM/yyyy HH:mm")
                 </Template>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="LogAuditoriaDTO" Property="UsuarioNome" Title="Usuário" />
-            <RadzenDataGridColumn TItem="LogAuditoriaDTO" Property="IdEntidade" Title="ID Entidade" TextAlign="TextAlign.Center" />
-            <RadzenDataGridColumn TItem="LogAuditoriaDTO" Title="Ação">
+            <RadzenDataGridColumn TItem="LogAuditoriaDto" Property="UsuarioNome" Title="Usuário" />
+            <RadzenDataGridColumn TItem="LogAuditoriaDto" Property="IdEntidade" Title="ID Entidade" TextAlign="TextAlign.Center" />
+            <RadzenDataGridColumn TItem="LogAuditoriaDto" Title="Ação">
                 <Template Context="e">
                     @EnumHelper.ObterDescricaoEnum(e.TipoLogAuditoria)
                 </Template>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="LogAuditoriaDTO" Property="Descricao" Title="Descrição" Width="5000px" />
+            <RadzenDataGridColumn TItem="LogAuditoriaDto" Property="Descricao" Title="Descrição" Width="5000px" />
         </Columns>
     </RadzenDataGrid>
 </RadzenCard>
 
 @code {
-    private List<LogAuditoriaDTO> _logs = new();
+    private List<LogAuditoriaDto> _logs = new();
     private List<EnumOption<TipoLogAuditoria>> tipoLogAuditoriaOptions = EnumHelper.ListarOpcoes<TipoLogAuditoria>(incluirNulo: true);
 
 
