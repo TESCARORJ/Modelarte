@@ -156,22 +156,5 @@
         }
     }
 
-    private async Task AbrirEtapas(long projetoId)
-    {
-        var parametros = new Dictionary<string, object>
-    {
-        { "ProjetoId", projetoId }
-    };
-
-        var opcoes = new DialogOptions
-            {
-                Resizable = true,
-                Draggable = true,
-                Width = "700px",
-                Height = "500px"
-            };
-
-        await DialogService.OpenAsync<VisualizarEtapasDialog>("Etapas do Projeto", parametros, opcoes);
-    }
-
+   
 }

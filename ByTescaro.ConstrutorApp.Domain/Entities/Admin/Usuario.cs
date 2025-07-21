@@ -4,11 +4,11 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities.Admin
 {
     public class Usuario : Pessoa
     {
-        public string? SenhaHash { get; set; } = string.Empty;
+        public string? SenhaHash { get; set; }
         public long PerfilUsuarioId { get; set; }
 
         [JsonIgnore]
-        public PerfilUsuario PerfilUsuario { get; set; } = null!;
+        public PerfilUsuario? PerfilUsuario { get; set; } = null!;
    
     }
 }

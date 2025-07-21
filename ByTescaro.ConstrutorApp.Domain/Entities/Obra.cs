@@ -1,4 +1,5 @@
 ﻿using ByTescaro.ConstrutorApp.Domain.Common;
+using ByTescaro.ConstrutorApp.Domain.Entities.Admin;
 using ByTescaro.ConstrutorApp.Domain.Enums;
 namespace ByTescaro.ConstrutorApp.Domain.Entities
 {
@@ -14,6 +15,8 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public ResponsavelMaterialEnum ResponsavelMaterial { get; set; }
         public long? ResponsavelObraId { get; set; }
         public Funcionario? ResponsavelObra { get; set; } = null!;
+
+       public Usuario? UsuarioCadastro { get; set; }
 
         public ICollection<ObraEtapa> Etapas { get; set; } = new List<ObraEtapa>();
         public ICollection<ObraFuncionario> Funcionarios { get; set; } = new List<ObraFuncionario>();

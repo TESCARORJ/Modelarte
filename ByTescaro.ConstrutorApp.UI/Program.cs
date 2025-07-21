@@ -480,7 +480,7 @@ app.MapControllers();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-await DbSeeder.SeedAdminAsync(app.Services);
+//await DbSeeder.SeedAdminAsync(app.Services);
 
 app.Run();
 

@@ -208,10 +208,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                        .WithMany()
                        .HasForeignKey(p => p.EnderecoId)
                        .OnDelete(DeleteBehavior.SetNull);
-
-                builder.HasMany(p => p.Obras)
-                       .WithOne()
-                       .HasForeignKey("ProjetoId");
             }
         }
 
@@ -454,10 +450,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                        .HasForeignKey(e => e.ObraId)
                        .OnDelete(DeleteBehavior.Restrict);
 
-                builder.HasOne(e => e.Funcionario)
-                       .WithMany()
-                       .HasForeignKey(e => e.FuncionarioId)
-                       .OnDelete(DeleteBehavior.Cascade);
+               
 
 
             }
@@ -507,9 +500,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                        .HasForeignKey(e => e.ObraId)
                        .OnDelete(DeleteBehavior.Restrict);
 
-                builder.HasOne(e => e.Equipamento)
-                       .WithMany()
-                       .HasForeignKey(e => e.EquipamentoId);
+             
             }
         }
 

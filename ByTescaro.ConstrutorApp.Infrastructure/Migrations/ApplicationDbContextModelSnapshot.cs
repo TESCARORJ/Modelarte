@@ -479,9 +479,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.Property<long>("ProjetoId")
                         .HasColumnType("bigint");
 
-                    b.Property<long>("ProjetoId1")
-                        .HasColumnType("bigint");
-
                     b.Property<int>("ResponsavelMaterial")
                         .HasColumnType("int");
 
@@ -497,8 +494,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ProjetoId");
-
-                    b.HasIndex("ProjetoId1");
 
                     b.HasIndex("ResponsavelObraId");
 
@@ -569,9 +564,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.Property<long>("EquipamentoId")
                         .HasColumnType("bigint");
 
-                    b.Property<long?>("EquipamentoId1")
-                        .HasColumnType("bigint");
-
                     b.Property<string>("EquipamentoNome")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -585,8 +577,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("EquipamentoId");
-
-                    b.HasIndex("EquipamentoId1");
 
                     b.HasIndex("ObraId");
 
@@ -737,9 +727,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.Property<long>("FuncionarioId")
                         .HasColumnType("bigint");
 
-                    b.Property<long?>("FuncionarioId1")
-                        .HasColumnType("bigint");
-
                     b.Property<string>("FuncionarioNome")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -753,8 +740,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FuncionarioId");
-
-                    b.HasIndex("FuncionarioId1");
 
                     b.HasIndex("ObraId");
 
@@ -1396,6 +1381,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasIndex("EnderecoId");
 
+                    b.HasIndex("UsuarioCadastroId");
+
                     b.ToTable("Pessoa", (string)null);
 
                     b.UseTptMappingStrategy();
@@ -1608,15 +1595,9 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Obra", b =>
                 {
-                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Projeto", null)
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Projeto", "Projeto")
                         .WithMany("Obras")
                         .HasForeignKey("ProjetoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Projeto", "Projeto")
-                        .WithMany()
-                        .HasForeignKey("ProjetoId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1644,14 +1625,10 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraEquipamento", b =>
                 {
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Equipamento", "Equipamento")
-                        .WithMany()
+                        .WithMany("ProjetoEquipamentos")
                         .HasForeignKey("EquipamentoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Equipamento", null)
-                        .WithMany("ProjetoEquipamentos")
-                        .HasForeignKey("EquipamentoId1");
 
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Obra", "Obra")
                         .WithMany("Equipamentos")
@@ -1697,14 +1674,10 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraFuncionario", b =>
                 {
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Funcionario", "Funcionario")
-                        .WithMany()
+                        .WithMany("ProjetoFuncionarios")
                         .HasForeignKey("FuncionarioId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Funcionario", null)
-                        .WithMany("ProjetoFuncionarios")
-                        .HasForeignKey("FuncionarioId1");
 
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Obra", "Obra")
                         .WithMany("Funcionarios")
@@ -1981,7 +1954,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .HasForeignKey("EnderecoId")
                         .OnDelete(DeleteBehavior.NoAction);
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Endereco");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Projeto", b =>

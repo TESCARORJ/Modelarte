@@ -29,12 +29,15 @@
     <RadzenDataGrid TItem="ClienteDto"
                     Data="@_clientesFiltrados"
                     AllowFiltering="true"
-                    AllowPaging="true"
+                    AllowColumnResize="true"
                     AllowSorting="true"
                     PageSize="10"
+                    AllowPaging="true"
+                    PagerHorizontalAlign="HorizontalAlign.Left"
+                    ShowPagingSummary="true"
                     FilterMode="FilterMode.Advanced"
                     Responsive="true"
-                    ShowPagingSummary="true" EmptyText="Não contém registros.">
+                    EmptyText="Não contém registros.">
 
         <Columns>
             <RadzenDataGridColumn TItem="ClienteDto" Property="Nome" Title="Nome" />

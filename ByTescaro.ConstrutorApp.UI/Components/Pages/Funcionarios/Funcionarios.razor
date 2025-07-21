@@ -29,15 +29,19 @@
 
     <RadzenDataGrid TItem="FuncionarioDto"
                     Data="@_filtrados"
-                    AllowPaging="true"
-                    PageSize="10"
+                    AllowFiltering="true"
+                    AllowColumnResize="true"
                     AllowSorting="true"
-                    FilterMode="FilterMode.Simple"
+                    PageSize="10"
+                    AllowPaging="true"
+                    PagerHorizontalAlign="HorizontalAlign.Left"
+                    ShowPagingSummary="true"
+                    FilterMode="FilterMode.Advanced"
                     Responsive="true"
-                    ShowPagingSummary="true">
+                    EmptyText="Não contém registros.">
 
         <Columns>
-            <RadzenDataGridColumn TItem="FuncionarioDto" Property="Nome" Title="Nome" />
+            <RadzenDataGridColumn TItem="FuncionarioDto" Property="Nome" Title="Nome" Width="250px"/>
             <RadzenDataGridColumn TItem="FuncionarioDto" Property="FuncaoNome" Title="Função" />
             <RadzenDataGridColumn TItem="FuncionarioDto" Property="TelefonePrincipal" Title="Telefone Principal" />
 

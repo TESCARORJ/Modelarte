@@ -36,7 +36,7 @@
 
                 <RadzenColumn Size="12" SizeMD="3">
                     <RadzenText TextStyle="TextStyle.Body1">
-                        <strong>Tipo de Fornecedor:</strong> <span>@(fornecedor.Tipo.HasValue ? EnumHelper.ObterDescricaoEnum(fornecedor.Tipo.Value) : string.Empty)</span>
+                        <strong>Tipo de Fornecedor:</strong> <span>@(fornecedor.TipoFornecedor.HasValue? EnumHelper.ObterDescricaoEnum(fornecedor.TipoFornecedor.Value) : string.Empty)</span>
                     </RadzenText>
                 </RadzenColumn>
 
@@ -72,6 +72,22 @@
                         <strong>Email:</strong> <span>@fornecedor.Email</span>
                     </RadzenText>
                 </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
+
+        <RadzenFieldset Text="Dados de Auditoria" Style="margin-bottom: 1.5rem;">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Usuário Cadastro:</strong> <span>@fornecedor.UsuarioCadastroNome</span> @* Assumindo que UsuarioCadastro é o nome do usuário *@
+                    </RadzenText>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Data/Hora Cadastro:</strong> <span>@fornecedor.DataHoraCadastro.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                    </RadzenText>
+                </RadzenColumn>
+
             </RadzenRow>
         </RadzenFieldset>
 
@@ -126,7 +142,7 @@
  *@
 
         @* Grid de Insumos fornecidos *@        
-        @if (fornecedor.Tipo.HasValue && (fornecedor.Tipo.Value == TipoFornecedor.Material || fornecedor.Tipo.Value == TipoFornecedor.Misto))
+                    @if (fornecedor.TipoFornecedor.HasValue && (fornecedor.TipoFornecedor.Value == TipoFornecedor.Material || fornecedor.TipoFornecedor.Value == TipoFornecedor.Misto))
         {
             <FornecedorInsumoGrid @ref="insumoGrid" FornecedorId="@fornecedor.Id" OnInsumosCarregados="HandleInsumosCarregados" />
 
@@ -143,7 +159,7 @@
         }
 
         @* Grid de Serviços fornecidos *@
-        @if (fornecedor.Tipo.HasValue && (fornecedor.Tipo.Value == TipoFornecedor.Servico || fornecedor.Tipo.Value == TipoFornecedor.Misto))
+        @if (fornecedor.TipoFornecedor.HasValue && (fornecedor.TipoFornecedor.Value == TipoFornecedor.Servico || fornecedor.TipoFornecedor.Value == TipoFornecedor.Misto))
         {
             <FornecedorServicoGrid @ref="servicoGrid" FornecedorId="@fornecedor.Id" OnServicosCarregados="HandleServicosCarregados"  />
 

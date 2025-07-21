@@ -1,0 +1,55 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<RadzenTemplateForm TItem="ObraItemEtapaDto" Data="@novoItem" Submit="@OnSubmit">
+    <RadzenCard Class="rz-p-4">
+        <RadzenText TextStyle="TextStyle.H6" Text="Criar Novo Item de Etapa" Class="rz-mb-4" />
+
+        <RadzenStack Gap="1rem">
+            <RadzenFormField Text="Nome do Item" Variant="Variant.Flat">
+                <RadzenTextBox @bind-Value="novoItem.Nome" Style="width: 100%;" />
+                <RadzenRequiredValidator Component="Nome" Text="O nome é obrigatório" />
+            </RadzenFormField>
+
+            <RadzenFormField Text="Dias para Prazo (opcional)" Variant="Variant.Flat">
+                <RadzenNumeric TValue="int?" @bind-Value="novoItem.DiasPrazo" Min="0" Style="width: 100%;" />
+            </RadzenFormField>
+
+            <RadzenCheckBox TValue="bool" @bind-Value="novoItem.IsDataPrazo" Text="Usar data de prazo (calcular com base nos dias)" />
+
+            @* Ordem não será visível para o usuário, será calculada no componente pai *@
+            @* <RadzenFormField Text="Ordem" Variant="Variant.Flat">
+                <RadzenNumeric TValue="int" @bind-Value="novoItem.Ordem" Min="1" Style="width: 100%;" />
+                <RadzenRequiredValidator Component="Ordem" Text="A ordem é obrigatória" />
+            </RadzenFormField> *@
+        </RadzenStack>
+
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem" Class="rz-mt-4">
+            <RadzenButton ButtonType="ButtonType.Submit" Text="Salvar" Icon="save" ButtonStyle="ButtonStyle.Primary" />
+            <RadzenButton Text="Cancelar" Icon="cancel" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
+        </RadzenStack>
+    </RadzenCard>
+</RadzenTemplateForm>
+
+@code {
+    [Parameter] public ObraEtapaDto ObraEtapa { get; set; } // Recebe a etapa para contextualização, se necessário
+
+    ObraItemEtapaDto novoItem = new();
+
+    void OnSubmit()
+    {
+        // Define o Id como 0 para indicar que é um novo item a ser salvo no backend
+        novoItem.Id = 0;
+        // Ordem será definida no componente pai (ObraEtapaTab.razor)
+        // Concluido sempre false para novos itens
+        novoItem.Concluido = false;
+
+        DialogService.Close(novoItem);
+    }
+
+    void Cancel()
+    {
+        DialogService.Close(null);
+    }
+}

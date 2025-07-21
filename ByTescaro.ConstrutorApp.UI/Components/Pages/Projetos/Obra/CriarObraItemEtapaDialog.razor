@@ -86,6 +86,11 @@
                                       Icon="add"
                                       Click="() => AdicionarItem(etapa)"
                                       Disabled="!itemSelecionadoIds.ContainsKey(etapa.Ordem) || itemSelecionadoIds[etapa.Ordem] == 0"
+                                      Style="width: 100%; margin-bottom: 0.5rem;" />
+                        <RadzenButton Text="Novo Item"
+                                      Icon="note_add"
+                                      ButtonStyle="ButtonStyle.Secondary"
+                                      Click="() => AbrirModalCriarItem(etapa)"
                                       Style="width: 100%;" />
                     </RadzenColumn>
                 </RadzenRow>
@@ -104,9 +109,6 @@
 
 
 @code {
-    // A flag 'isMobile' e o método 'OnMobileChanged' foram removidos.
-    // O layout agora é controlado inteiramente pelo markup responsivo.
-
     [Parameter] public ObraDto Obra { get; set; } = new();
 
     private List<ObraEtapaPadraoDto> etapasPadrao = new();
@@ -124,19 +126,12 @@
         set => Obra.Etapas = value;
     }
 
-    /// OnParametersSetAsync é usado para carregar os dados do checklist
-    /// sempre que os parâmetros do componente (como 'Obra') forem definidos.
-    /// </summary>
     protected override async Task OnParametersSetAsync()
     {
-        // Garante que o Obra.Id seja válido antes de buscar os dados
         if (Obra != null && Obra.Id > 0)
         {
             isLoading = true;
-
-            // Chama o serviço para carregar o checklist associado a esta obra
             Etapas = await ChecklistService.GetEtapasAsync(Obra.Id);
-
             isLoading = false;
         }
     }
@@ -148,7 +143,6 @@
         itensPadrao = todosItensPadrao.ToList();
     }
 
-    // Método auxiliar para o Change do RadzenDropDown de Itens
     private void OnItemChange(long etapaOrdem, object value)
     {
         if (value != null)
@@ -170,24 +164,24 @@
             return;
         }
 
-        var itens = todosItensPadrao // Usar a lista completa de itens padrão
+        var itens = todosItensPadrao
             .Where(i => i.ObraEtapaPadraoId == modelo.Id)
             .Select(i => new ObraItemEtapaDto
-                {
-                    Nome = i.Nome,
-                    Ordem = i.Ordem,
-                    Concluido = false,
-                    DiasPrazo = i.DiasPrazo,
-                    IsDataPrazo = i.IsDataPrazo
-                }).ToList();
+            {
+                Nome = i.Nome,
+                Ordem = i.Ordem,
+                Concluido = false,
+                DiasPrazo = i.DiasPrazo,
+                IsDataPrazo = i.IsDataPrazo
+            }).ToList();
 
         Etapas.Add(new ObraEtapaDto
-            {
-                Id = 0,
-                Nome = modelo.Nome,
-                Ordem = modelo.Ordem,
-                Itens = itens
-            });
+        {
+            Id = 0,
+            Nome = modelo.Nome,
+            Ordem = modelo.Ordem,
+            Itens = itens
+        });
 
         etapaSelecionadaId = 0; // Limpa a seleção
     }
@@ -197,23 +191,48 @@
         if (!itemSelecionadoIds.TryGetValue(etapa.Ordem, out var itemId) || itemId == 0) return;
 
         var modelo = todosItensPadrao.FirstOrDefault(i => i.Id == itemId);
-        if (modelo == null || etapa.Itens.Any(i => i.Nome.Equals(modelo.Nome, StringComparison.OrdinalIgnoreCase)))
+        if (modelo == null) return; // Alterado para não notificar erro se modelo for nulo, já que o botão estará desabilitado.
+
+        if (etapa.Itens.Any(i => i.Nome.Equals(modelo.Nome, StringComparison.OrdinalIgnoreCase)))
         {
-            NotificationService.Notify(NotificationSeverity.Warning, "Duplicado", $"O item '{modelo?.Nome}' já existe nesta etapa.");
+            NotificationService.Notify(NotificationSeverity.Warning, "Duplicado", $"O item '{modelo.Nome}' já existe nesta etapa.");
             return;
         }
 
         etapa.Itens.Add(new ObraItemEtapaDto
-            {
-                Id = 0,
-                Nome = modelo.Nome,
-                Ordem = modelo.Ordem,
-                Concluido = false,
-                DiasPrazo = modelo.DiasPrazo,
-                IsDataPrazo = modelo.IsDataPrazo
-            });
+        {
+            Id = 0,
+            Nome = modelo.Nome,
+            Ordem = modelo.Ordem,
+            Concluido = false,
+            DiasPrazo = modelo.DiasPrazo,
+            IsDataPrazo = modelo.IsDataPrazo
+        });
 
         itemSelecionadoIds[etapa.Ordem] = 0; // Limpa a seleção do dropdown
+    }
+
+    private async Task AbrirModalCriarItem(ObraEtapaDto etapa)
+    {
+        var novoItem = await DialogService.OpenAsync<CriarObraItemEtapaDialog>("Criar Novo Item de Etapa",
+            new Dictionary<string, object>() { { "ObraEtapa", etapa } },
+            new DialogOptions() { Width = "500px", Height = "400px", Resizable = true, Draggable = true });
+
+        if (novoItem != null)
+        {
+            if (etapa.Itens.Any(i => i.Nome.Equals(novoItem.Nome, StringComparison.OrdinalIgnoreCase)))
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Duplicado", $"O item '{novoItem.Nome}' já existe nesta etapa.");
+                return;
+            }
+            // Definir a ordem do novo item. Pode ser o próximo da sequência ou um valor padrão.
+            // Para simplicidade, vamos usar o próximo número maior ou 1 se não houver itens.
+            novoItem.Ordem = etapa.Itens.Any() ? etapa.Itens.Max(i => i.Ordem) + 1 : 1;
+            novoItem.Concluido = false; // Novo item sempre começa como não concluído
+            etapa.Itens.Add(novoItem);
+            NotificationService.Notify(NotificationSeverity.Success, "Sucesso", $"Item '{novoItem.Nome}' adicionado à etapa '{etapa.Nome}'.");
+            StateHasChanged();
+        }
     }
 
     private async Task ConfirmarRemocaoEtapa(ObraEtapaDto etapa)

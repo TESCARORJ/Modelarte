@@ -115,6 +115,22 @@
             </RadzenRow>
         </RadzenFieldset>
 
+        <RadzenFieldset Text="Dados de Auditoria" Style="margin-bottom: 1.5rem;">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Usuário Cadastro:</strong> <span>@cliente.UsuarioCadastroNome</span> @* Assumindo que UsuarioCadastro é o nome do usuário *@
+                    </RadzenText>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Data/Hora Cadastro:</strong> <span>@cliente.DataHoraCadastro.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                    </RadzenText>
+                </RadzenColumn>
+
+            </RadzenRow>
+        </RadzenFieldset>
+
         <RadzenDivider Style="margin: 2rem 0;" />
 
         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-3">

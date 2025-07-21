@@ -31,12 +31,16 @@
 
     <RadzenDataGrid TItem="InsumoDto"
                     Data="@_insumosFiltrados"
-                    AllowPaging="true"
-                    PageSize="10"
+                    AllowFiltering="true"
+                    AllowColumnResize="true"
                     AllowSorting="true"
-                    FilterMode="FilterMode.Simple"
+                    PageSize="10"
+                    AllowPaging="true"
+                    PagerHorizontalAlign="HorizontalAlign.Left"
+                    ShowPagingSummary="true"
+                    FilterMode="FilterMode.Advanced"
                     Responsive="true"
-                    ShowPagingSummary="true">
+                    EmptyText="Não contém registros.">
 
         <Columns>
             <RadzenDataGridColumn TItem="InsumoDto" Property="Nome" Title="Nome" />

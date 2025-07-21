@@ -3,7 +3,7 @@ using ByTescaro.ConstrutorApp.Application.DTOs;
 using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Entities.Admin;
 using ByTescaro.ConstrutorApp.Domain.Enums;
-using System.Text.Json;
+// Removed unused System.Text.Json
 
 namespace ByTescaro.ConstrutorApp.Application.Mappings;
 
@@ -12,13 +12,14 @@ public class ApplicationProfile : Profile
     public ApplicationProfile()
     {
         // =========================================================================
-        // MAPEAMENTO DE ENDEREÇO (DTO PARA ENTIDADE ENDERECO)
-        // Isso é para criar/atualizar a entidade Endereco em si.
+        // MAPEAMENTOS GERAIS
         // =========================================================================
 
         CreateMap<LogAuditoriaDto, LogAuditoria>().ReverseMap();
 
-
+        // Mapeamentos de DTO para Endereco (para criar/atualizar a entidade Endereco separadamente)
+        // Estes mapeamentos são para cenários onde um DTO "plano" (com Logradouro, Numero, etc.)
+        // é usado para criar ou atualizar uma entidade Endereco.
         CreateMap<ClienteDto, Endereco>()
            .ForMember(dest => dest.Id, opt => opt.Ignore())
            .ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Logradouro))
@@ -29,7 +30,6 @@ public class ApplicationProfile : Profile
            .ForMember(dest => dest.UF, opt => opt.MapFrom(src => src.UF))
            .ForMember(dest => dest.CEP, opt => opt.MapFrom(src => src.CEP))
            .ForMember(dest => dest.Complemento, opt => opt.MapFrom(src => src.Complemento));
-
 
         CreateMap<FuncionarioDto, Endereco>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
@@ -42,29 +42,27 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.CEP, opt => opt.MapFrom(src => src.CEP))
             .ForMember(dest => dest.Complemento, opt => opt.MapFrom(src => src.Complemento));
 
-
-        CreateMap<FornecedorDto, Endereco>();
-            //.ForMember(dest => dest.Id, opt => opt.Ignore())
-            //.ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Logradouro))
-            //.ForMember(dest => dest.Numero, opt => opt.MapFrom(src => src.Numero))
-            //.ForMember(dest => dest.Bairro, opt => opt.MapFrom(src => src.Bairro))
-            //.ForMember(dest => dest.Cidade, opt => opt.MapFrom(src => src.Cidade))
-            //.ForMember(dest => dest.Estado, opt => opt.MapFrom(src => src.Estado))
-            //.ForMember(dest => dest.UF, opt => opt.MapFrom(src => src.UF))
-            //.ForMember(dest => dest.CEP, opt => opt.MapFrom(src => src.CEP))
-            //.ForMember(dest => dest.Complemento, opt => opt.MapFrom(src => src.Complemento));
-
+        CreateMap<FornecedorDto, Endereco>()
+             .ForMember(dest => dest.Id, opt => opt.Ignore())
+             .ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Logradouro))
+             .ForMember(dest => dest.Numero, opt => opt.MapFrom(src => src.Numero))
+             .ForMember(dest => dest.Bairro, opt => opt.MapFrom(src => src.Bairro))
+             .ForMember(dest => dest.Cidade, opt => opt.MapFrom(src => src.Cidade))
+             .ForMember(dest => dest.Estado, opt => opt.MapFrom(src => src.Estado))
+             .ForMember(dest => dest.UF, opt => opt.MapFrom(src => src.UF))
+             .ForMember(dest => dest.CEP, opt => opt.MapFrom(src => src.CEP))
+             .ForMember(dest => dest.Complemento, opt => opt.MapFrom(src => src.Complemento));
 
         CreateMap<UsuarioDto, Endereco>();
-            //.ForMember(dest => dest.Id, opt => opt.Ignore())
-            //.ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Logradouro))
-            //.ForMember(dest => dest.Numero, opt => opt.MapFrom(src => src.Numero))
-            //.ForMember(dest => dest.Bairro, opt => opt.MapFrom(src => src.Bairro))
-            //.ForMember(dest => dest.Cidade, opt => opt.MapFrom(src => src.Cidade))
-            //.ForMember(dest => dest.Estado, opt => opt.MapFrom(src => src.Estado))
-            //.ForMember(dest => dest.UF, opt => opt.MapFrom(src => src.UF))
-            //.ForMember(dest => dest.CEP, opt => opt.MapFrom(src => src.CEP))
-            //.ForMember(dest => dest.Complemento, opt => opt.MapFrom(src => src.Complemento));
+             //.ForMember(dest => dest.Id, opt => opt.Ignore())
+             //.ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Logradouro))
+             //.ForMember(dest => dest.Numero, opt => opt.MapFrom(src => src.Numero))
+             //.ForMember(dest => dest.Bairro, opt => opt.MapFrom(src => src.Bairro))
+             //.ForMember(dest => dest.Cidade, opt => opt.MapFrom(src => src.Cidade))
+             //.ForMember(dest => dest.Estado, opt => opt.MapFrom(src => src.Estado))
+             //.ForMember(dest => dest.UF, opt => opt.MapFrom(src => src.UF))
+             //.ForMember(dest => dest.CEP, opt => opt.MapFrom(src => src.CEP))
+             //.ForMember(dest => dest.Complemento, opt => opt.MapFrom(src => src.Complemento));
 
         CreateMap<ProjetoDto, Endereco>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
@@ -78,27 +76,37 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.Complemento, opt => opt.MapFrom(src => src.Complemento));
 
 
-        // ==== Administração ==== 
+        // ==== Administração ====
         CreateMap<PerfilUsuario, PerfilUsuarioDto>().ReverseMap();
 
-        CreateMap<Usuario, UsuarioDto>();
-            // CORRIGIDO: Tratamento de nulo para Endereco
-            //.ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Logradouro : string.Empty))
-            //.ForMember(dest => dest.Numero, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Numero : string.Empty))
-            //.ForMember(dest => dest.Bairro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Bairro : string.Empty))
-            //.ForMember(dest => dest.Cidade, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Cidade : string.Empty))
-            //.ForMember(dest => dest.Estado, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Estado : string.Empty))
-            //.ForMember(dest => dest.UF, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.UF : string.Empty))
-            //.ForMember(dest => dest.CEP, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.CEP : string.Empty))
-            //.ForMember(dest => dest.Complemento, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Complemento : string.Empty));
+        // Mapeamento de Usuario para UsuarioDto (Entidade para DTO)
+        CreateMap<Usuario, UsuarioDto>()
+             .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email ?? string.Empty))
+             .ForMember(dest => dest.UsuarioCadastroNome, opt => opt.MapFrom(src => src.UsuarioCadastro != null ? src.UsuarioCadastro.Nome : string.Empty))
+             .ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Logradouro : string.Empty))
+             .ForMember(dest => dest.Numero, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Numero : string.Empty))
+             .ForMember(dest => dest.Bairro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Bairro : string.Empty))
+             .ForMember(dest => dest.Cidade, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Cidade : string.Empty))
+             .ForMember(dest => dest.Estado, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Estado : string.Empty))
+             .ForMember(dest => dest.UF, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.UF : string.Empty))
+             .ForMember(dest => dest.CEP, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.CEP : string.Empty))
+             .ForMember(dest => dest.Complemento, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Complemento : string.Empty))
+             .ForMember(dest => dest.PerfilUsuario, opt => opt.MapFrom(src => src.PerfilUsuario));
+        //.ForMember(dest => dest.UsuarioCadastroId, opt => opt.Ignore());
 
+        // Mapeamento de UsuarioDto para Usuario (DTO para Entidade)
         CreateMap<UsuarioDto, Usuario>()
-            .ForMember(dest => dest.Endereco, opt => opt.Ignore()); // Endereco será gerenciado no serviço.
+             .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email ?? string.Empty))
+             .ForMember(dest => dest.Endereco, opt => opt.Ignore())
+             .ForMember(dest => dest.EnderecoId, opt => opt.Ignore())
+             .ForMember(dest => dest.PerfilUsuario, opt => opt.Ignore());
+             //.ForMember(dest => dest.UsuarioCadastro, opt => opt.Ignore());
 
 
-        // ==== Cadastros Básicos ==== 
+
+        // ==== Cadastros Básicos ====
         CreateMap<Cliente, ClienteDto>()
-            // CORRIGIDO: Tratamento de nulo para Endereco
+            .ForMember(dest => dest.UsuarioCadastroNome, opt => opt.MapFrom(src => src.UsuarioCadastro != null ? src.UsuarioCadastro.Nome : string.Empty))
             .ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Logradouro : string.Empty))
             .ForMember(dest => dest.Numero, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Numero : string.Empty))
             .ForMember(dest => dest.Bairro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Bairro : string.Empty))
@@ -113,9 +121,9 @@ public class ApplicationProfile : Profile
 
 
         CreateMap<Funcionario, FuncionarioDto>()
-           .ForMember(dest => dest.FuncaoNome, opt => opt.MapFrom(src => src.Funcao != null ? src.Funcao.Nome : string.Empty)) // CORRIGIDO: Tratamento de nulo para Funcao
+           .ForMember(dest => dest.FuncaoNome, opt => opt.MapFrom(src => src.Funcao != null ? src.Funcao.Nome : string.Empty))
            .ForMember(dest => dest.UsuarioCadastroNome, opt => opt.MapFrom(src => src.UsuarioCadastro != null ? src.UsuarioCadastro.Nome : string.Empty))
-           // CORRIGIDO: Adicionado tratamento de nulo para Endereco
+           // Mapeia propriedades do Endereco aninhado para as propriedades planas do DTO.
            .ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Logradouro : string.Empty))
            .ForMember(dest => dest.Numero, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Numero : string.Empty))
            .ForMember(dest => dest.Bairro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Bairro : string.Empty))
@@ -133,16 +141,16 @@ public class ApplicationProfile : Profile
         CreateMap<Funcao, FuncaoDto>().ReverseMap();
         CreateMap<Equipamento, EquipamentoDto>().ReverseMap();
 
-        CreateMap<Fornecedor, FornecedorDto>();
-           // CORRIGIDO: Tratamento de nulo para Endereco
-           //.ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Logradouro : string.Empty))
-           //.ForMember(dest => dest.Numero, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Numero : string.Empty))
-           //.ForMember(dest => dest.Bairro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Bairro : string.Empty))
-           //.ForMember(dest => dest.Cidade, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Cidade : string.Empty))
-           //.ForMember(dest => dest.Estado, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Estado : string.Empty))
-           //.ForMember(dest => dest.UF, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.UF : string.Empty))
-           //.ForMember(dest => dest.CEP, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.CEP : string.Empty))
-           //.ForMember(dest => dest.Complemento, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Complemento : string.Empty));
+        CreateMap<Fornecedor, FornecedorDto>()
+        .ForMember(dest => dest.UsuarioCadastroNome, opt => opt.MapFrom(src => src.UsuarioCadastro != null ? src.UsuarioCadastro.Nome : string.Empty))
+        .ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Logradouro : string.Empty))
+        .ForMember(dest => dest.Numero, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Numero : string.Empty))
+        .ForMember(dest => dest.Bairro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Bairro : string.Empty))
+        .ForMember(dest => dest.Cidade, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Cidade : string.Empty))
+        .ForMember(dest => dest.Estado, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Estado : string.Empty))
+        .ForMember(dest => dest.UF, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.UF : string.Empty))
+        .ForMember(dest => dest.CEP, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.CEP : string.Empty))
+        .ForMember(dest => dest.Complemento, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Complemento : string.Empty));
 
         CreateMap<FornecedorDto, Fornecedor>()
            .ForMember(dest => dest.Endereco, opt => opt.Ignore());
@@ -165,8 +173,10 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.Servico, opt => opt.Ignore());
 
 
-        // ==== Projeto ==== 
+        // ==== Projeto ====
         CreateMap<Projeto, ProjetoDto>()
+             .ForMember(dest => dest.UsuarioCadastroNome, opt => opt.MapFrom(src => src.UsuarioCadastro != null ? src.UsuarioCadastro.Nome : string.Empty))
+
             .ForMember(dest => dest.Logradouro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Logradouro : string.Empty))
             .ForMember(dest => dest.Numero, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Numero : string.Empty))
             .ForMember(dest => dest.Bairro, opt => opt.MapFrom(src => src.Endereco != null ? src.Endereco.Bairro : string.Empty))
@@ -180,7 +190,8 @@ public class ApplicationProfile : Profile
             .ReverseMap()
             .ForMember(dest => dest.DataInicio, opt => opt.MapFrom(src => src.DataInicio.HasValue ? src.DataInicio.Value.ToDateTime(TimeOnly.MinValue) : default))
             .ForMember(dest => dest.DataFim, opt => opt.MapFrom(src => src.DataFim.HasValue ? src.DataFim.Value.ToDateTime(TimeOnly.MinValue) : (DateTime?)null))
-            .ForMember(dest => dest.Obras, opt => opt.Ignore());
+            .ForMember(dest => dest.Obras, opt => opt.Ignore())
+            .ForMember(dest => dest.Endereco, opt => opt.Ignore()); // Endereco é gerenciado no serviço.
 
         CreateMap<Projeto, ProjetoListDto>()
             .ForMember(dest => dest.DataInicio, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.DataInicio)))
@@ -190,41 +201,43 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.DataInicio, opt => opt.MapFrom(src => src.DataInicio.HasValue ? src.DataInicio.Value.ToDateTime(TimeOnly.MinValue) : default))
             .ForMember(dest => dest.DataFim, opt => opt.MapFrom(src => src.DataFim.HasValue ? src.DataFim.Value.ToDateTime(TimeOnly.MinValue) : (DateTime?)null))
             .ForMember(dest => dest.Obras, opt => opt.Ignore())
-            .ForMember(dest => dest.Endereco, opt => opt.Ignore());
+            .ForMember(dest => dest.Endereco, opt => opt.Ignore()); // Endereco é gerenciado no serviço.
 
-        // ==== Obra ==== 
+        // ==== Obra ====
         CreateMap<Obra, ObraDto>()
+         .ForMember(dest => dest.UsuarioCadastroNome, opt => opt.MapFrom(src => src.UsuarioCadastro != null ? src.UsuarioCadastro.Nome : string.Empty))
+
         .ForMember(dest => dest.Documentos, opt => opt.MapFrom(src => src.Documentos))
         .ForMember(dest => dest.Imagens, opt => opt.MapFrom(src => src.Imagens))
         .ReverseMap()
         .ForMember(dest => dest.Id, opt => opt.Ignore())
-        .ForMember(dest => dest.Projeto, opt => opt.Ignore()) // evitar loop ou entidade já rastreada 
+        .ForMember(dest => dest.Projeto, opt => opt.Ignore()) // evitar loop ou entidade já rastreada
         .ForMember(dest => dest.Etapas, opt => opt.Ignore())
-        .ForMember(dest => dest.Funcionarios, opt => opt.Ignore())
+        .ForMember(dest => dest.Funcionarios, opt => opt.MapFrom(src => src.Funcionarios)) // Mapear a coleção de funcionários
         .ForMember(dest => dest.Insumos, opt => opt.Ignore())
         .ForMember(dest => dest.ListasInsumo, opt => opt.Ignore())
         .ForMember(dest => dest.Servicos, opt => opt.Ignore())
         .ForMember(dest => dest.ListasServico, opt => opt.Ignore())
-        .ForMember(dest => dest.Equipamentos, opt => opt.Ignore())
+        .ForMember(dest => dest.Equipamentos, opt => opt.MapFrom(src => src.Equipamentos)) // Mapear a coleção de equipamentos
         .ForMember(dest => dest.Retrabalhos, opt => opt.Ignore())
         .ForMember(dest => dest.Pendencias, opt => opt.Ignore())
         .ForMember(dest => dest.Documentos, opt => opt.Ignore())
         .ForMember(dest => dest.Imagens, opt => opt.Ignore());
 
 
-        // ==== ObraFuncionario ==== 
+        // ==== ObraFuncionario ====
         CreateMap<ObraFuncionario, ObraFuncionarioDto>()
             .ReverseMap()
             .ForMember(dest => dest.Funcionario, opt => opt.Ignore())
             .ForMember(dest => dest.Obra, opt => opt.Ignore());
 
-        // ==== ObraFornecedor ==== 
+        // ==== ObraFornecedor ====
         CreateMap<ObraFornecedor, ObraFornecedorDto>()
             .ReverseMap()
             .ForMember(dest => dest.Fornecedor, opt => opt.Ignore())
             .ForMember(dest => dest.Obra, opt => opt.Ignore());
 
-        // ==== ObraInsumo ==== 
+        // ==== ObraInsumo ====
         CreateMap<ObraInsumo, ObraInsumoDto>()
             .ForMember(dest => dest.InsumoNome, opt => opt.MapFrom(src => src.Insumo.Nome))
             .ForMember(dest => dest.UnidadeMedida, opt => opt.MapFrom(src => src.Insumo.UnidadeMedida))
@@ -232,7 +245,7 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.Insumo, opt => opt.Ignore())
             .ForMember(dest => dest.Lista, opt => opt.Ignore());
 
-        // ==== ObraInsumoLista ==== 
+        // ==== ObraInsumoLista ====
         CreateMap<ObraInsumoLista, ObraInsumoListaDto>()
             .ForMember(dest => dest.NomeResponsavel, opt => opt.MapFrom(src => src.Responsavel.Nome))
             .ForMember(dest => dest.Data, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.Data)))
@@ -242,14 +255,14 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.Responsavel, opt => opt.Ignore())
             .ForMember(dest => dest.Obra, opt => opt.Ignore());
 
-        // ==== ObraServico ==== 
+        // ==== ObraServico ====
         CreateMap<ObraServico, ObraServicoDto>()
             .ForMember(dest => dest.ServicoNome, opt => opt.MapFrom(src => src.Servico.Nome))
             .ReverseMap()
             .ForMember(dest => dest.Servico, opt => opt.Ignore())
             .ForMember(dest => dest.Lista, opt => opt.Ignore());
 
-        // ==== ObraServicoLista ==== 
+        // ==== ObraServicoLista ====
         CreateMap<ObraServicoLista, ObraServicoListaDto>()
             .ForMember(dest => dest.NomeResponsavel, opt => opt.MapFrom(src => src.Responsavel.Nome))
             .ForMember(dest => dest.Data, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.Data)))
@@ -260,13 +273,13 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.Obra, opt => opt.Ignore());
 
 
-        // ==== ObraEquipamento ==== 
+        // ==== ObraEquipamento ====
         CreateMap<ObraEquipamento, ObraEquipamentoDto>()
             .ReverseMap()
             .ForMember(dest => dest.Equipamento, opt => opt.Ignore())
             .ForMember(dest => dest.Obra, opt => opt.Ignore());
 
-        // ==== Etapas Padrão ==== 
+        // ==== Etapas Padrão ====
 
         CreateMap<ObraItemEtapaPadrao, ObraItemEtapaPadraoDto>()
             .ForMember(dest => dest.ObraEtapaPadraoId, opt => opt.MapFrom(src => src.ObraEtapaPadrao != null ? src.ObraEtapaPadrao.Id : src.ObraEtapaPadraoId))
@@ -278,7 +291,7 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.Itens, opt => opt.MapFrom(src => src.Itens))
             .ReverseMap();
 
-        // ==== Etapas Executadas ==== 
+        // ==== Etapas Executadas ====
         CreateMap<ObraEtapa, ObraEtapaDto>()
             .ForMember(dest => dest.Itens, opt => opt.MapFrom(src => src.Itens))
             .ReverseMap()
@@ -288,14 +301,14 @@ public class ApplicationProfile : Profile
             .ReverseMap()
             .ForMember(dest => dest.Id, opt => opt.Ignore());
 
-        // ==== ObraPendencia ==== 
+        // ==== ObraPendencia ====
         CreateMap<ObraPendencia, ObraPendenciaDto>()
             .ForMember(dest => dest.NomeResponsavel, opt => opt.MapFrom(src => src.Responsavel.Nome))
             .ReverseMap()
             .ForMember(dest => dest.Obra, opt => opt.Ignore())
             .ForMember(dest => dest.Responsavel, opt => opt.Ignore());
 
-        // ==== ObraRetrabalho ==== 
+        // ==== ObraRetrabalho ====
         CreateMap<ObraRetrabalho, ObraRetrabalhoDto>()
             .ForMember(dest => dest.NomeResponsavel, opt => opt.MapFrom(src => src.Responsavel.Nome))
             .ReverseMap()
@@ -311,7 +324,7 @@ public class ApplicationProfile : Profile
             .ReverseMap();
 
 
-        // ==== ObraItemEtapaPadraoInsumo ==== 
+        // ==== ObraItemEtapaPadraoInsumo ====
         CreateMap<ObraItemEtapaPadraoInsumo, ObraItemEtapaPadraoInsumoDto>()
             .ForMember(dest => dest.InsumoNome, opt => opt.MapFrom(src => src.Insumo.Nome))
             .ReverseMap()
@@ -326,7 +339,7 @@ public class ApplicationProfile : Profile
             .ReverseMap()
             .ForMember(dest => dest.ObraEtapaPadrao, opt => opt.Ignore())
             .ForMember(dest => dest.Insumos, opt => opt.Ignore());
-        // ==== Orçamento ==== 
+        // ==== Orçamento ====
         CreateMap<Orcamento, OrcamentoDto>().ReverseMap();
         CreateMap<OrcamentoItem, OrcamentoItemDto>()
             .ForMember(dest => dest.InsumoNome, opt => opt.MapFrom(src => src.Insumo.Nome))
@@ -334,19 +347,19 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.FornecedorNome, opt => opt.MapFrom(src => src.Fornecedor.Nome))
             .ReverseMap();
 
-        // ==== Agenda ==== 
+        // ==== Agenda ====
 
         CreateMap<Evento, EventoDto>()
                 .ForMember(dest => dest.NomeCriador, opt => opt.MapFrom(src => src.Criador.Nome))
-                .ForMember(dest => dest.Participantes, opt => opt.MapFrom(src => src.Participantes)); 
+                .ForMember(dest => dest.Participantes, opt => opt.MapFrom(src => src.Participantes));
 
         CreateMap<CriarEventoRequest, Evento>();
         CreateMap<AtualizarEventoRequest, Evento>();
         CreateMap<ParticipanteEvento, ParticipanteEventoDto>()
-             .ForMember(dest => dest.NomeUsuario, opt => opt.MapFrom(src => src.Usuario.Nome));
+               .ForMember(dest => dest.NomeUsuario, opt => opt.MapFrom(src => src.Usuario.Nome));
         CreateMap<LembreteEvento, LembreteEventoDto>();
         CreateMap<ConfiguracaoLembreteDiario, ConfiguracaoLembreteDiarioDto>();
         CreateMap<CriarConfiguracaoLembreteDiarioRequest, ConfiguracaoLembreteDiario>();
-        CreateMap<AtualizarConfiguracaoLembreteDiarioRequest, ConfiguracaoLembreteDiario>(); 
+        CreateMap<AtualizarConfiguracaoLembreteDiarioRequest, ConfiguracaoLembreteDiario>();
     }
 }

@@ -15,15 +15,15 @@ using System.Text.Json;
 
 namespace ByTescaro.ConstrutorApp.Application.Services
 {
-    public class ClienteImportacaoService : IClienteImportacaoService
+    public class FuncionarioImportacaoService : IFuncionarioImportacaoService
     {
         private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
-        private readonly IClienteRepository _repo;
+        private readonly IFuncionarioRepository _repo;
         private readonly ILogAuditoriaRepository _logRepo;
         private readonly IUsuarioLogadoService _usuarioLogadoService;
 
-        public ClienteImportacaoService(ApplicationDbContext context, IMapper mapper, IClienteRepository repo, ILogAuditoriaRepository logRepo, IUsuarioLogadoService usuarioLogadoService)
+        public FuncionarioImportacaoService(ApplicationDbContext context, IMapper mapper, IFuncionarioRepository repo, ILogAuditoriaRepository logRepo, IUsuarioLogadoService usuarioLogadoService)
         {
             _context = context;
             _mapper = mapper;
@@ -32,12 +32,12 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             _usuarioLogadoService = usuarioLogadoService;
         }
 
-        public async Task<List<ClienteDto>> CarregarPreviewAsync(Stream excelStream)
+        public async Task<List<FuncionarioDto>> CarregarPreviewAsync(Stream excelStream)
         {
             var workbook = new XLWorkbook(excelStream);
             var worksheet = workbook.Worksheets.First();
             var rows = worksheet.RangeUsed().RowsUsed().Skip(1);
-            var clientes = new List<ClienteDto>();
+            var funcionarios = new List<FuncionarioDto>();
 
 
 
@@ -75,7 +75,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     }
                 }
 
-                clientes.Add(new ClienteDto
+                funcionarios.Add(new FuncionarioDto
                 {
                     Nome = nome,
                     TipoPessoa = tipoPessoa,
@@ -95,10 +95,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 });
             }
 
-            return clientes;
+            return funcionarios;
         }
 
-        public async Task<List<ErroImportacaoDto>> ImportarClientesAsync(List<ClienteDto> clientes, string usuario)
+        public async Task<List<ErroImportacaoDto>> ImportarFuncionariosAsync(List<FuncionarioDto> funcionarios, string usuario)
         {
             var erros = new List<ErroImportacaoDto>();
             var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
@@ -111,7 +111,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 .Select(c => c.CpfCnpj)
                 .ToHashSet();
 
-            foreach (var dto in clientes)
+            foreach (var dto in funcionarios)
             {
                 if (string.IsNullOrWhiteSpace(dto.CpfCnpj))
                 {
@@ -136,19 +136,19 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 dto.DataHoraCadastro = DateTime.Now;
                 dto.Ativo = true;
 
-                var cliente = _mapper.Map<Cliente>(dto);
+                var funcionario = _mapper.Map<Funcionario>(dto);
 
-                cliente.TipoEntidade = TipoEntidadePessoa.Cliente;
+                funcionario.TipoEntidade = TipoEntidadePessoa.Funcionario;
 
-                _repo.Add(cliente);
+                _repo.Add(funcionario);
 
                 await _logRepo.RegistrarAsync(new LogAuditoria
                 {
                     UsuarioId = usuarioLogado == null ? 0 : usuarioLogado.Id,
                     UsuarioNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome,
-                    Entidade = nameof(Cliente),
+                    Entidade = nameof(Funcionario),
                     TipoLogAuditoria = TipoLogAuditoria.Criacao,
-                    Descricao = $"Cliente '{cliente.Nome}' importado por {usuarioLogado.Nome} em {DateTime.Now}",
+                    Descricao = $"Funcionario '{funcionario.Nome}' importado por {usuarioLogado.Nome} em {DateTime.Now}",
                     DadosAtuais = JsonSerializer.Serialize(dto) // Serializa o DTO para o log
                 });
             }

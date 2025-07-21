@@ -12,12 +12,23 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
         public string? TelefonePrincipal { get; set; } = string.Empty;
         public string? TelefoneWhatsApp { get; set; } = string.Empty; 
         public string? Email { get; set; }
-        public TipoFornecedor? Tipo { get; set; }
+        public TipoFornecedor? TipoFornecedor { get; set; }
 
         public bool Ativo { get; set; }
         public long UsuarioCadastroId { get; set; }
         public string? UsuarioCadastroNome { get; set; } = string.Empty;
         public DateTime DataHoraCadastro { get; set; }
+
+        // Endereço
+        public string? Logradouro { get; set; } = string.Empty;
+        public string? Numero { get; set; } = string.Empty;
+        public string? Bairro { get; set; } = string.Empty;
+        public string? Cidade { get; set; } = string.Empty;
+        public string? Estado { get; set; } = string.Empty;
+        public string? UF { get; set; } = string.Empty;
+        public string? CEP { get; set; } = string.Empty;
+        public string? Complemento { get; set; } = string.Empty;
+
 
         /// <summary>
         /// Cria uma cópia superficial (shallow copy) da instância atual do FornecedorDto.

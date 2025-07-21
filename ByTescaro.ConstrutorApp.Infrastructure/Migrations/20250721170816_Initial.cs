@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class NovaEstrutura : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -27,7 +27,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     Complemento = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -47,7 +47,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     CustoLocacaoDiaria = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -63,7 +63,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     Nome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -81,7 +81,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     UnidadeMedida = table.Column<int>(type: "int", nullable: false),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -120,7 +120,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     Status = table.Column<int>(type: "int", nullable: false),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -136,7 +136,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     Nome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -153,40 +153,11 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     Descricao = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Servico", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Pessoa",
-                columns: table => new
-                {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Nome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    Sobrenome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    CpfCnpj = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    TipoPessoa = table.Column<int>(type: "int", nullable: false),
-                    TipoEntidade = table.Column<int>(type: "int", nullable: false),
-                    TelefonePrincipal = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    TelefoneWhatsApp = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    Email = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    EnderecoId = table.Column<long>(type: "bigint", nullable: true),
-                    Ativo = table.Column<bool>(type: "bit", nullable: true),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Pessoa", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Pessoa_Endereco_EnderecoId",
-                        column: x => x.EnderecoId,
-                        principalTable: "Endereco",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -202,7 +173,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     DiasPrazo = table.Column<int>(type: "int", nullable: true),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -211,93 +182,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         name: "FK_ObraItemEtapaPadrao_ObraEtapaPadrao_ObraEtapaPadraoId",
                         column: x => x.ObraEtapaPadraoId,
                         principalTable: "ObraEtapaPadrao",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Cliente",
-                columns: table => new
-                {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Cliente", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Cliente_Pessoa_Id",
-                        column: x => x.Id,
-                        principalTable: "Pessoa",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Fornecedor",
-                columns: table => new
-                {
-                    Id = table.Column<long>(type: "bigint", nullable: false),
-                    Tipo = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Fornecedor", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Fornecedor_Pessoa_Id",
-                        column: x => x.Id,
-                        principalTable: "Pessoa",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Funcionario",
-                columns: table => new
-                {
-                    Id = table.Column<long>(type: "bigint", nullable: false),
-                    Salario = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    DataAdmissao = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    DataDemissao = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    FuncaoId = table.Column<long>(type: "bigint", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Funcionario", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Funcionario_Funcao_FuncaoId",
-                        column: x => x.FuncaoId,
-                        principalTable: "Funcao",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Funcionario_Pessoa_Id",
-                        column: x => x.Id,
-                        principalTable: "Pessoa",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Usuario",
-                columns: table => new
-                {
-                    Id = table.Column<long>(type: "bigint", nullable: false),
-                    SenhaHash = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    PerfilUsuarioId = table.Column<long>(type: "bigint", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Usuario", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Usuario_PerfilUsuario_PerfilUsuarioId",
-                        column: x => x.PerfilUsuarioId,
-                        principalTable: "PerfilUsuario",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Usuario_Pessoa_Id",
-                        column: x => x.Id,
-                        principalTable: "Pessoa",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -313,7 +197,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     QuantidadeSugerida = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -333,6 +217,17 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Cliente",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Cliente", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Projeto",
                 columns: table => new
                 {
@@ -347,7 +242,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     ClienteId = table.Column<long>(type: "bigint", nullable: false),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -367,6 +262,83 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ConfiguracaoLembreteDiario",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    HoraDoDia = table.Column<TimeSpan>(type: "time", nullable: false),
+                    Descricao = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ConfiguracaoLembreteDiario", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Evento",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Titulo = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    Descricao = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
+                    DataHoraInicio = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DataHoraFim = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsRecorrente = table.Column<bool>(type: "bit", nullable: false),
+                    FrequenciaRecorrencia = table.Column<int>(type: "int", nullable: true),
+                    DataFimRecorrencia = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false),
+                    Visibilidade = table.Column<int>(type: "int", nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Evento", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "LembreteEvento",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    EventoId = table.Column<long>(type: "bigint", nullable: false),
+                    TempoAntes = table.Column<int>(type: "int", nullable: false),
+                    UnidadeTempo = table.Column<int>(type: "int", nullable: true),
+                    Enviado = table.Column<bool>(type: "bit", nullable: false),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LembreteEvento", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_LembreteEvento_Evento_EventoId",
+                        column: x => x.EventoId,
+                        principalTable: "Evento",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Fornecedor",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false),
+                    Tipo = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Fornecedor", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "FornecedorInsumo",
                 columns: table => new
                 {
@@ -379,7 +351,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     Observacao = table.Column<string>(type: "nvarchar(max)", maxLength: 5000, nullable: true),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -411,7 +383,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     Observacao = table.Column<string>(type: "nvarchar(max)", maxLength: 5000, nullable: true),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -431,55 +403,24 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ConfiguracaoLembreteDiario",
+                name: "Funcionario",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    HoraDoDia = table.Column<TimeSpan>(type: "time", nullable: false),
-                    Descricao = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    Ativo = table.Column<bool>(type: "bit", nullable: true),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    Id = table.Column<long>(type: "bigint", nullable: false),
+                    Salario = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    DataAdmissao = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DataDemissao = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    FuncaoId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ConfiguracaoLembreteDiario", x => x.Id);
+                    table.PrimaryKey("PK_Funcionario", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ConfiguracaoLembreteDiario_Usuario_UsuarioCadastroId",
-                        column: x => x.UsuarioCadastroId,
-                        principalTable: "Usuario",
+                        name: "FK_Funcionario_Funcao_FuncaoId",
+                        column: x => x.FuncaoId,
+                        principalTable: "Funcao",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Evento",
-                columns: table => new
-                {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Titulo = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    Descricao = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
-                    DataHoraInicio = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    DataHoraFim = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    IsRecorrente = table.Column<bool>(type: "bit", nullable: false),
-                    FrequenciaRecorrencia = table.Column<int>(type: "int", nullable: true),
-                    DataFimRecorrencia = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false),
-                    Visibilidade = table.Column<int>(type: "int", nullable: true),
-                    Ativo = table.Column<bool>(type: "bit", nullable: true),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Evento", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Evento_Usuario_UsuarioCadastroId",
-                        column: x => x.UsuarioCadastroId,
-                        principalTable: "Usuario",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -496,7 +437,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     ResponsavelObraId = table.Column<long>(type: "bigint", nullable: true),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -511,63 +452,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         name: "FK_Obra_Projeto_ProjetoId",
                         column: x => x.ProjetoId,
                         principalTable: "Projeto",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);
-                  
-                });
-
-            migrationBuilder.CreateTable(
-                name: "LembreteEvento",
-                columns: table => new
-                {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    EventoId = table.Column<long>(type: "bigint", nullable: false),
-                    TempoAntes = table.Column<int>(type: "int", nullable: false),
-                    UnidadeTempo = table.Column<int>(type: "int", nullable: true),
-                    Enviado = table.Column<bool>(type: "bit", nullable: false),
-                    Ativo = table.Column<bool>(type: "bit", nullable: true),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_LembreteEvento", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_LembreteEvento_Evento_EventoId",
-                        column: x => x.EventoId,
-                        principalTable: "Evento",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ParticipantesEvento",
-                columns: table => new
-                {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    EventoId = table.Column<long>(type: "bigint", nullable: false),
-                    UsuarioId = table.Column<long>(type: "bigint", nullable: false),
-                    StatusParticipacao = table.Column<int>(type: "int", nullable: true),
-                    DataResposta = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Ativo = table.Column<bool>(type: "bit", nullable: true),
-                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ParticipantesEvento", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ParticipantesEvento_Evento_EventoId",
-                        column: x => x.EventoId,
-                        principalTable: "Evento",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ParticipantesEvento_Usuario_UsuarioId",
-                        column: x => x.UsuarioId,
-                        principalTable: "Usuario",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -585,7 +469,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     TamanhoEmKb = table.Column<long>(type: "bigint", nullable: false),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -609,10 +493,9 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     EquipamentoNome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     DataInicioUso = table.Column<DateTime>(type: "datetime2", nullable: false),
                     DataFimUso = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    EquipamentoId1 = table.Column<long>(type: "bigint", nullable: true),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -623,11 +506,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         principalTable: "Equipamento",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ObraEquipamento_Equipamento_EquipamentoId1",
-                        column: x => x.EquipamentoId1,
-                        principalTable: "Equipamento",
-                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_ObraEquipamento_Obra_ObraId",
                         column: x => x.ObraId,
@@ -650,7 +528,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     DataConclusao = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -676,7 +554,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     DataFim = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -707,10 +585,9 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     FuncaoNoObra = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     DataInicio = table.Column<DateTime>(type: "datetime2", nullable: false),
                     DataFim = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    FuncionarioId1 = table.Column<long>(type: "bigint", nullable: true),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -721,11 +598,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         principalTable: "Funcionario",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ObraFuncionario_Funcionario_FuncionarioId1",
-                        column: x => x.FuncionarioId1,
-                        principalTable: "Funcionario",
-                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_ObraFuncionario_Obra_ObraId",
                         column: x => x.ObraId,
@@ -746,7 +618,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     TamanhoEmKb = table.Column<long>(type: "bigint", nullable: false),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -770,7 +642,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     Data = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -804,7 +676,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     DataConclusao = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -838,7 +710,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     DataConclusao = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -868,7 +740,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     Data = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -899,7 +771,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     TotalEstimado = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -926,7 +798,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     TotalEstimado = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -955,7 +827,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     DataConclusao = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -980,7 +852,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     Quantidade = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1017,7 +889,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     Quantidade = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1057,7 +929,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     OrcamentoId = table.Column<long>(type: "bigint", nullable: true),
                     Ativo = table.Column<bool>(type: "bit", nullable: true),
                     DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: false)
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1091,6 +963,85 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         principalTable: "Servico",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ParticipantesEvento",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    EventoId = table.Column<long>(type: "bigint", nullable: false),
+                    UsuarioId = table.Column<long>(type: "bigint", nullable: false),
+                    StatusParticipacao = table.Column<int>(type: "int", nullable: true),
+                    DataResposta = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ParticipantesEvento", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ParticipantesEvento_Evento_EventoId",
+                        column: x => x.EventoId,
+                        principalTable: "Evento",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Pessoa",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Nome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    Sobrenome = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    CpfCnpj = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    TipoPessoa = table.Column<int>(type: "int", nullable: false),
+                    TipoEntidade = table.Column<int>(type: "int", nullable: false),
+                    TelefonePrincipal = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    TelefoneWhatsApp = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    Email = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    EnderecoId = table.Column<long>(type: "bigint", nullable: true),
+                    Ativo = table.Column<bool>(type: "bit", nullable: true),
+                    DataHoraCadastro = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UsuarioCadastroId = table.Column<long>(type: "bigint", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Pessoa", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Pessoa_Endereco_EnderecoId",
+                        column: x => x.EnderecoId,
+                        principalTable: "Endereco",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Usuario",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false),
+                    SenhaHash = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    PerfilUsuarioId = table.Column<long>(type: "bigint", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Usuario", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Usuario_PerfilUsuario_PerfilUsuarioId",
+                        column: x => x.PerfilUsuarioId,
+                        principalTable: "PerfilUsuario",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Usuario_Pessoa_Id",
+                        column: x => x.Id,
+                        principalTable: "Pessoa",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
@@ -1163,8 +1114,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 table: "Obra",
                 column: "ProjetoId");
 
-           
-
             migrationBuilder.CreateIndex(
                 name: "IX_Obra_ResponsavelObraId",
                 table: "Obra",
@@ -1179,11 +1128,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 name: "IX_ObraEquipamento_EquipamentoId",
                 table: "ObraEquipamento",
                 column: "EquipamentoId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ObraEquipamento_EquipamentoId1",
-                table: "ObraEquipamento",
-                column: "EquipamentoId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ObraEquipamento_ObraId",
@@ -1209,11 +1153,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 name: "IX_ObraFuncionario_FuncionarioId",
                 table: "ObraFuncionario",
                 column: "FuncionarioId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ObraFuncionario_FuncionarioId1",
-                table: "ObraFuncionario",
-                column: "FuncionarioId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ObraFuncionario_ObraId",
@@ -1372,6 +1311,11 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 column: "EnderecoId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Pessoa_UsuarioCadastroId",
+                table: "Pessoa",
+                column: "UsuarioCadastroId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Projeto_ClienteId",
                 table: "Projeto",
                 column: "ClienteId");
@@ -1385,11 +1329,70 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 name: "IX_Usuario_PerfilUsuarioId",
                 table: "Usuario",
                 column: "PerfilUsuarioId");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Cliente_Pessoa_Id",
+                table: "Cliente",
+                column: "Id",
+                principalTable: "Pessoa",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.NoAction);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_ConfiguracaoLembreteDiario_Usuario_UsuarioCadastroId",
+                table: "ConfiguracaoLembreteDiario",
+                column: "UsuarioCadastroId",
+                principalTable: "Usuario",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.NoAction);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Evento_Usuario_UsuarioCadastroId",
+                table: "Evento",
+                column: "UsuarioCadastroId",
+                principalTable: "Usuario",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Restrict);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Fornecedor_Pessoa_Id",
+                table: "Fornecedor",
+                column: "Id",
+                principalTable: "Pessoa",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.NoAction);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Funcionario_Pessoa_Id",
+                table: "Funcionario",
+                column: "Id",
+                principalTable: "Pessoa",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.NoAction);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_ParticipantesEvento_Usuario_UsuarioId",
+                table: "ParticipantesEvento",
+                column: "UsuarioId",
+                principalTable: "Usuario",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.NoAction);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Pessoa_Usuario_UsuarioCadastroId",
+                table: "Pessoa",
+                column: "UsuarioCadastroId",
+                principalTable: "Usuario",
+                principalColumn: "Id");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_Usuario_Pessoa_Id",
+                table: "Usuario");
+
             migrationBuilder.DropTable(
                 name: "ConfiguracaoLembreteDiario");
 
@@ -1484,16 +1487,10 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 name: "Obra");
 
             migrationBuilder.DropTable(
-                name: "Usuario");
-
-            migrationBuilder.DropTable(
                 name: "Funcionario");
 
             migrationBuilder.DropTable(
                 name: "Projeto");
-
-            migrationBuilder.DropTable(
-                name: "PerfilUsuario");
 
             migrationBuilder.DropTable(
                 name: "Funcao");
@@ -1506,6 +1503,12 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Endereco");
+
+            migrationBuilder.DropTable(
+                name: "Usuario");
+
+            migrationBuilder.DropTable(
+                name: "PerfilUsuario");
         }
     }
 }

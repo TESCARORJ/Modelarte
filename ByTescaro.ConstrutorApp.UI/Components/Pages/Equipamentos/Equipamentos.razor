@@ -29,13 +29,16 @@
 
     <RadzenDataGrid TItem="EquipamentoDto"
                     Data="@_equipamentosFiltrados"
-                    AllowPaging="true"
-                    PageSize="10"
-                    AllowSorting="true"
                     AllowFiltering="true"
+                    AllowColumnResize="true"
+                    AllowSorting="true"
+                    PageSize="10"
+                    AllowPaging="true"
+                    PagerHorizontalAlign="HorizontalAlign.Left"
+                    ShowPagingSummary="true"
                     FilterMode="FilterMode.Advanced"
                     Responsive="true"
-                    ShowPagingSummary="true">
+                    EmptyText="Não contém registros.">
 
         <Columns>
             <RadzenDataGridColumn TItem="EquipamentoDto" Property="Nome" Title="Nome" />

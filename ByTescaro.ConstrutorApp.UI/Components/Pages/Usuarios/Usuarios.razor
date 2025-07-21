@@ -40,12 +40,16 @@
 
     <RadzenDataGrid TItem="UsuarioDto"
                     Data="@FiltrarUsuarios()"
-                    AllowPaging="true"
+                    AllowFiltering="true"
+                    AllowColumnResize="true"
                     AllowSorting="true"
                     PageSize="10"
+                    AllowPaging="true"
+                    PagerHorizontalAlign="HorizontalAlign.Left"
                     ShowPagingSummary="true"
-                    FilterMode="FilterMode.Simple"
-                    Responsive="true">
+                    FilterMode="FilterMode.Advanced"
+                    Responsive="true"
+                    EmptyText="Não contém registros.">
 
         <Columns>
             <RadzenDataGridColumn TItem="UsuarioDto" Property="Nome" Title="Nome" />

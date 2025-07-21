@@ -2,8 +2,9 @@
 @inject HttpClient Http
 @inject ClienteImportacaoApiService ImportacaoService
 @inject NotificationService NotificationService
+@inject NavigationManager NavigationManager
 
-
+@using ByTescaro.ConstrutorApp.Application.Utils
 @using ByTescaro.ConstrutorApp.Application.DTOs
 @using ByTescaro.ConstrutorApp.UI.Services
 @using Microsoft.AspNetCore.Components.Forms
@@ -13,25 +14,78 @@
     <RadzenHeading Size="H4" Text="Importador de Clientes" />
 
     <!-- Upload Excel -->
-    <div class="rz-mb-4">
-        <label class="rz-button rz-button-md rz-button-outlined">
-            <span class="material-icons">upload</span>&nbsp;Selecionar Excel
-            <InputFile OnChange="OnFileSelected" accept=".xlsx,.xls" style="display:none" />
-        </label>
+    <div class="rz-mb-4" style="display: flex; gap: 1rem; align-items: center;">
+        <div style="position: relative; display: inline-block;">
+            <RadzenButton Text="Selecionar Excel"
+                          Icon="upload"
+                          ButtonStyle="ButtonStyle.Primary"
+                          class="rz-button-md rz-button-solid"
+                          style="pointer-events: none; opacity: 1; position: relative; z-index: 1;" />
+            <InputFile OnChange="OnFileSelected"
+                       accept=".xlsx,.xls"
+                       style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer; z-index: 2;" />
+        </div>
+
+
+
+        <RadzenButton Text="Modelo de Importação"
+                      Icon="file_download"
+                      ButtonStyle="ButtonStyle.Secondary"
+                      Click="@DownloadModeloImportacao" />
     </div>
+
+@*     <RadzenFieldset Text="Atenção" Style="margin-bottom: 1.5rem">
+        <RadzenRow Class="rz-p-4" Style="row-gap: 1rem;">
+            <RadzenColumn Size="6" SizeMD="6">
+                <RadzenText TextStyle="TextStyle.Body1" wid="3">
+                    <p>
+                        <strong>Na coluna TipoPessoa:</strong>
+                        <ul>
+                            <li>Coloque <strong>1</strong> para <strong>Pessoa Física</strong></li>
+                            <li>Coloque <strong>2</strong> para <strong>Pessoa Jurídica</strong></li>
+                        </ul>
+                    </p>
+                </RadzenText>
+
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenFieldset> *@
+
 
     <!-- Preview Editável -->
     @if (clientesPreview?.Any() == true)
     {
-        <RadzenDataGrid TItem="ClienteDto" Data="@clientesPreview" @ref="grid" Editable="true" EditMode="DataGridEditMode.Single">
+        <RadzenDataGrid TItem="ClienteDto" Data="@clientesPreview" @ref="grid" Editable="true" EditMode="DataGridEditMode.Single" AllowFiltering="true"
+                        AllowColumnResize="true"
+                        AllowSorting="true"
+                        PageSize="10"
+                        AllowPaging="true"
+                        PagerHorizontalAlign="HorizontalAlign.Left"
+                        ShowPagingSummary="true"
+                        FilterMode="FilterMode.Advanced"
+                        Responsive="true"
+                        EmptyText="Não contém registros."
+                        ColumnWidth="250px">
             <Columns>
                 <RadzenDataGridColumn TItem="ClienteDto" Property="Nome" Title="Nome" />
-                <RadzenDataGridColumn TItem="ClienteDto" Property="TipoPessoa" Title="Tipo Pessoa" />
-                <RadzenDataGridColumn TItem="ClienteDto" Property="CpfCnpj" Title="CPF/CNPJ" />
-                <RadzenDataGridColumn TItem="ClienteDto" Property="TelefonePrincipal" Title="Telefone" />
-                <RadzenDataGridColumn TItem="ClienteDto" Property="TelefoneWhatsApp" Title="WhatsApp" />
+                <RadzenDataGridColumn TItem="ClienteDto" Title="Tipo de Pessoa">
+                    <Template Context="e">
+                        @EnumHelper.ObterDescricaoEnum(e.TipoPessoa)
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ClienteDto" Property="CpfCnpj" Title="CNPJ/CPF" />
+                <RadzenDataGridColumn TItem="ClienteDto" Property="TelefonePrincipal" Title="Telefone Principal" />
+                <RadzenDataGridColumn TItem="ClienteDto" Property="TelefoneWhatsApp" Title="Telefone WhastApp" />
                 <RadzenDataGridColumn TItem="ClienteDto" Property="Email" Title="Email" />
                 <RadzenDataGridColumn TItem="ClienteDto" Property="CEP" Title="CEP" />
+                <RadzenDataGridColumn TItem="ClienteDto" Property="Logradouro" Title="Logradouro" />
+                <RadzenDataGridColumn TItem="ClienteDto" Property="Numero" Title="Número" />
+                <RadzenDataGridColumn TItem="ClienteDto" Property="Bairro" Title="Bairro" />
+                <RadzenDataGridColumn TItem="ClienteDto" Property="Complemento" Title="Complemento" />
+                <RadzenDataGridColumn TItem="ClienteDto" Property="Cidade" Title="Cidade" />
+                <RadzenDataGridColumn TItem="ClienteDto" Property="Estado" Title="Estado" />
+                <RadzenDataGridColumn TItem="ClienteDto" Property="UF" Title="UF" />
+
                 <RadzenDataGridColumn TItem="ClienteDto">
                     <Template Context="cliente">
                         <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="() => grid.EditRow(cliente)" Text="Editar" />
@@ -45,10 +99,10 @@
         </RadzenDataGrid>
 
         <RadzenButton Text="Importar"
-        Style="margin-top: 1.5rem"
-        Icon="upload"
-        ButtonStyle="ButtonStyle.Primary"
-        Click="@Importar" />
+                      Style="margin-top: 1.5rem"
+                      Icon="upload"
+                      ButtonStyle="ButtonStyle.Primary"
+                      Click="@Importar" />
     }
 
     <!-- Lista de Erros -->
@@ -116,6 +170,12 @@
         {
             NotificationService.Notify(NotificationSeverity.Error, "Erro ao importar", ex.Message);
         }
+    }
+
+
+    private void DownloadModeloImportacao()
+    {
+        NavigationManager.NavigateTo("/modelos/Modelo_Importacao_Clientes.xlsx", true);
     }
 
 }

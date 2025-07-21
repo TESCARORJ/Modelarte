@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using ByTescaro.ConstrutorApp.Application.DTOs;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
+using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Entities.Admin;
 using ByTescaro.ConstrutorApp.Domain.Enums;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
@@ -40,25 +41,48 @@ public class UsuarioService : IUsuarioService
         return usuario == null ? null : _mapper.Map<UsuarioDto>(usuario);
     }
 
+    // EM UsuarioService.cs
     public async Task CriarAsync(UsuarioDto dto)
     {
         var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
         var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
 
+        // 1. Criar/Obter Endereco a partir do DTO
+        Endereco? endereco = null;
+        if (!string.IsNullOrEmpty(dto.Logradouro) ||
+            !string.IsNullOrEmpty(dto.Numero) ||
+            !string.IsNullOrEmpty(dto.Bairro) ||
+            !string.IsNullOrEmpty(dto.Cidade) ||
+            !string.IsNullOrEmpty(dto.Estado) ||
+            !string.IsNullOrEmpty(dto.UF) ||
+            !string.IsNullOrEmpty(dto.CEP))
+        {
+            endereco = _mapper.Map<Endereco>(dto); // Mapeia UsuarioDto (plano) para Endereco
+            endereco.UsuarioCadastroId = usuarioLogadoId; // Define o usuário de cadastro para o Endereço
+            _unitOfWork.EnderecoRepository.Add(endereco); // Adiciona o Endereço ao contexto para ser salvo
+            await _unitOfWork.CommitAsync(); // Salva o Endereço para obter o Id antes de atribuir ao Usuário
+        }
+
+        // 2. Mapear UsuarioDto para Usuario
         var entity = _mapper.Map<Usuario>(dto);
+
+        // 3. Associar o Endereco criado/obtido ao Usuario
+        if (endereco != null)
+        {
+            entity.EnderecoId = endereco.Id;
+            entity.Endereco = endereco; // Opcional, mas útil para navegação imediata
+        }
+
         entity.DataHoraCadastro = DateTime.Now;
         entity.UsuarioCadastroId = usuarioLogadoId;
         entity.TipoEntidade = TipoEntidadePessoa.Usuario;
-
 
         var hasher = new PasswordHasher<Usuario>();
         entity.SenhaHash = hasher.HashPassword(entity, dto.Senha!);
 
         _unitOfWork.UsuarioRepository.Add(entity);
-        await _auditoriaService.RegistrarCriacaoAsync(_mapper.Map<UsuarioDto>(entity), usuarioLogadoId);
-
+        await _auditoriaService.RegistrarCriacaoAsync(_mapper.Map<UsuarioDto>(entity), usuarioLogadoId); // Mapeia para DTO de auditoria
         await _unitOfWork.CommitAsync();
-
     }
 
 

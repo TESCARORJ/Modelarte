@@ -16,11 +16,12 @@ public class InsumoImportacaoService : IInsumoImportacaoService
     private readonly ILogAuditoriaRepository _logRepo;
     private readonly IUsuarioLogadoService _usuarioLogadoService;
 
-    public InsumoImportacaoService(IMapper mapper, ILogAuditoriaRepository logRepo, IUsuarioLogadoService usuarioLogadoService)
+    public InsumoImportacaoService(IMapper mapper, ILogAuditoriaRepository logRepo, IUsuarioLogadoService usuarioLogadoService, IUnitOfWork unitOfWork)
     {
         _mapper = mapper;
         _logRepo = logRepo;
         _usuarioLogadoService = usuarioLogadoService;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<List<InsumoDto>> CarregarPreviewAsync(Stream excelStream)

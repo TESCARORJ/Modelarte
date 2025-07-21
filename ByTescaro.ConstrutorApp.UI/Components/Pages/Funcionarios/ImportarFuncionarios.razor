@@ -1,5 +1,6 @@
-﻿@page "/fornecedores/importar"
-@inject FornecedorImportacaoApiService ImportacaoService
+﻿@page "/funcionarios/importar"
+@inject HttpClient Http
+@inject FuncionarioImportacaoApiService ImportacaoService
 @inject NotificationService NotificationService
 @inject NavigationManager NavigationManager
 
@@ -10,7 +11,7 @@
 @using Radzen
 
 <RadzenCard Style="max-width: 1300px; margin: auto; padding: 2rem;">
-    <RadzenHeading Size="H4" Text="Importador de Fornecedores" />
+    <RadzenHeading Size="H4" Text="Importador de Funcionários" />
 
     <!-- Upload Excel -->
     <div class="rz-mb-4" style="display: flex; gap: 1rem; align-items: center;">
@@ -40,35 +41,21 @@
                     <p>
                         <strong>Na coluna TipoPessoa:</strong>
                         <ul>
-                            <li>Coloque <strong>Fisica</strong> para <strong>Pessoa Física</strong></li>
-                            <li>Coloque <strong>Juridica</strong> para <strong>Pessoa Jurídica</strong></li>
+                            <li>Coloque <strong>1</strong> para <strong>Pessoa Física</strong></li>
+                            <li>Coloque <strong>2</strong> para <strong>Pessoa Jurídica</strong></li>
                         </ul>
                     </p>
                 </RadzenText>
 
-            </RadzenColumn>
-
-            <RadzenColumn Size="6" SizeMD="6">
-                <RadzenText TextStyle="TextStyle.Body1" wid="3">
-                    <p>
-                        <strong>Na coluna TipoFornecedor:</strong>
-                        <ul>
-                            <li>Coloque <strong>1</strong> para <strong>Material</strong></li>
-                            <li>Coloque <strong>2</strong> para <strong>Serviço</strong></li>
-                            <li>Coloque <strong>3</strong> para <strong>Meterial e Serviço</strong></li>
-                        </ul>
-                    </p>
-                </RadzenText>
             </RadzenColumn>
         </RadzenRow>
     </RadzenFieldset> *@
 
 
-
     <!-- Preview Editável -->
-    @if (fornecedoresPreview?.Any() == true)
+    @if (funcionariosPreview?.Any() == true)
     {
-        <RadzenDataGrid TItem="FornecedorDto" Data="@fornecedoresPreview" @ref="grid" Editable="true" EditMode="DataGridEditMode.Single" AllowFiltering="true"
+        <RadzenDataGrid TItem="FuncionarioDto" Data="@funcionariosPreview" @ref="grid" Editable="true" EditMode="DataGridEditMode.Single" AllowFiltering="true"
                         AllowColumnResize="true"
                         AllowSorting="true"
                         PageSize="10"
@@ -80,40 +67,32 @@
                         EmptyText="Não contém registros."
                         ColumnWidth="250px">
             <Columns>
-                <RadzenDataGridColumn TItem="FornecedorDto" Property="Nome" Title="Nome" />
-                <RadzenDataGridColumn TItem="FornecedorDto" Title="Tipo de Pessoa">
+                <RadzenDataGridColumn TItem="FuncionarioDto" Property="Nome" Title="Nome" />
+                <RadzenDataGridColumn TItem="FuncionarioDto" Title="Tipo de Pessoa">
                     <Template Context="e">
                         @EnumHelper.ObterDescricaoEnum(e.TipoPessoa)
                     </Template>
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="FornecedorDto" Property="CpfCnpj" Title="CNPJ/CPF" />
-                <RadzenDataGridColumn TItem="FornecedorDto" Property="TelefonePrincipal" Title="Telefone Principal" />
-                <RadzenDataGridColumn TItem="FornecedorDto" Property="TelefoneWhatsApp" Title="Telefone WhastApp" />
-                <RadzenDataGridColumn TItem="FornecedorDto" Property="Email" Title="Email" />
-                <RadzenDataGridColumn TItem="FornecedorDto" Title="Tipo de Fornecedor">
-                    <Template Context="e">
-                        @EnumHelper.ObterDescricaoEnum(e.TipoFornecedor)
+                <RadzenDataGridColumn TItem="FuncionarioDto" Property="CpfCnpj" Title="CNPJ/CPF" />
+                <RadzenDataGridColumn TItem="FuncionarioDto" Property="TelefonePrincipal" Title="Telefone Principal" />
+                <RadzenDataGridColumn TItem="FuncionarioDto" Property="TelefoneWhatsApp" Title="Telefone WhastApp" />
+                <RadzenDataGridColumn TItem="FuncionarioDto" Property="Email" Title="Email" />
+                <RadzenDataGridColumn TItem="FuncionarioDto" Property="CEP" Title="CEP" />
+                <RadzenDataGridColumn TItem="FuncionarioDto" Property="Logradouro" Title="Logradouro" />
+                <RadzenDataGridColumn TItem="FuncionarioDto" Property="Numero" Title="Número" />
+                <RadzenDataGridColumn TItem="FuncionarioDto" Property="Bairro" Title="Bairro" />
+                <RadzenDataGridColumn TItem="FuncionarioDto" Property="Complemento" Title="Complemento" />
+                <RadzenDataGridColumn TItem="FuncionarioDto" Property="Cidade" Title="Cidade" />
+                <RadzenDataGridColumn TItem="FuncionarioDto" Property="Estado" Title="Estado" />
+                <RadzenDataGridColumn TItem="FuncionarioDto" Property="UF" Title="UF" />
+
+                <RadzenDataGridColumn TItem="FuncionarioDto">
+                    <Template Context="funcionario">
+                        <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="() => grid.EditRow(funcionario)" Text="Editar" />
                     </Template>
-                </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="FornecedorDto" Property="CEP" Title="CEP" />
-                <RadzenDataGridColumn TItem="FornecedorDto" Property="Logradouro" Title="Logradouro" />
-                <RadzenDataGridColumn TItem="FornecedorDto" Property="Numero" Title="Número" />
-                <RadzenDataGridColumn TItem="FornecedorDto" Property="Bairro" Title="Bairro" />
-                <RadzenDataGridColumn TItem="FornecedorDto" Property="Complemento" Title="Complemento" />
-                <RadzenDataGridColumn TItem="FornecedorDto" Property="Cidade" Title="Cidade" />
-                <RadzenDataGridColumn TItem="FornecedorDto" Property="Estado" Title="Estado" />
-                <RadzenDataGridColumn TItem="FornecedorDto" Property="UF" Title="UF" />
-
-
-
-
-                <RadzenDataGridColumn TItem="FornecedorDto">
-                    <Template Context="fornecedor">
-                        <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="() => grid.EditRow(fornecedor)" Text="Editar" />
-                    </Template>
-                    <EditTemplate Context="fornecedor">
-                        <RadzenButton Icon="check" Size="ButtonSize.Small" Click="() => grid.UpdateRow(fornecedor)" Text="Salvar" />
-                        <RadzenButton Icon="close" Size="ButtonSize.Small" Click="() => grid.CancelEditRow(fornecedor)" Text="Cancelar" />
+                    <EditTemplate Context="funcionario">
+                        <RadzenButton Icon="check" Size="ButtonSize.Small" Click="() => grid.UpdateRow(funcionario)" Text="Salvar" />
+                        <RadzenButton Icon="close" Size="ButtonSize.Small" Click="() => grid.CancelEditRow(funcionario)" Text="Cancelar" />
                     </EditTemplate>
                 </RadzenDataGridColumn>
             </Columns>
@@ -141,9 +120,9 @@
 </RadzenCard>
 
 @code {
-    private List<FornecedorDto> fornecedoresPreview = new();
+    private List<FuncionarioDto> funcionariosPreview = new();
     private List<ErroImportacaoDto> errosImportacao = new();
-    private RadzenDataGrid<FornecedorDto>? grid;
+    private RadzenDataGrid<FuncionarioDto>? grid;
 
     async Task OnFileSelected(InputFileChangeEventArgs args)
     {
@@ -157,7 +136,7 @@
             }
 
             using var stream = file.OpenReadStream();
-            fornecedoresPreview = await ImportacaoService.PreviewExcelFornecedoresAsync(stream, file.Name);
+            funcionariosPreview = await ImportacaoService.PreviewExcelFuncionariosAsync(stream, file.Name);
 
             NotificationService.Notify(NotificationSeverity.Success, "Pré-visualização pronta", "Dados carregados com sucesso.");
         }
@@ -171,16 +150,20 @@
     {
         try
         {
-            errosImportacao = await ImportacaoService.ImportarFornecedoresAsync(fornecedoresPreview);
+            errosImportacao = await ImportacaoService.ImportarFuncionariosAsync(funcionariosPreview);
 
             if (errosImportacao.Count == 0)
             {
-                fornecedoresPreview.Clear();
-                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Todos os fornecedores foram importados!", Duration = 4000 });
+                //     NotificationService.Notify(NotificationSeverity.Success, "Importação concluída", "Todos os funcionarios foram importados.");
+                funcionariosPreview.Clear();
+                NotificationMessage message = new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Todos os funcionarios foram importados!", Duration = 4000 };
+                NotificationService.Notify(message);
+
+
             }
             else
             {
-                NotificationService.Notify(NotificationSeverity.Warning, "Importação parcial", "Alguns fornecedores não foram importados.");
+                NotificationService.Notify(NotificationSeverity.Warning, "Importação parcial", "Alguns funcionarios não foram importados.");
             }
         }
         catch (Exception ex)
@@ -192,6 +175,7 @@
 
     private void DownloadModeloImportacao()
     {
-        NavigationManager.NavigateTo("/modelos/Modelo_Importacao_Fornecedores.xlsx", true);
+        NavigationManager.NavigateTo("/modelos/Modelo_Importacao_Funcionarios.xlsx", true);
     }
+
 }

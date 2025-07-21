@@ -24,39 +24,35 @@
     {
         <RadzenFieldset Text="Informações do Serviço" Style="margin-bottom: 1.5rem;">
             <RadzenRow>
-                <RadzenColumn Size="12" SizeMD="6">
+                <RadzenColumn Size="12" SizeMD="12">
                     <RadzenText TextStyle="TextStyle.Body1">
                         <strong>Nome:</strong> <span>@servico.Nome</span>
                     </RadzenText>
                 </RadzenColumn>
 
+                <RadzenColumn Size="12" SizeMD="12">
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Descrição:</strong> <span>@servico.Descricao</span>
+                    </RadzenText>
+                </RadzenColumn>
+               
+            </RadzenRow>
+        </RadzenFieldset>
+
+
+        <RadzenFieldset Text="Dados de Auditoria" Style="margin-bottom: 1.5rem;">
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Usuário Cadastro:</strong> <span>@servico.UsuarioCadastroNome</span> @* Assumindo que UsuarioCadastro é o nome do usuário *@
+                    </RadzenText>
+                </RadzenColumn>
                 <RadzenColumn Size="12" SizeMD="6">
                     <RadzenText TextStyle="TextStyle.Body1">
                         <strong>Data/Hora Cadastro:</strong> <span>@servico.DataHoraCadastro.ToString("dd/MM/yyyy HH:mm:ss")</span>
                     </RadzenText>
                 </RadzenColumn>
-                @* Adicione aqui outros campos de auditoria, se existirem no seu DTO, como UsuarioCadastroNome, DataHoraAtualizacao e UsuarioAtualizacaoNome *@
-                @if (!string.IsNullOrWhiteSpace(servico.UsuarioCadastroNome))
-                {
-                    <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenText TextStyle="TextStyle.Body1">
-                            <strong>Usuário Cadastro:</strong> <span>@servico.UsuarioCadastroNome</span>
-                        </RadzenText>
-                    </RadzenColumn>
-                }
-                @* @if (servico.DataHoraAtualizacao.HasValue)
-                {
-                    <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenText TextStyle="TextStyle.Body1">
-                            <strong>Última Atualização Por:</strong> <span>@servico.UsuarioAtualizacaoNome</span>
-                        </RadzenText>
-                    </RadzenColumn>
-                    <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenText TextStyle="TextStyle.Body1">
-                            <strong>Data/Hora Última Atualização:</strong> <span>@servico.DataHoraAtualizacao?.ToString("dd/MM/yyyy HH:mm:ss")</span>
-                        </RadzenText>
-                    </RadzenColumn>
-                } *@
+
             </RadzenRow>
         </RadzenFieldset>
 
@@ -70,7 +66,7 @@
             <RadzenButton Text="Editar"
                           Icon="edit"
                           ButtonStyle="ButtonStyle.Primary"
-                          Click="@(() => Navigation.NavigateTo($"/servicos/editar/{servico.Id}"))" />
+                          Click="@(() => Navigation.NavigateTo($"/servico/editar/{servico.Id}"))" />
         </RadzenStack>
     }
 </RadzenCard>
