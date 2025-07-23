@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250721170816_Initial")]
-    partial class Initial
+    [Migration("20250723044816_inicio")]
+    partial class inicio
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -47,6 +47,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UsuarioCadastroId");
 
                     b.ToTable("PerfilUsuario", (string)null);
                 });
@@ -109,9 +111,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<DateTime?>("DataHoraCadastro")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Estado")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -127,9 +126,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.Property<string>("UF")
                         .HasMaxLength(2)
                         .HasColumnType("nvarchar(2)");
-
-                    b.Property<long?>("UsuarioCadastroId")
-                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -175,6 +171,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasIndex("Patrimonio");
 
+                    b.HasIndex("UsuarioCadastroId");
+
                     b.ToTable("Equipamento", (string)null);
                 });
 
@@ -215,7 +213,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<long>("UsuarioCadastroId")
+                    b.Property<long?>("UsuarioCadastroId")
                         .HasColumnType("bigint");
 
                     b.Property<int?>("Visibilidade")
@@ -267,6 +265,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasIndex("InsumoId");
 
+                    b.HasIndex("UsuarioCadastroId");
+
                     b.ToTable("FornecedorInsumo", (string)null);
                 });
 
@@ -309,6 +309,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasIndex("ServicoId");
 
+                    b.HasIndex("UsuarioCadastroId");
+
                     b.ToTable("FornecedorServico", (string)null);
                 });
 
@@ -334,6 +336,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UsuarioCadastroId");
 
                     b.ToTable("Funcao", (string)null);
                 });
@@ -367,6 +371,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UsuarioCadastroId");
 
                     b.ToTable("Insumo", (string)null);
                 });
@@ -403,6 +409,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("EventoId");
+
+                    b.HasIndex("UsuarioCadastroId");
 
                     b.ToTable("LembreteEvento", (string)null);
                 });
@@ -500,6 +508,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasIndex("ResponsavelObraId");
 
+                    b.HasIndex("UsuarioCadastroId");
+
                     b.ToTable("Obra", (string)null);
                 });
 
@@ -540,6 +550,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ObraId");
+
+                    b.HasIndex("UsuarioCadastroId");
 
                     b.ToTable("ObraDocumento", (string)null);
                 });
@@ -582,6 +594,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasIndex("EquipamentoId");
 
                     b.HasIndex("ObraId");
+
+                    b.HasIndex("UsuarioCadastroId");
 
                     b.ToTable("ObraEquipamento", (string)null);
                 });
@@ -626,6 +640,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasIndex("ObraId");
 
+                    b.HasIndex("UsuarioCadastroId");
+
                     b.ToTable("ObraEtapa", (string)null);
                 });
 
@@ -657,6 +673,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UsuarioCadastroId");
 
                     b.ToTable("ObraEtapaPadrao", (string)null);
                 });
@@ -699,6 +717,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasIndex("FornecedorId");
 
                     b.HasIndex("ObraId");
+
+                    b.HasIndex("UsuarioCadastroId");
 
                     b.ToTable("ObraFornecedor", (string)null);
                 });
@@ -746,6 +766,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasIndex("ObraId");
 
+                    b.HasIndex("UsuarioCadastroId");
+
                     b.ToTable("ObraFuncionario", (string)null);
                 });
 
@@ -782,6 +804,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ObraId");
+
+                    b.HasIndex("UsuarioCadastroId");
 
                     b.ToTable("ObraImagem", (string)null);
                 });
@@ -823,6 +847,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasIndex("ObraInsumoListaId");
 
+                    b.HasIndex("UsuarioCadastroId");
+
                     b.ToTable("ObraInsumo", (string)null);
                 });
 
@@ -857,6 +883,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasIndex("ObraId");
 
                     b.HasIndex("ResponsavelId");
+
+                    b.HasIndex("UsuarioCadastroId");
 
                     b.ToTable("ObraInsumoLista", (string)null);
                 });
@@ -907,6 +935,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasIndex("ObraEtapaId");
 
+                    b.HasIndex("UsuarioCadastroId");
+
                     b.ToTable("ObraItemEtapa", (string)null);
                 });
 
@@ -947,6 +977,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasIndex("ObraEtapaPadraoId");
 
+                    b.HasIndex("UsuarioCadastroId");
+
                     b.ToTable("ObraItemEtapaPadrao", (string)null);
                 });
 
@@ -981,6 +1013,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasIndex("InsumoId");
 
                     b.HasIndex("ObraItemEtapaPadraoId");
+
+                    b.HasIndex("UsuarioCadastroId");
 
                     b.ToTable("ObraItemEtapaPadraoInsumo", (string)null);
                 });
@@ -1031,6 +1065,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasIndex("ResponsavelId");
 
+                    b.HasIndex("UsuarioCadastroId");
+
                     b.ToTable("ObraPendencia", (string)null);
                 });
 
@@ -1080,6 +1116,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasIndex("ResponsavelId");
 
+                    b.HasIndex("UsuarioCadastroId");
+
                     b.ToTable("ObraRetrabalho", (string)null);
                 });
 
@@ -1120,6 +1158,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasIndex("ServicoId");
 
+                    b.HasIndex("UsuarioCadastroId");
+
                     b.ToTable("ObraServico", (string)null);
                 });
 
@@ -1154,6 +1194,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasIndex("ObraId");
 
                     b.HasIndex("ResponsavelId");
+
+                    b.HasIndex("UsuarioCadastroId");
 
                     b.ToTable("ObraServicoLista", (string)null);
                 });
@@ -1191,6 +1233,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ObraId");
+
+                    b.HasIndex("UsuarioCadastroId");
 
                     b.ToTable("Orcamento", (string)null);
                 });
@@ -1245,6 +1289,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasIndex("ServicoId");
 
+                    b.HasIndex("UsuarioCadastroId");
+
                     b.ToTable("OrcamentoItem", (string)null);
                 });
 
@@ -1286,6 +1332,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("UsuarioCadastroId");
+
                     b.HasIndex("ObraId", "DataReferencia")
                         .IsUnique();
 
@@ -1324,6 +1372,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("EventoId");
+
+                    b.HasIndex("UsuarioCadastroId");
 
                     b.HasIndex("UsuarioId");
 
@@ -1402,7 +1452,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.Property<bool?>("Ativo")
                         .HasColumnType("bit");
 
-                    b.Property<long>("ClienteId")
+                    b.Property<long?>("ClienteId")
                         .HasColumnType("bigint");
 
                     b.Property<DateTime?>("DataFim")
@@ -1437,6 +1487,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 
                     b.HasIndex("EnderecoId");
 
+                    b.HasIndex("UsuarioCadastroId");
+
                     b.ToTable("Projeto", (string)null);
                 });
 
@@ -1466,6 +1518,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UsuarioCadastroId");
 
                     b.ToTable("Servico", (string)null);
                 });
@@ -1499,7 +1553,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                 {
                     b.HasBaseType("ByTescaro.ConstrutorApp.Domain.Entities.Pessoa");
 
-                    b.Property<int>("Tipo")
+                    b.Property<int>("TipoFornecedor")
                         .HasColumnType("int");
 
                     b.ToTable("Fornecedor", (string)null);
@@ -1526,6 +1580,16 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.ToTable("Funcionario", (string)null);
                 });
 
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Admin.PerfilUsuario", b =>
+                {
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("UsuarioCadastro");
+                });
+
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ConfiguracaoLembreteDiario", b =>
                 {
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
@@ -1536,15 +1600,23 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.Navigation("UsuarioCadastro");
                 });
 
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Equipamento", b =>
+                {
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
+                    b.Navigation("UsuarioCadastro");
+                });
+
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Evento", b =>
                 {
-                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "Criador")
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
                         .WithMany()
                         .HasForeignKey("UsuarioCadastroId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
-                    b.Navigation("Criador");
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.FornecedorInsumo", b =>
@@ -1561,9 +1633,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Fornecedor");
 
                     b.Navigation("Insumo");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.FornecedorServico", b =>
@@ -1580,9 +1658,33 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Fornecedor");
 
                     b.Navigation("Servico");
+
+                    b.Navigation("UsuarioCadastro");
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Funcao", b =>
+                {
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
+                    b.Navigation("UsuarioCadastro");
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Insumo", b =>
+                {
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.LembreteEvento", b =>
@@ -1593,7 +1695,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Evento");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Obra", b =>
@@ -1609,9 +1717,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .HasForeignKey("ResponsavelObraId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Projeto");
 
                     b.Navigation("ResponsavelObra");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraDocumento", b =>
@@ -1622,7 +1736,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Obra");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraEquipamento", b =>
@@ -1639,9 +1759,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Equipamento");
 
                     b.Navigation("Obra");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraEtapa", b =>
@@ -1652,7 +1778,22 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Obra");
+
+                    b.Navigation("UsuarioCadastro");
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraEtapaPadrao", b =>
+                {
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraFornecedor", b =>
@@ -1669,9 +1810,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Fornecedor");
 
                     b.Navigation("Obra");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraFuncionario", b =>
@@ -1688,9 +1835,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Funcionario");
 
                     b.Navigation("Obra");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraImagem", b =>
@@ -1701,7 +1854,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Obra");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraInsumo", b =>
@@ -1724,11 +1883,17 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Insumo");
 
                     b.Navigation("Lista");
 
                     b.Navigation("Obra");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraInsumoLista", b =>
@@ -1745,9 +1910,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Obra");
 
                     b.Navigation("Responsavel");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraItemEtapa", b =>
@@ -1758,7 +1929,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("ObraEtapa");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraItemEtapaPadrao", b =>
@@ -1769,7 +1946,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("ObraEtapaPadrao");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraItemEtapaPadraoInsumo", b =>
@@ -1786,9 +1969,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Insumo");
 
                     b.Navigation("ObraItemEtapaPadrao");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraPendencia", b =>
@@ -1804,9 +1993,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .HasForeignKey("ResponsavelId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Obra");
 
                     b.Navigation("Responsavel");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraRetrabalho", b =>
@@ -1822,9 +2017,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .HasForeignKey("ResponsavelId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Obra");
 
                     b.Navigation("Responsavel");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraServico", b =>
@@ -1847,11 +2048,17 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Lista");
 
                     b.Navigation("Obra");
 
                     b.Navigation("Servico");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ObraServicoLista", b =>
@@ -1868,9 +2075,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Obra");
 
                     b.Navigation("Responsavel");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Orcamento", b =>
@@ -1881,7 +2094,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Obra");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.OrcamentoItem", b =>
@@ -1911,6 +2130,10 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .HasForeignKey("ServicoId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Fornecedor");
 
                     b.Navigation("Insumo");
@@ -1918,6 +2141,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.Navigation("OrcamentoObra");
 
                     b.Navigation("Servico");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.OrcamentoObra", b =>
@@ -1928,7 +2153,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Obra");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.ParticipanteEvento", b =>
@@ -1939,6 +2170,10 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "Usuario")
                         .WithMany()
                         .HasForeignKey("UsuarioId")
@@ -1948,6 +2183,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.Navigation("Evento");
 
                     b.Navigation("Usuario");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Pessoa", b =>
@@ -1971,17 +2208,31 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Cliente", "Cliente")
                         .WithMany("Projetos")
                         .HasForeignKey("ClienteId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Endereco", "Endereco")
                         .WithMany()
                         .HasForeignKey("EnderecoId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
                     b.Navigation("Cliente");
 
                     b.Navigation("Endereco");
+
+                    b.Navigation("UsuarioCadastro");
+                });
+
+            modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Servico", b =>
+                {
+                    b.HasOne("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", "UsuarioCadastro")
+                        .WithMany()
+                        .HasForeignKey("UsuarioCadastroId");
+
+                    b.Navigation("UsuarioCadastro");
                 });
 
             modelBuilder.Entity("ByTescaro.ConstrutorApp.Domain.Entities.Admin.Usuario", b =>

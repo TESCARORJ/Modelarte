@@ -58,7 +58,6 @@ public class UsuarioService : IUsuarioService
             !string.IsNullOrEmpty(dto.CEP))
         {
             endereco = _mapper.Map<Endereco>(dto); // Mapeia UsuarioDto (plano) para Endereco
-            endereco.UsuarioCadastroId = usuarioLogadoId; // Define o usuário de cadastro para o Endereço
             _unitOfWork.EnderecoRepository.Add(endereco); // Adiciona o Endereço ao contexto para ser salvo
             await _unitOfWork.CommitAsync(); // Salva o Endereço para obter o Id antes de atribuir ao Usuário
         }

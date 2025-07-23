@@ -13,8 +13,9 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public bool IsRecorrente { get; set; } 
         public FrequenciaRecorrencia? FrequenciaRecorrencia { get; set; } // Ex: Diaria, Semanal, Mensal, Anual
         public DateTime? DataFimRecorrencia { get; set; }
-        public long UsuarioCadastroId { get; set; } // FK para o Usuário que criou o evento
-        public Usuario? Criador { get; set; } = null!;
+        public long? UsuarioCadastroId { get; set; }
+        public Usuario UsuarioCadastro { get; set; }
+        public DateTime? DataHoraCadastro { get; set; } = DateTime.Now;
         public Visibilidade? Visibilidade { get; set; } // Ex: Publico, Privado, SomenteConvidados
         public ICollection<ParticipanteEvento> Participantes { get; set; }
         public ICollection<LembreteEvento> Lembretes { get; set; } // Se houver lembretes específicos por evento

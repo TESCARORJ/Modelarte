@@ -1,4 +1,5 @@
 ﻿using ByTescaro.ConstrutorApp.Domain.Common;
+using ByTescaro.ConstrutorApp.Domain.Entities.Admin;
 
 namespace ByTescaro.ConstrutorApp.Domain.Entities
 {
@@ -11,9 +12,12 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public decimal Quantidade { get; set; }
         public decimal PrecoUnitario { get; set; }
         public decimal Total => Quantidade * PrecoUnitario;
-        public OrcamentoObra? OrcamentoObra { get; set; }
-        public Insumo Insumo { get; set; } = null!;
-        public Servico Servico { get; set; } = null!;
-        public Fornecedor Fornecedor { get; set; } = null!;
+        public OrcamentoObra OrcamentoObra { get; set; }
+        public Insumo Insumo { get; set; } 
+        public Servico Servico { get; set; } 
+        public Fornecedor Fornecedor { get; set; } 
+        public long? UsuarioCadastroId { get; set; }
+        public Usuario UsuarioCadastro { get; set; }
+        public DateTime? DataHoraCadastro { get; set; } = DateTime.Now;
     }
 }

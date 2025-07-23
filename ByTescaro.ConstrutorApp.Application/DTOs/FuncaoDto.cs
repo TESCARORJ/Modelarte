@@ -5,7 +5,7 @@ public class FuncaoDto
     public long Id { get; set; }
 
     public string? Nome { get; set; } = string.Empty;
-    public long UsuarioCadastroId { get; set; }
+    public long? UsuarioCadastroId { get; set; }
     public string? UsuarioCadastroNome { get; set; } = string.Empty;
     public DateTime DataHoraCadastro { get; set; }
 

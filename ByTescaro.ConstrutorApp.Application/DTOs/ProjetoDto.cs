@@ -15,7 +15,7 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
 
         public decimal CustoEstimado { get; set; }
         public decimal CustoReal { get; set; }
-        public long ClienteId { get; set; }
+        public long? ClienteId { get; set; }
         public string? Observacao { get; set; } = string.Empty;
         public string? DescricaoConclusao { get; set; } = string.Empty;
         public string? DescricaoCancelamento { get; set; } = string.Empty;
@@ -31,7 +31,7 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
         public string? Complemento { get; set; } = string.Empty;
         public string? TelefonePrincipal { get; set; } = string.Empty;
 
-        public long UsuarioCadastroId { get; set; }
+        public long? UsuarioCadastroId { get; set; }
         public string? UsuarioCadastroNome { get; set; } = string.Empty;
         public DateTime DataHoraCadastro { get; set; }
 

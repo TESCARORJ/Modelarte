@@ -54,12 +54,13 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
             _context.Entry(entity).State = EntityState.Modified;
         }
 
-        public async Task<Usuario> ObterPorEmailComPerfilAsync(string email)
+        public async Task<Usuario?> ObterPorEmailComPerfilAsync(string email)
         {
             return await _dbSet
-                .Include(u => u.PerfilUsuario)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Email == email);
+                .AsNoTracking() // <--- CRÍTICO: Garante que o objeto não é rastreado
+                .Include(u => u.PerfilUsuario) // Inclua se o PerfilUsuario for usado em algum mapeamento de DTO na auditoria
+                .Where(u => u.Email == email)
+                .FirstOrDefaultAsync();
         }
 
     }

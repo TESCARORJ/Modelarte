@@ -78,64 +78,47 @@ public class ProjetoService : IProjetoService
 
     public async Task<ProjetoDto> CriarAsync(ProjetoDto dto)
     {
-        var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
-        var usuarioLogadoId = usuarioLogado == null ? 0 : usuarioLogado.Id;
-        var projeto = _mapper.Map<Projeto>(dto);
+        var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
+        var usuarioLogadoId = usuarioLogado?.Id ?? throw new InvalidOperationException("Usuário não autenticado para criar projeto.");
 
-        projeto.UsuarioCadastroId = usuarioLogadoId;
-        projeto.DataHoraCadastro = DateTime.Now;
+        // 1. Mapeie o DTO para a entidade Projeto.
+        var projetoEntity = _mapper.Map<Projeto>(dto);
 
-        // Lógica para Endereço (Criação)
+        // 2. Defina os dados de auditoria do Projeto (pai).
+        projetoEntity.UsuarioCadastroId = usuarioLogadoId;
+        projetoEntity.DataHoraCadastro = DateTime.Now;
+
+        // 3. Lógica para Endereço (opcional)
         if (!string.IsNullOrWhiteSpace(dto.CEP))
         {
             var enderecoEntity = _mapper.Map<Endereco>(dto);
             _unitOfWork.EnderecoRepository.Add(enderecoEntity);
-            projeto.Endereco = enderecoEntity;
+            projetoEntity.Endereco = enderecoEntity;
         }
 
-        foreach (var obra in projeto.Obras)
+        // 4. Itere sobre cada Obra filha para estabelecer o vínculo.
+        // Com a entidade Obra corrigida, esta lógica agora funciona perfeitamente.
+        foreach (var obra in projetoEntity.Obras)
         {
+            // Esta linha informa ao EF que esta 'obra' pertence a 'projetoEntity'.
+            obra.Projeto = projetoEntity;
+
             obra.UsuarioCadastroId = usuarioLogadoId;
             obra.DataHoraCadastro = DateTime.Now;
-
-            if (obra.ResponsavelObraId == 0)
-            {
-                obra.ResponsavelObraId = null;
-            }
-
-            if (obra.ResponsavelObraId.HasValue)
-            {
-                // Validação utilizando o repositório da Unit of Work
-                var responsavelExiste = await _unitOfWork.FuncionarioRepository.ExistsAsync(x => x.Id == obra.ResponsavelObraId);
-                if (!responsavelExiste)
-                {
-                    throw new InvalidOperationException($"O responsável pela obra com ID {obra.ResponsavelObraId.Value} não existe.");
-                }
-            }
-
-            foreach (var etapa in obra.Etapas)
-            {
-                etapa.UsuarioCadastroId = usuarioLogadoId;
-                etapa.DataHoraCadastro = DateTime.Now;
-
-                foreach (var item in etapa.Itens)
-                {
-                    item.UsuarioCadastroId = usuarioLogadoId;
-                    item.DataHoraCadastro = DateTime.Now;
-                }
-            }
         }
 
-        // 1. Adiciona a entidade raiz ao contexto. O EF Core rastreia o grafo de objetos.
-        _unitOfWork.ProjetoRepository.Add(projeto);
+        // 5. Adicione APENAS a entidade raiz (Projeto) ao contexto.
+        _unitOfWork.ProjetoRepository.Add(projetoEntity);
 
-        // 2. Comita todas as mudanças para o banco de dados em uma única transação.
+        // 6. Salve tudo em uma única transação.
+        // O EF irá inserir o Projeto, obter o ID, e então usar esse ID para inserir as Obras.
         await _unitOfWork.CommitAsync();
 
-        // 3. Registra a auditoria após a confirmação da transação.
-        await _auditoriaService.RegistrarCriacaoAsync(_mapper.Map<ProjetoDto>(projeto), usuarioLogadoId);
+        // Auditoria
+        await _auditoriaService.RegistrarCriacaoAsync(projetoEntity, usuarioLogadoId);
 
-        return _mapper.Map<ProjetoDto>(projeto);
+        // Retorne o DTO mapeado da entidade, agora com todos os IDs preenchidos.
+        return _mapper.Map<ProjetoDto>(projetoEntity);
     }
 
     public async Task AtualizarAsync(ProjetoDto dto)

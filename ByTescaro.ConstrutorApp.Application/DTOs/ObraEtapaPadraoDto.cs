@@ -17,7 +17,7 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
 
         public DateTime? DataInicio { get; set; }
         public DateTime? DataConclusao { get; set; }
-        public long UsuarioCadastroId { get; set; }
+        public long? UsuarioCadastroId { get; set; }
         public string? UsuarioCadastroNome { get; set; } = string.Empty;
         public DateTime DataHoraCadastro { get; set; }
         public List<ObraItemEtapaDto> Itens { get; set; } = new();

@@ -19,7 +19,7 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
         public UnidadeTempo? UnidadeTempo { get; set; } // Ex: Minutos, Horas, Dias
         public bool Enviado { get; set; } = false; // Para controlar se o lembrete já foi enviado
         public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
-        public long UsuarioCadastroId { get; set; }
+        public long? UsuarioCadastroId { get; set; }
         public string? UsuarioCadastroNome { get; set; } = string.Empty;
     }
 }

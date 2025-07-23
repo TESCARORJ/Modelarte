@@ -4,8 +4,6 @@
     {
         public long Id { get; set; }
         public bool? Ativo { get; set; }
-        public DateTime? DataHoraCadastro { get; set; } = DateTime.Now;
-        public long? UsuarioCadastroId { get; set; }
 
     }
 }

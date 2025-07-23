@@ -117,8 +117,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                 builder.ToTable("Endereco");
                 builder.HasKey(e => e.Id);
                 builder.Property(e => e.Ativo);
-                builder.Property(e => e.DataHoraCadastro);
-                builder.Property(e => e.UsuarioCadastroId);
                 builder.Property(e => e.Logradouro).HasMaxLength(255);
                 builder.Property(e => e.Numero).HasMaxLength(50);
                 builder.Property(e => e.Bairro).HasMaxLength(150);
@@ -164,7 +162,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
             public void Configure(EntityTypeBuilder<Fornecedor> builder)
             {
                 builder.ToTable("Fornecedor");
-                builder.Property(f => f.Tipo).HasColumnType("int");
+                builder.Property(f => f.TipoFornecedor).HasColumnType("int");
             }
         }
 
@@ -354,18 +352,29 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
             }
         }
 
-        public class PerfilUsuarioConfiguration : IEntityTypeConfiguration<ByTescaro.ConstrutorApp.Domain.Entities.Admin.PerfilUsuario>
+        public class PerfilUsuarioConfiguration : IEntityTypeConfiguration<PerfilUsuario>
         {
-            public void Configure(EntityTypeBuilder<ByTescaro.ConstrutorApp.Domain.Entities.Admin.PerfilUsuario> builder)
+            public void Configure(EntityTypeBuilder<PerfilUsuario> builder)
             {
                 builder.ToTable("PerfilUsuario");
                 builder.HasKey(e => e.Id);
                 builder.Property(e => e.Nome).HasMaxLength(255);
                 builder.Property(e => e.Ativo);
                 builder.Property(e => e.DataHoraCadastro);
-                builder.Property(e => e.UsuarioCadastroId);
+
+                // A propriedade já existe na entidade base ou na própria entidade
+                // builder.Property(e => e.UsuarioCadastroId); // Não precisa declarar de novo
+
+                // --- Relacionamento Muitos-para-Um: Muitos perfis podem ser cadastrados por UM usuário ---
+                // Adicione esta configuração para o usuário que CADASTROU o perfil.
+                // Supondo que sua entidade PerfilUsuario tenha "public Usuario UsuarioCadastro { get; set; }"
+                builder.HasOne(e => e.UsuarioCadastro)
+                       .WithMany() // Um usuário pode cadastrar muitos perfis
+                       .HasForeignKey(e => e.UsuarioCadastroId)
+                       .OnDelete(DeleteBehavior.Restrict); // Evita que um usuário seja deletado se cadastrou perfis
 
 
+                // --- Relacionamento Um-para-Muitos: UM perfil tem MUITOS usuários ---
                 builder.HasMany(p => p.Usuarios)
                        .WithOne(u => u.PerfilUsuario)
                        .HasForeignKey(u => u.PerfilUsuarioId)
@@ -450,7 +459,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                        .HasForeignKey(e => e.ObraId)
                        .OnDelete(DeleteBehavior.Restrict);
 
-               
+
 
 
             }
@@ -500,7 +509,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                        .HasForeignKey(e => e.ObraId)
                        .OnDelete(DeleteBehavior.Restrict);
 
-             
+
             }
         }
 
@@ -865,7 +874,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                 builder.Property(e => e.UsuarioCadastroId);
 
 
-                builder.HasOne(e => e.Criador)
+                builder.HasOne(e => e.UsuarioCadastro)
                     .WithMany() // Um usuário pode criar muitos eventos
                     .HasForeignKey(e => e.UsuarioCadastroId)
                     .OnDelete(DeleteBehavior.Restrict);
@@ -923,7 +932,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
 
                 builder.HasOne(le => le.Evento)
                     .WithMany(e => e.Lembretes)
-                    .HasForeignKey(le => le.EventoId)                    
+                    .HasForeignKey(le => le.EventoId)
                     .OnDelete(DeleteBehavior.Cascade);
             }
         }
@@ -936,17 +945,17 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                 builder.HasKey(x => x.Id);
 
                 builder.Property(x => x.Ativo);
-                builder.Property(x => x.HoraDoDia).HasColumnType("time"); 
+                builder.Property(x => x.HoraDoDia).HasColumnType("time");
                 builder.Property(x => x.Descricao).HasMaxLength(500);
                 builder.Property(x => x.DataHoraCadastro);
-                builder.Property(x => x.UsuarioCadastroId); 
+                builder.Property(x => x.UsuarioCadastroId);
 
                 // Relacionamento com Usuario (o usuário que possui/cadastrou esta configuração)
                 // Usa UsuarioCadastroId da EntidadeBase como chave estrangeira.
                 builder.HasOne(x => x.UsuarioCadastro) // Relacionamento da ConfiguraçãoLembreteDiario com Usuario
                        .WithMany() // Um usuário pode ter várias configurações de lembrete diário
                        .HasForeignKey(x => x.UsuarioCadastroId) // FK para o usuário na tabela ConfiguracaoLembreteDiario
-                        // A configuração deve estar associada a um usuário
+                                                                // A configuração deve estar associada a um usuário
                        .OnDelete(DeleteBehavior.Cascade);
             }
         }
@@ -987,7 +996,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
 
                 builder.HasOne(oi => oi.OrcamentoObra)
                     .WithMany(o => o.Itens)
-                    .HasForeignKey(oi => oi.OrcamentoObraId)                    
+                    .HasForeignKey(oi => oi.OrcamentoObraId)
                     .OnDelete(DeleteBehavior.Cascade);
 
                 // Relacionamento com Insumo (opcional)
@@ -1006,7 +1015,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                 builder.HasOne(oi => oi.Fornecedor)
                     .WithMany() // Um fornecedor pode estar em muitos itens de orçamento
                     .HasForeignKey(oi => oi.FornecedorId)
-                    .OnDelete(DeleteBehavior.Restrict);                
+                    .OnDelete(DeleteBehavior.Restrict);
             }
         }
         public class OrcamentoObraConfiguration : IEntityTypeConfiguration<OrcamentoObra>
@@ -1029,7 +1038,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                 builder.HasMany(oo => oo.Itens)
                     .WithOne(oi => oi.OrcamentoObra)
                     .HasForeignKey(oi => oi.OrcamentoObraId)
-                    
+
                     .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasIndex(oo => new { oo.ObraId, oo.DataReferencia }).IsUnique();
@@ -1049,7 +1058,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                 builder.Property(l => l.TipoLogAuditoria).HasColumnType("int");
                 builder.Property(l => l.Descricao).HasColumnType("nvarchar(max)");
                 builder.Property(l => l.DataHora);
-                builder.Property(l => l.DadosAnteriores).HasColumnType("nvarchar(max)"); 
+                builder.Property(l => l.DadosAnteriores).HasColumnType("nvarchar(max)");
                 builder.Property(l => l.DadosAtuais).HasColumnType("nvarchar(max)");
                 builder.Property(l => l.IdEntidade).HasMaxLength(50);
 

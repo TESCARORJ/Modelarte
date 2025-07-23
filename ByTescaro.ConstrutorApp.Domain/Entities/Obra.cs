@@ -7,23 +7,21 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
     public class Obra : EntidadeBase
     {
         public long ProjetoId { get; set; }
-        public Projeto Projeto { get; set; } = null!;
+        public Projeto Projeto { get; set; } 
         public string? Nome { get; set; } = string.Empty;
         public StatusObra Status { get; set; }
         public DateTime? DataInicioExecucao { get; set; }    
-
         public ResponsavelMaterialEnum ResponsavelMaterial { get; set; }
         public long? ResponsavelObraId { get; set; }
-        public Funcionario? ResponsavelObra { get; set; } = null!;
-
-       public Usuario? UsuarioCadastro { get; set; }
-
+        public Funcionario ResponsavelObra { get; set; }
+        public long? UsuarioCadastroId { get; set; }
+        public Usuario UsuarioCadastro { get; set; } 
+        public DateTime? DataHoraCadastro { get; set; } = DateTime.Now;
         public ICollection<ObraEtapa> Etapas { get; set; } = new List<ObraEtapa>();
         public ICollection<ObraFuncionario> Funcionarios { get; set; } = new List<ObraFuncionario>();
         public ICollection<ObraFornecedor> Fornecedores { get; set; } = new List<ObraFornecedor>();
         public ICollection<ObraInsumo> Insumos { get; set; } = new List<ObraInsumo>();
         public ICollection<ObraInsumoLista> ListasInsumo { get; set; } = new List<ObraInsumoLista>();
-
         public ICollection<ObraEquipamento> Equipamentos { get; set; } = new List<ObraEquipamento>();
         public ICollection<ObraRetrabalho> Retrabalhos { get; set; } = new List<ObraRetrabalho>();
         public ICollection<ObraPendencia> Pendencias { get; set; } = new List<ObraPendencia>();

@@ -84,7 +84,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         private IQueryable<Projeto> GetQueryWithAllIncludes()
         {
             return _dbSet
-                .Include(p => p.Cliente)
+                //.Include(p => p.Cliente)
                 .Include(p => p.Obras).ThenInclude(o => o.Etapas).ThenInclude(e => e.Itens)
                 .Include(p => p.Obras).ThenInclude(o => o.Documentos)
                 .Include(p => p.Obras).ThenInclude(o => o.Imagens)

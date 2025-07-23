@@ -8,7 +8,7 @@ public class ServicoDto
     public bool Ativo { get; set; }  
     public string? Nome { get; set; } = string.Empty;
     public string? Descricao { get; set; }
-    public long UsuarioCadastroId { get; set; }
+    public long? UsuarioCadastroId { get; set; }
     public string? UsuarioCadastroNome { get; set; } = string.Empty;
     public DateTime DataHoraCadastro { get; set; }
 

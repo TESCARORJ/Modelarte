@@ -16,7 +16,7 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
         public long ResponsavelId { get; set; }
         public string? NomeResponsavel { get; set; } = string.Empty;
         public DateTime DataHoraCadastro { get; set; }
-        public long UsuarioCadastroId { get; set; }
+        public long? UsuarioCadastroId { get; set; }
         public string? UsuarioCadastroNome { get; set; } = string.Empty;
     }
 }

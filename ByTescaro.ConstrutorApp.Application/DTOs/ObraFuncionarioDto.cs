@@ -12,7 +12,7 @@
         public DateTime? DataFim { get; set; }
 
         public DateTime DataHoraCadastro { get; set; }
-        public long UsuarioCadastroId { get; set; }
+        public long? UsuarioCadastroId { get; set; }
         public string? UsuarioCadastroNome { get; set; } = string.Empty;
     }
 

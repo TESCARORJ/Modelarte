@@ -31,7 +31,7 @@ public class FuncionarioDto
     public string? Email { get; set; } = string.Empty;
     public bool Ativo { get; set; }
 
-    public long UsuarioCadastroId { get; set; }
+    public long? UsuarioCadastroId { get; set; }
     public string? UsuarioCadastroNome { get; set; } = string.Empty;
     public DateTime DataHoraCadastro { get; set; }
 

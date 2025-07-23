@@ -10,9 +10,7 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public DateTime? DataDemissao { get; set; }
 
         public long FuncaoId { get; set; }
-        public Funcao Funcao { get; set; } = null!;
-
-
+        public Funcao Funcao { get; set; } 
 
         public ICollection<ObraFuncionario> ProjetoFuncionarios { get; set; } = new List<ObraFuncionario>();
 

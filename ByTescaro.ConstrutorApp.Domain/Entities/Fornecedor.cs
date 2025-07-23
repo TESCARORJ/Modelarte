@@ -5,7 +5,7 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
     public class Fornecedor : Pessoa
     {
 
-        public TipoFornecedor Tipo { get; set; }
+        public TipoFornecedor TipoFornecedor { get; set; }
     }
 
 }

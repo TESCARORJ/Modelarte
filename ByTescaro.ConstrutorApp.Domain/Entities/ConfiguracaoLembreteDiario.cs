@@ -14,6 +14,9 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         [MaxLength(100)]
         [Display(Name = "Descrição")]
         public string? Descricao { get; set; }
-        public Usuario? UsuarioCadastro { get; set; }
+
+        public long? UsuarioCadastroId { get; set; }
+        public Usuario UsuarioCadastro { get; set; }
+        public DateTime? DataHoraCadastro { get; set; } = DateTime.Now;
     }
 }

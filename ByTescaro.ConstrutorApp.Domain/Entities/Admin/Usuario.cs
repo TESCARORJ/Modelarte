@@ -8,7 +8,7 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities.Admin
         public long PerfilUsuarioId { get; set; }
 
         [JsonIgnore]
-        public PerfilUsuario? PerfilUsuario { get; set; } = null!;
+        public PerfilUsuario PerfilUsuario { get; set; }
    
     }
 }

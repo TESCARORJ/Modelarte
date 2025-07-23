@@ -16,9 +16,11 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public string? TelefoneWhatsApp { get; set; } = string.Empty;
         public string? Email { get; set; } = string.Empty;
 
-        public Usuario? UsuarioCadastro { get; set; }
+        public long? UsuarioCadastroId { get; set; }
+        public Usuario UsuarioCadastro { get; set; }
+        public DateTime? DataHoraCadastro { get; set; } = DateTime.Now;
 
-        public Endereco? Endereco { get; set; } = null!;
+        public Endereco? Endereco { get; set; } 
         public long? EnderecoId { get; set; }
 
  

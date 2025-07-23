@@ -40,19 +40,19 @@ else
                                 <RadzenColumn Size="12" SizeMD="6">
                                     <RadzenLabel Text="Cliente *" />
                                     <RadzenDropDown @bind-Value="projeto.ClienteId" Name="ClienteId"
-                                    AllowClear="true"
-                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                                    FilterOperator="StringFilterOperator.Contains"
-                                    AllowFiltering="true"
-                                    Data="@clientes" TextProperty="Nome" ValueProperty="Id"
-                                    Placeholder="-- Selecione um cliente --" Style="width: 100%;" />
+                                                    AllowClear="true"
+                                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                    FilterOperator="StringFilterOperator.Contains"
+                                                    AllowFiltering="true"
+                                                    Data="@clientes" TextProperty="Nome" ValueProperty="Id"
+                                                    Placeholder="-- Selecione um cliente --" Style="width: 100%;" />
                                     <RadzenRequiredValidator Component="ClienteId" Text="Campo obrigatório" />
                                 </RadzenColumn>
                                 <RadzenColumn Size="12" SizeMD="6">
                                     <RadzenLabel Text="Status *" />
                                     <RadzenDropDown @bind-Value="projeto.Status" Name="Status"
-                                    Data="@statusOptions" TextProperty="Label" ValueProperty="Value"
-                                    Placeholder="-- Selecione --" Style="width: 100%;" />
+                                                    Data="@statusOptions" TextProperty="Label" ValueProperty="Value"
+                                                    Placeholder="-- Selecione --" Style="width: 100%;" />
                                     <RadzenRequiredValidator Component="Status" Text="Campo obrigatório" />
                                 </RadzenColumn>
                                 <RadzenColumn Size="12" SizeMD="3">
@@ -66,7 +66,7 @@ else
                                 <RadzenColumn Size="12" SizeMD="6">
                                     <RadzenLabel Text="Telefone Principal" />
                                     <RadzenMask @bind-Value="projeto.TelefonePrincipal"
-                                    Mask="(**) *****-****" Name="TelefonePrincipal" Style="width: 100%;" />
+                                                Mask="(**) *****-****" Name="TelefonePrincipal" Style="width: 100%;" />
                                 </RadzenColumn>
                             </RadzenRow>
                         </RadzenFieldset>
@@ -76,12 +76,12 @@ else
                                 <RadzenColumn Size="12" SizeMD="4">
                                     <RadzenLabel Text="CEP *" />
                                     <RadzenMask @bind-Value="projeto.CEP"
-                                    Mask="*****-***"
-                                    CharacterPattern="[0-9]"
-                                    Placeholder="00000-000"
-                                    Name="CEP"
-                                    Change="@(async (string _) => await PreencherEndereco())"
-                                    Style="width: 100%;" />
+                                                Mask="*****-***"
+                                                CharacterPattern="[0-9]"
+                                                Placeholder="00000-000"
+                                                Name="CEP"
+                                                Change="@(async (string _) => await PreencherEndereco())"
+                                                Style="width: 100%;" />
                                     <RadzenRequiredValidator Component="CEP" Text="Campo obrigatório" />
                                 </RadzenColumn>
                                 <RadzenColumn Size="12" SizeMD="8">
@@ -135,19 +135,19 @@ else
                                     @for (int i = 0; i < projeto.Obras.Count; i++)
                                     {
                                         <ObraAccordionItem Obra="@projeto.Obras[i]"
-                                        TituloObra="@(!string.IsNullOrWhiteSpace(projeto.Obras[i].Nome) ? projeto.Obras[i].Nome : $"Obra #{i + 1}")"
-                                        ResponsavelOptions="@responsavelMaterialEnumOptions"
-                                        StatusOptions="@statusObraOptions"
-                                        OnRemover="RemoverObra" />
+                                                           TituloObra="@(!string.IsNullOrWhiteSpace(projeto.Obras[i].Nome) ? projeto.Obras[i].Nome : $"Obra #{i + 1}")"
+                                                           ResponsavelOptions="@responsavelMaterialEnumOptions"
+                                                           StatusOptions="@statusObraOptions"
+                                                           OnRemover="RemoverObra" />
                                     }
                                 </Items>
 
                             </RadzenAccordion>
 
                             <RadzenButton Text="Adicionar Nova Obra"
-                            Icon="add_circle_outline"
-                            Style="margin-top: 1rem;"
-                            Click="AdicionarNovaObra" />
+                                          Icon="add_circle_outline"
+                                          Style="margin-top: 1rem;"
+                                          Click="AdicionarNovaObra" />
                         </RadzenTabsItem>
                     }
                 </Tabs>
@@ -195,6 +195,7 @@ else
         {
             // Apenas inicializa um novo DTO
             projeto = new ProjetoDto();
+            projeto = await ProjetoApiService.CreateAsync(projeto);
             AdicionarNovaObra(); // Garante que todo novo projeto já comece com uma obra principal
         }
 
@@ -209,8 +210,8 @@ else
     {
         // Se for a primeira obra, nomeia como "Obra Principal". Senão, numera as novas.
         string nomeObra = !projeto.Obras.Any() ? "Obra Principal" : $"Nova Obra {projeto.Obras.Count + 1}";
-        long projetoId = projeto.Id;
-        var obra = new ObraDto { Nome = nomeObra, Status = StatusObra.NaoIniciada, ProjetoId = projetoId };
+        // long projetoId = projeto.Id;
+        var obra = new ObraDto { Nome = nomeObra, Status = StatusObra.NaoIniciada, ProjetoId = projeto.Id };
         var obraCriada = await ObraApiService.CreateAsync(obra);
         if (obraCriada != null)
         {

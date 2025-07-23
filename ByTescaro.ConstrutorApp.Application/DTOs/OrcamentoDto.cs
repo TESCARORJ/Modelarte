@@ -13,7 +13,7 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
         public string? Titulo { get; set; } = string.Empty;
         public string? Descricao { get; set; }
         public decimal Total { get; set; }
-        public long UsuarioCadastroId { get; set; }
+        public long? UsuarioCadastroId { get; set; }
         public string? UsuarioCadastroNome { get; set; } = string.Empty;
         public DateTime DataHoraCadastro { get; set; }
         public bool Ativo { get; set; }

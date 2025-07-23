@@ -172,7 +172,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             await _unitOfWork.CommitAsync();
 
             var evento = await _eventoRepository.GetByIdAsync(request.EventoId);
-            var organizador = await _usuarioRepository.GetByIdAsync(evento.UsuarioCadastroId);
+            var organizador = await _usuarioRepository.GetByIdAsync((long)evento.UsuarioCadastroId);
             var respondente = await _usuarioRepository.GetByIdAsync(usuarioId);
 
             if (organizador != null && !string.IsNullOrEmpty(organizador.TelefoneWhatsApp))
@@ -232,7 +232,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                             var evento = await _eventoRepository.GetByIdAsync(eventoId);
                             if (evento != null)
                             {
-                                var criadorEvento = await _usuarioRepository.GetByIdAsync(evento.UsuarioCadastroId);
+                                var criadorEvento = await _usuarioRepository.GetByIdAsync((long)evento.UsuarioCadastroId);
                                 if (criadorEvento != null && !string.IsNullOrEmpty(criadorEvento.TelefoneWhatsApp))
                                 {
                                     var respondente = await _usuarioRepository.GetByIdAsync(usuarioId); // Busca o nome do respondente
@@ -485,7 +485,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             foreach (var evento in eventos)
             {
                 var eventoDto = _mapper.Map<EventoDto>(evento);
-                eventoDto.NomeCriador = (await _unitOfWork.UsuarioRepository.GetByIdAsync(evento.UsuarioCadastroId))?.Nome;
+                eventoDto.NomeCriador = (await _unitOfWork.UsuarioRepository.GetByIdAsync((long)evento.UsuarioCadastroId))?.Nome;
 
                 var participantes = await _unitOfWork.ParticipanteEventoRepository.GetParticipantesByEventoIdAsync(evento.Id);
                 eventoDto.Participantes = new List<ParticipanteEventoDto>();
@@ -519,7 +519,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             }
 
             var eventoDto = _mapper.Map<EventoDto>(evento);
-            eventoDto.NomeCriador = (await _unitOfWork.UsuarioRepository.GetByIdAsync(evento.UsuarioCadastroId))?.Nome;
+            eventoDto.NomeCriador = (await _unitOfWork.UsuarioRepository.GetByIdAsync((long)evento.UsuarioCadastroId))?.Nome;
 
             var participantes = await _participanteEventoRepository.GetParticipantesByEventoIdAsync(evento.Id);
             eventoDto.Participantes = new List<ParticipanteEventoDto>();

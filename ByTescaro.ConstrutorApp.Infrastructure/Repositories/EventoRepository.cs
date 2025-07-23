@@ -20,7 +20,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
             return await _dbSet
                 .Include(e => e.Participantes)
                     .ThenInclude(pe => pe.Usuario)
-                .Include(e => e.Criador)
+                .Include(e => e.UsuarioCadastro)
                 .Where(e =>
                     e.UsuarioCadastroId == usuarioId || // O criador sempre vê seu próprio evento (Privado, Publico, SomenteConvidados)
                     e.Visibilidade == Visibilidade.Publico || // QUALQUER usuário pode ver eventos públicos
@@ -34,7 +34,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
             var query = _dbSet
                 .Include(e => e.Participantes)
                     .ThenInclude(pe => pe.Usuario)
-                .Include(e => e.Criador)
+                .Include(e => e.UsuarioCadastro)
                 .Where(e => (e.DataHoraInicio <= endDate && e.DataHoraFim >= startDate));
 
             if (userId.HasValue)

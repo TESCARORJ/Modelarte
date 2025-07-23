@@ -9,7 +9,7 @@ public class InsumoDto
     public string? Nome { get; set; } = string.Empty;
     public string? Descricao { get; set; } = string.Empty;
     public UnidadeMedida? UnidadeMedida { get; set; }
-    public long UsuarioCadastroId { get; set; }
+    public long? UsuarioCadastroId { get; set; }
     public string? UsuarioCadastroNome { get; set; } = string.Empty;
     public DateTime DataHoraCadastro { get; set; }
 
