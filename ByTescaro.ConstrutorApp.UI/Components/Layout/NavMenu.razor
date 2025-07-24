@@ -14,23 +14,8 @@
             <RadzenPanelMenuItem Text=@($"Olá {nomeUsuario}") Disabled="true" />
             <RadzenPanelMenuItem Text="Dashboard" Icon="home" Path="" />
 
-            <!-- Cadastros Gerais -->
-            <AuthorizeView Roles="Administrador,SA" Context="adminContext">
-                <Authorized>
-                    <RadzenPanelMenuItem Text="Cadastros" Icon="folder_shared">
-                        <RadzenPanelMenuItem Text="Clientes" Icon="people" Path="clientes" />
-                        <RadzenPanelMenuItem Text="Fornecedores" Icon="contacts_product" Path="fornecedores" />
-                        <RadzenPanelMenuItem Text="Funções" Icon="badge" Path="funcoes" />
-                        <RadzenPanelMenuItem Text="Funcionários" Icon="work" Path="funcionarios" />
-                        <RadzenPanelMenuItem Text="Equipamentos" Icon="build" Path="equipamentos" />
-                        <RadzenPanelMenuItem Text="Insumos" Icon="inventory" Path="insumos" />
-                        <RadzenPanelMenuItem Text="Serviços" Icon="design_services" Path="servicos" />
-                    </RadzenPanelMenuItem>
-                </Authorized>
-            </AuthorizeView>
-
             <!-- Gestão de Projetos -->
-            <AuthorizeView Roles="Administrador,SA" Context="adminContext">
+            <AuthorizeView Roles="Administrador,SA" Context="adminContextGP">
                 <Authorized>
                     <RadzenPanelMenuItem Text="Projetos" Icon="construction">
                         <RadzenPanelMenuItem Text="Projetos" Icon="business" Path="projetos" />
@@ -41,20 +26,35 @@
                 </Authorized>
             </AuthorizeView>
 
-            <!-- Importações -->
-            <AuthorizeView Roles="Administrador,SA" Context="adminContext">
+            <!-- Cadastros Gerais -->
+            <AuthorizeView Roles="Administrador,SA" Context="adminContextCG">
                 <Authorized>
-                    <RadzenPanelMenuItem Text="Importações" Icon="upload">
-                        <RadzenPanelMenuItem Text="Clientes" Path="/clientes/importar" Icon="people" />
-                        <RadzenPanelMenuItem Text="Equipamentos" Path="/equipamentos/importar"  Icon="build" />
-                        <RadzenPanelMenuItem Text="Fornecedores" Path="/fornecedores/importar" Icon="contacts_product" />
-                        <RadzenPanelMenuItem Text="Insumos" Path="/insumos/importar" Icon="inventory" />
-                        <RadzenPanelMenuItem Text="Serviços" Path="/servicos/importar" Icon="design_services" />
+                    <RadzenPanelMenuItem Text="Cadastros" Icon="folder_shared">
+                        <RadzenPanelMenuItem Text="Clientes" Icon="people" Path="clientes" />
+                        <RadzenPanelMenuItem Text="Equipamentos" Icon="build" Path="equipamentos" />
+                        <RadzenPanelMenuItem Text="Fornecedores" Icon="contacts_product" Path="fornecedores" />
+                        <RadzenPanelMenuItem Text="Funções" Icon="badge" Path="funcoes" />
+                        <RadzenPanelMenuItem Text="Funcionários" Icon="work" Path="funcionarios" />
+                        <RadzenPanelMenuItem Text="Insumos" Icon="inventory" Path="insumos" />
+                        <RadzenPanelMenuItem Text="Serviços" Icon="design_services" Path="servicos" />
                     </RadzenPanelMenuItem>
                 </Authorized>
             </AuthorizeView>
 
-            <AuthorizeView Roles="Administrador,SA" Context="adminContext">
+            <!-- Importações -->
+            <AuthorizeView Roles="Administrador,SA" Context="adminContextImport">
+                <Authorized>
+                    <RadzenPanelMenuItem Text="Importações" Icon="upload">
+                        <RadzenPanelMenuItem Text="Clientes" Path="/importar/clientes" Icon="people" />
+                        <RadzenPanelMenuItem Text="Equipamentos" Path="/importar/equipamentos" Icon="build" />
+                        <RadzenPanelMenuItem Text="Fornecedores" Path="/importar/fornecedores" Icon="contacts_product" />
+                        <RadzenPanelMenuItem Text="Insumos" Path="/importar/insumos" Icon="inventory" />
+                        <RadzenPanelMenuItem Text="Serviços" Path="/importar/servicos" Icon="design_services" />
+                    </RadzenPanelMenuItem>
+                </Authorized>
+            </AuthorizeView>
+
+            <AuthorizeView Roles="Administrador,SA" Context="adminContextConfig">
                 <Authorized>
                     <RadzenPanelMenuItem Text="Configurações" Icon="settings">
                         <RadzenPanelMenuItem Text="Lembretes Diários" Icon="alarm" Path="configuracoes/lembretesdiarios" />
@@ -64,7 +64,7 @@
             </AuthorizeView>
 
             <!-- Administração -->
-            <AuthorizeView Roles="Administrador,SA" Context="adminContext">
+            <AuthorizeView Roles="Administrador,SA" Context="adminContextAdmin">
                 <Authorized>
                     <RadzenPanelMenuItem Text="Administração" Icon="admin_panel_settings">
                         <RadzenPanelMenuItem Text="Perfis de Usuários" Icon="list" Path="perfilUsuarios" />
@@ -76,7 +76,7 @@
             </AuthorizeView>
 
             <!-- Auditoria -->
-            <AuthorizeView Roles="Administrador,SA" Context="adminContext">
+            <AuthorizeView Roles="Administrador,SA" Context="adminContextAud">
                 <Authorized>
                     <RadzenPanelMenuItem Text="Auditoria Geral" Icon="history" Path="/auditoria" />
                 </Authorized>

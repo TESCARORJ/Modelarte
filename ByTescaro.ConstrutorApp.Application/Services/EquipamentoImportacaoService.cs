@@ -35,28 +35,21 @@ public class EquipamentoImportacaoService : IEquipamentoImportacaoService
         {
             var nome = row.Cell(1).GetString();
             var descricao = row.Cell(2).GetString();
-            var unidadeTexto = row.Cell(3).GetString();
+            var patrimonio = row.Cell(3).GetString();
+            var custoLocacaoDiaria = row.Cell(4).GetString();
 
-            UnidadeMedida? unidade = null;
-            if (!string.IsNullOrWhiteSpace(unidadeTexto))
+            decimal? custoLocacao = null;
+            if (decimal.TryParse(custoLocacaoDiaria, out var valor))
             {
-                // Tenta primeiro pelo nome
-                if (Enum.TryParse<UnidadeMedida>(unidadeTexto, ignoreCase: true, out var parsedEnum))
-                {
-                    unidade = parsedEnum;
-                }
-                // Tenta pelo número, se o nome falhar
-                else if (int.TryParse(unidadeTexto, out var valorNumerico) &&
-                         Enum.IsDefined(typeof(UnidadeMedida), valorNumerico))
-                {
-                    unidade = (UnidadeMedida)valorNumerico;
-                }
+                custoLocacao = valor;
             }
 
             lista.Add(new EquipamentoDto
             {
                 Nome = nome,
                 Descricao = descricao,
+                Patrimonio = patrimonio,
+                CustoLocacaoDiaria = custoLocacao,
             });
         }
 
@@ -95,6 +88,7 @@ public class EquipamentoImportacaoService : IEquipamentoImportacaoService
             dto.UsuarioCadastroNome = usuarioLogadoNome;
             dto.DataHoraCadastro = DateTime.Now;
             dto.Ativo = true;
+            dto.Status = StatusEquipamento.Disponivel;
 
             var entidade = _mapper.Map<Equipamento>(dto);
 
