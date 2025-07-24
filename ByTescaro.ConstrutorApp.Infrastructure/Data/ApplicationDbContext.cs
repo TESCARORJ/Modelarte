@@ -227,6 +227,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                 builder.HasOne(o => o.Projeto)
                        .WithMany(p => p.Obras)
                        .HasForeignKey(o => o.ProjetoId)
+                       .IsRequired()
                        .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasOne(o => o.ResponsavelObra)
@@ -236,52 +237,64 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
 
                 builder.HasMany(o => o.Etapas)
                        .WithOne(oe => oe.Obra)
-                       .HasForeignKey(oe => oe.ObraId);
+                       .HasForeignKey(oe => oe.ObraId)
+                       .OnDelete(DeleteBehavior.Cascade);
 
 
                 builder.HasMany(o => o.Funcionarios)
                        .WithOne(of => of.Obra)
-                       .HasForeignKey(of => of.ObraId);
+                       .HasForeignKey(of => of.ObraId)
+                       .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasMany(o => o.Fornecedores)
                        .WithOne(of => of.Obra)
-                       .HasForeignKey(of => of.ObraId);
+                       .HasForeignKey(of => of.ObraId)
+                       .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasMany(o => o.Insumos)
                        .WithOne(oi => oi.Obra)
-                       .HasForeignKey(oi => oi.ObraId);
+                       .HasForeignKey(oi => oi.ObraId)
+                       .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasMany(o => o.ListasInsumo)
                        .WithOne(oil => oil.Obra)
-                       .HasForeignKey(oil => oil.ObraId);
+                       .HasForeignKey(oil => oil.ObraId)
+                       .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasMany(o => o.Equipamentos)
                        .WithOne(oe => oe.Obra)
-                       .HasForeignKey(oe => oe.ObraId);
+                       .HasForeignKey(oe => oe.ObraId)
+                       .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasMany(o => o.Retrabalhos)
                        .WithOne(or => or.Obra)
-                       .HasForeignKey(or => or.ObraId);
+                       .HasForeignKey(or => or.ObraId)
+                       .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasMany(o => o.Pendencias)
                        .WithOne(op => op.Obra)
-                       .HasForeignKey(op => op.ObraId);
+                       .HasForeignKey(op => op.ObraId)
+                       .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasMany(o => o.Documentos)
                        .WithOne(od => od.Obra)
-                       .HasForeignKey(od => od.ObraId);
+                       .HasForeignKey(od => od.ObraId)
+                       .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasMany(o => o.Imagens)
                        .WithOne(oi => oi.Obra)
-                       .HasForeignKey(oi => oi.ObraId);
+                       .HasForeignKey(oi => oi.ObraId)
+                       .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasMany(o => o.Servicos)
                        .WithOne(os => os.Obra)
-                       .HasForeignKey(os => os.ObraId);
+                       .HasForeignKey(os => os.ObraId)
+                       .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasMany(o => o.ListasServico)
                        .WithOne(osl => osl.Obra)
-                       .HasForeignKey(osl => osl.ObraId);
+                       .HasForeignKey(osl => osl.ObraId)
+                       .OnDelete(DeleteBehavior.Cascade);
             }
         }
 
@@ -457,7 +470,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                 builder.HasOne(e => e.Obra)
                        .WithMany(o => o.Funcionarios)
                        .HasForeignKey(e => e.ObraId)
-                       .OnDelete(DeleteBehavior.Restrict);
+                       .OnDelete(DeleteBehavior.Cascade);
 
 
 

@@ -58,8 +58,6 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             _unitOfWork.EquipamentoRepository.Add(entity);
             await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
 
-
-
             await _unitOfWork.CommitAsync();
         }
 
@@ -88,12 +86,11 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             
             _mapper.Map(dto, equipamentoParaAtualizar);
             equipamentoParaAtualizar.UsuarioCadastroId = equipamentoAntigoParaAuditoria.UsuarioCadastroId;
-            equipamentoParaAtualizar.DataHoraCadastro = equipamentoAntigoParaAuditoria.DataHoraCadastro;
-
-           
-            await _auditoriaService.RegistrarAtualizacaoAsync(equipamentoAntigoParaAuditoria, equipamentoParaAtualizar, usuarioLogadoId);
+            equipamentoParaAtualizar.DataHoraCadastro = equipamentoAntigoParaAuditoria.DataHoraCadastro;           
 
             _unitOfWork.EquipamentoRepository.Update(equipamentoParaAtualizar);
+
+            await _auditoriaService.RegistrarAtualizacaoAsync(equipamentoAntigoParaAuditoria, equipamentoParaAtualizar, usuarioLogadoId);
 
             await _unitOfWork.CommitAsync();
         }

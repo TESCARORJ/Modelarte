@@ -92,6 +92,8 @@ public class EquipamentoImportacaoService : IEquipamentoImportacaoService
 
             var entidade = _mapper.Map<Equipamento>(dto);
 
+            _unitOfWork.EquipamentoRepository.Add(entidade);
+
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
                 UsuarioId = usuarioLogado == null ? 0 : usuarioLogado.Id,
@@ -102,7 +104,6 @@ public class EquipamentoImportacaoService : IEquipamentoImportacaoService
                 DadosAtuais = JsonSerializer.Serialize(entidade) // Serializa o DTO para o log
             });
 
-            _unitOfWork.EquipamentoRepository.Add(entidade);
         }
 
         await _unitOfWork.CommitAsync();

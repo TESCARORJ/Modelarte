@@ -123,7 +123,7 @@
         {
             Obra.Retrabalhos.Remove(retrabalho);
             NotificationService.Notify(NotificationSeverity.Warning, "Removido", "Retrabalho removido da lista.");
-            StateHasChanged();
+            await ObraRetrabalhoApiService.DeleteAsync(retrabalho.Id);
         }
     }
 

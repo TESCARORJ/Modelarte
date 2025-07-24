@@ -70,8 +70,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
             var usuarioLogadoId = usuarioLogado?.Id ?? 0;
 
-            // 1. Busque a entidade antiga SOMENTE PARA FINS DE AUDITORIA, SEM RASTREAMENTO.
-            // Isso garante que essa instância de 'configuracaoParaAuditoria' não será modificada pelo AutoMapper.
+            
             var configuracaoParaAuditoria = await _unitOfWork.ConfiguracaoLembreteDiarioRepository.GetByIdNoTrackingAsync(request.Id);
 
             if (configuracaoParaAuditoria == null)
@@ -79,8 +78,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 throw new ApplicationException("Configuração de lembrete diário não encontrada para auditoria.");
             }
 
-            // 2. Busque a entidade que REALMENTE SERÁ ATUALIZADA, COM RASTREAMENTO.
-            // Essa é a instância que o EF Core vai monitorar para detectar as mudanças.
+          
             var configuracaoParaAtualizar = await _unitOfWork.ConfiguracaoLembreteDiarioRepository.GetByIdAsync(request.Id);
 
             if (configuracaoParaAtualizar == null)
@@ -88,21 +86,15 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 throw new ApplicationException("Configuração de lembrete diário não encontrada para atualização.");
             }
 
-            // 3. Mapeie as propriedades do 'request' para a entidade 'configuracaoParaAtualizar'.
-            // O AutoMapper irá aplicar as mudanças diretamente em 'configuracaoParaAtualizar'.
+           
             _mapper.Map(request, configuracaoParaAtualizar);
 
-            // O método .Update() no repositório muitas vezes não é estritamente necessário se
-            // a entidade já está rastreada e suas propriedades foram alteradas.
-            // O EF Core já detecta as mudanças automaticamente.
-            // _unitOfWork.ConfiguracaoLembreteDiarioRepository.Update(configuracaoParaAtualizar);
+           
+            _unitOfWork.ConfiguracaoLembreteDiarioRepository.Update(configuracaoParaAtualizar);
 
-            // 4. Registre a auditoria, passando a cópia original e a entidade atualizada.
-            // 'configuracaoParaAuditoria' tem os dados antes da mudança.
-            // 'configuracaoParaAtualizar' tem os dados depois da mudança.
+           
             await _auditoriaService.RegistrarAtualizacaoAsync(configuracaoParaAuditoria, configuracaoParaAtualizar, usuarioLogadoId);
 
-            // 5. Salve as alterações no banco de dados.
             await _unitOfWork.CommitAsync();
         }
 

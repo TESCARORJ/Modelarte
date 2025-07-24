@@ -233,7 +233,9 @@ else
         projeto.Obras.Add(new ObraDto
         {
             Nome = nomeObra,
-            Status = StatusObra.NaoIniciada
+            Status = StatusObra.NaoIniciada,
+            ProjetoId = projeto.Id, 
+            
             // Não precisa definir o ProjetoId aqui. O backend cuidará disso
             // ao salvar o grafo de objetos (Projeto com suas Obras).
         });

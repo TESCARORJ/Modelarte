@@ -124,10 +124,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 }
             }
 
+            _unitOfWork.ClienteRepository.Update(entityParaAtualizar);
             
             await _auditoriaService.RegistrarAtualizacaoAsync(entityOriginalParaAuditoria, entityParaAtualizar, usuarioLogadoId);
 
-            _unitOfWork.ClienteRepository.Update(entityParaAtualizar);
 
 
             await _unitOfWork.CommitAsync();

@@ -44,10 +44,11 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entity.UsuarioCadastroId = usuarioLogadoId;
 
             _unitOfWork.ObraRepository.Add(entity);
-            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
 
 
             await _unitOfWork.CommitAsync();
+
+            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
 
             return _mapper.Map<ObraDto>(entity);
 

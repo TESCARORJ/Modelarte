@@ -90,20 +90,6 @@
         </RadzenColumn>
     </RadzenRow>
 
-    <RadzenTabs Class="rz-mt-4">
-        <Tabs>
-            <RadzenTabsItem Text="Checklist"><ChecklistObraTab Obra="@Obra" /></RadzenTabsItem>
-            <RadzenTabsItem Text="Funcionários"><ObraFuncionarioTab Obra="@Obra" /></RadzenTabsItem>
-            <RadzenTabsItem Text="Equipamentos"><ObraEquipamentoTab Obra="@Obra" /></RadzenTabsItem>
-            <RadzenTabsItem Text="Insumos"><ObraInsumoTab Obra="@Obra" /></RadzenTabsItem>
-            <RadzenTabsItem Text="Serviços"><ObraServicoTab Obra="@Obra" /></RadzenTabsItem>
-            <RadzenTabsItem Text="Documentos"><DocumentosObraTab Obra="@Obra" /></RadzenTabsItem>
-            <RadzenTabsItem Text="Imagens"><ImagensObraTab Obra="@Obra" /></RadzenTabsItem>
-            <RadzenTabsItem Text="Retrabalhos"><RetrabalhoObraTab Obra="@Obra" /></RadzenTabsItem>
-            <RadzenTabsItem Text="Pendências"><PendenciaObraTab Obra="@Obra" /></RadzenTabsItem>
-        </Tabs>
-    </RadzenTabs>
-
     <RadzenRow>
         <RadzenColumn Size="12" class="d-flex justify-content-end" Style="margin-top: 1.5rem;">
             <RadzenButton Text="Salvar Alterações na Obra"
@@ -120,6 +106,22 @@
                           Disabled="@(isSaving || Obra.Id == 0)" />
         </RadzenColumn>
     </RadzenRow>
+
+    <RadzenTabs Class="rz-mt-4">
+        <Tabs>
+            <RadzenTabsItem Text="Checklist"><ChecklistObraTab Obra="@Obra" /></RadzenTabsItem>
+            <RadzenTabsItem Text="Funcionários"><ObraFuncionarioTab Obra="@Obra" /></RadzenTabsItem>
+            <RadzenTabsItem Text="Equipamentos"><ObraEquipamentoTab Obra="@Obra" /></RadzenTabsItem>
+            <RadzenTabsItem Text="Insumos"><ObraInsumoTab Obra="@Obra" /></RadzenTabsItem>
+            <RadzenTabsItem Text="Serviços"><ObraServicoTab Obra="@Obra" /></RadzenTabsItem>
+            <RadzenTabsItem Text="Documentos"><DocumentosObraTab Obra="@Obra" /></RadzenTabsItem>
+            <RadzenTabsItem Text="Imagens"><ImagensObraTab Obra="@Obra" /></RadzenTabsItem>
+            <RadzenTabsItem Text="Retrabalhos"><RetrabalhoObraTab Obra="@Obra" /></RadzenTabsItem>
+            <RadzenTabsItem Text="Pendências"><PendenciaObraTab Obra="@Obra" /></RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+
+    
 </RadzenAccordionItem>
 
 @code {

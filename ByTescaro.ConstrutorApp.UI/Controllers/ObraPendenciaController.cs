@@ -31,10 +31,11 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
             return Ok();
         }
 
-        [HttpPut]
+        [HttpPut("{id}")]
         public async Task<IActionResult> Put([FromBody] ObraPendenciaDto dto)
         {
             await _service.AtualizarAsync(dto);
+
             return Ok();
         }
 

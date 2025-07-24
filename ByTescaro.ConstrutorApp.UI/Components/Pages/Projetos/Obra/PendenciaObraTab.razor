@@ -6,6 +6,10 @@
 @inject FuncionarioApiService FuncionarioApiService
 @inject NotificationService NotificationService
 @inject DialogService DialogService
+@inject ObraEtapaPadraoApiService EtapaPadraoApiService
+@inject ObraItemEtapaPadraoApiService ItemPadraoApiService
+@inject ObraChecklistApiService ChecklistService
+
 
 
 <RadzenCard Class="rz-pa-4">
@@ -56,6 +60,11 @@
                                       Text="Remover"
                                       Click="@(() => ConfirmarRemocao(pendencia))"
                                       ButtonStyle="ButtonStyle.Danger"
+                                      Style="margin-top: 1rem; margin-right: 1rem;" />
+                        <RadzenButton Icon="transform"
+                                      Text="Transformar em Item de Etapa"
+                                      Click="@(() => TransformarPendencia(pendencia))"
+                                      ButtonStyle="ButtonStyle.Info"
                                       Style="margin-top: 1rem;" />
                     </RadzenColumn>
                 </RadzenRow>
@@ -78,10 +87,9 @@
     [Parameter] public ObraDto Obra { get; set; } = new();
     private bool isLoading = true;
 
-
     private List<FuncionarioDto> Funcionarios = new();
     private List<EnumOption<StatusPendencia>> statusList = EnumHelper.ListarOpcoes<StatusPendencia>(incluirNulo: true);
-
+    private List<ObraEtapaPadraoDto> etapasPadrao = new(); // Lista para passar para a modal
 
     protected override async Task OnParametersSetAsync()
     {
@@ -100,20 +108,20 @@
     protected override async Task OnInitializedAsync()
     {
         Funcionarios = await FuncionarioApiService.GetAllAsync();
+        etapasPadrao = await EtapaPadraoApiService.GetAllAsync(); // Carrega as etapas padrão
     }
 
     private void AdicionarPendencia()
     {
         Obra.Pendencias.Add(new ObraPendenciaDto
-            {
-                Descricao = "",
-                ResponsavelId = 0,
-                Status = StatusPendencia.Pendente,
-                DataHoraCadastro = DateTime.Now,
-                UsuarioCadastroNome = "Sistema"
-            });
+        {
+            Descricao = "",
+            ResponsavelId = 0,
+            Status = StatusPendencia.Pendente,
+            DataHoraCadastro = DateTime.Now,
+            UsuarioCadastroNome = "Sistema"
+        });
     }
-
 
     private async Task ConfirmarRemocao(ObraPendenciaDto pendencia)
     {
@@ -123,10 +131,128 @@
         {
             Obra.Pendencias.Remove(pendencia);
             NotificationService.Notify(NotificationSeverity.Warning, "Removido", "Pendência removido da lista.");
-            StateHasChanged();
+            await ObraPendenciaApiService.DeleteAsync(pendencia.Id);
+            // StateHasChanged();
         }
     }
 
+    private async Task TransformarPendencia(ObraPendenciaDto pendenciaToTransform)
+    {
+        // Certifica-se de que há etapas padrão para escolher
+        if (!etapasPadrao.Any())
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Erro", "Nenhuma etapa padrão disponível. Não é possível transformar a pendência em item de etapa.");
+            return;
+        }
+
+        // Abre a modal para o usuário selecionar a etapa padrão e preencher os detalhes do item padrão
+        var novoItemPadrao = await DialogService.OpenAsync<TransformarPendenciaEmItemEtapaDialog>("Transformar em Item de Etapa Padrão",
+            new Dictionary<string, object>()
+            {
+                { "PendenciaDescricao", pendenciaToTransform.Descricao },
+                { "EtapasPadrao", etapasPadrao }
+            },
+            new DialogOptions() { Width = "550px", Height = "550px", Resizable = true, Draggable = true });
+
+        if (novoItemPadrao != null)
+        {
+            // 1. O novo ObraItemEtapaPadraoDto (template) já foi criado e salvo pelo diálogo.
+
+            // 2. Encontrar ou Criar a ObraEtapaDto (instância da obra) correspondente
+            ObraEtapaDto targetObraEtapa = Obra.Etapas.FirstOrDefault(oe =>
+                ObterIdEtapaPadraoPorNome(oe.Nome) == novoItemPadrao.ObraEtapaPadraoId);
+
+            if (targetObraEtapa == null)
+            {
+                // Se a ObraEtapaDto (instância) não existe na Obra atual, crie-a.
+                var correspondingEtapaPadrao = etapasPadrao.FirstOrDefault(ep => ep.Id == novoItemPadrao.ObraEtapaPadraoId);
+                if (correspondingEtapaPadrao == null)
+                {
+                    NotificationService.Notify(NotificationSeverity.Error, "Erro", "Etapa padrão selecionada não encontrada. Impossível criar a etapa da obra.");
+                    return;
+                }
+
+                targetObraEtapa = new ObraEtapaDto
+                {
+                    Id = 0, // Nova instância, ID será definido pelo backend ao salvar o checklist da obra
+                    Nome = correspondingEtapaPadrao.Nome,
+                    Ordem = correspondingEtapaPadrao.Ordem,
+                    Itens = new List<ObraItemEtapaDto>() // Inicializa a lista de itens
+                };
+                Obra.Etapas.Add(targetObraEtapa);
+                NotificationService.Notify(NotificationSeverity.Info, "Nova Etapa Adicionada", $"A etapa '{targetObraEtapa.Nome}' foi adicionada à obra.");
+            }
+
+            // 3. Criar a ObraItemEtapaDto (instância da obra) a partir do ObraItemEtapaPadraoDto (template) recém-criado
+            var newItemInstance = new ObraItemEtapaDto
+            {
+                Id = 0, // Nova instância, ID será definido pelo backend
+                Nome = novoItemPadrao.Nome,
+                // A ordem do item dentro da etapa da obra pode ser o próximo da sequência ou 1, se não houver itens
+                Ordem = targetObraEtapa.Itens.Any() ? targetObraEtapa.Itens.Max(i => i.Ordem) + 1 : 1,
+                Concluido = false, // Um item recém-adicionado sempre começa como não concluído
+                DiasPrazo = novoItemPadrao.DiasPrazo,
+                IsDataPrazo = novoItemPadrao.IsDataPrazo
+            };
+
+            // Verificar duplicatas no nível da instância da obra antes de adicionar
+            if (targetObraEtapa.Itens.Any(i => i.Nome.Equals(newItemInstance.Nome, StringComparison.OrdinalIgnoreCase)))
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Duplicado", $"O item '{newItemInstance.Nome}' já existe na etapa '{targetObraEtapa.Nome}'. Não será adicionado novamente.");
+                return; // Não prossegue se for um item duplicado na instância da obra
+            }
+
+            // 4. Adicionar a nova instância de ObraItemEtapaDto à lista de itens da ObraEtapaDto alvo
+            targetObraEtapa.Itens.Add(newItemInstance);
+
+            // Modal de confirmação final
+            bool? confirm = await DialogService.Confirm($"Deseja realmente transformar a pendência '{pendenciaToTransform.Descricao}' em um item de etapa '{newItemInstance.Nome}' na etapa '{targetObraEtapa.Nome}' e excluí-la da lista de pendências?", "Confirmação de Transformação", new ConfirmOptions() { OkButtonText = "Sim", CancelButtonText = "Não" });
+
+            if (confirm == true)
+            {
+                try
+                {
+                    // A ObraItemEtapaPadraoDto (template) já foi criada e salva pela modal.
+                    // Agora, o que precisa ser persistido é a exclusão da pendência e a atualização da Obra (que contém o checklist).
+
+                    // Excluir a pendência original (se ela já estiver no banco de dados)
+                    if (pendenciaToTransform.Id > 0)
+                    {
+                        await ObraPendenciaApiService.DeleteAsync(pendenciaToTransform.Id);
+                        NotificationService.Notify(NotificationSeverity.Info, "Removido", "Pendência excluída após transformação.");
+                    }
+                    Obra.Pendencias.Remove(pendenciaToTransform); // Remover da lista local do componente
+                    StateHasChanged(); // Forçar a renderização para refletir a remoção da pendência
+
+                    NotificationService.Notify(NotificationSeverity.Success, "Sucesso", $"Pendência transformada em item de etapa e adicionada à obra. Salve o checklist para persistir as alterações.");
+
+                    // IMPORTANTE: As alterações no checklist (Obra.Etapas e Obra.Etapas.Itens) são em memória.
+                    // Elas serão salvas quando o método 'SalvarChecklistAsync' do ChecklistObraTab for chamado.
+                    // Se você deseja salvar automaticamente aqui, precisaria injetar o ChecklistService
+                    // e chamar um método para salvar o checklist da obra.
+                    await ChecklistService.SaveEtapasAsync(Obra.Id, Obra.Etapas);
+                    // No entanto, o padrão atual parece ser salvar o checklist explicitamente.
+
+                    // Recarregar os itens padrão e etapas padrão para garantir que os dropdowns estejam atualizados
+                    // (Exemplo: se o usuário quiser adicionar manualmente o item padrão recém-criado em outro lugar)
+                    etapasPadrao = await EtapaPadraoApiService.GetAllAsync();
+                    // Assumindo que o ItemPadraoApiService.GetAllAsync() será chamado em ChecklistObraTab
+                    // para atualizar a lista 'todosItensPadrao' lá, se necessário.
+                    // Ou, para garantir, ItemPadraoApiService.GetAllAsync() poderia ser chamado aqui também.
+                    // todosItensPadrao = await ItemPadraoApiService.GetAllAsync(); // Se a lista fosse gerenciada aqui.
+
+                }
+                catch (Exception ex)
+                {
+                    NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Erro ao transformar pendência: {ex.Message}");
+                }
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Info, "Cancelado", "Transformação da pendência cancelada.");
+            }
+        }
+    }
 
     private async Task SalvarPendencias()
     {
@@ -154,4 +280,9 @@
         NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Pendencias salvos com sucesso.");
     }
 
+    // Método auxiliar para obter o ID da etapa padrão pelo nome
+    private long ObterIdEtapaPadraoPorNome(string nomeEtapa)
+    {
+        return etapasPadrao.FirstOrDefault(e => e.Nome.Equals(nomeEtapa, StringComparison.OrdinalIgnoreCase))?.Id ?? 0;
+    }
 }

@@ -21,9 +21,15 @@ namespace ByTescaro.ConstrutorApp.UI.Services
         public async Task CreateAsync(ObraPendenciaDto dto) =>
             await _http.PostAsJsonAsync("api/obrapendencia", dto);
 
-        public async Task UpdateAsync(ObraPendenciaDto dto) =>
-            await _http.PutAsJsonAsync($"api/obrapendencia/{dto.Id}", dto);
+        public async Task UpdateAsync(ObraPendenciaDto dto)
+        {
+            //await _http.PutAsJsonAsync($"api/obrapendencia/{dto.Id}", dto);
 
+            var response = await _http.PutAsJsonAsync($"api/obrapendencia/{dto.Id}", dto);
+
+            if (!response.IsSuccessStatusCode)
+                throw new Exception($"Erro ao atualizar Obra Pendência: {response.StatusCode}");
+        }
         public async Task DeleteAsync(long id) =>
             await _http.DeleteAsync($"api/obrapendencia/{id}");
     }

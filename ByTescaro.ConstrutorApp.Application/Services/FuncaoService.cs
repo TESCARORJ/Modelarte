@@ -70,10 +70,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 throw new KeyNotFoundException($"Função com ID {dto.Id} não encontrada para auditoria.");
             }
 
-            var dadosAnteriores = JsonSerializer.Serialize(_mapper.Map<FuncaoDto>(antigaParaAuditoria)); //
+            var dadosAnteriores = JsonSerializer.Serialize(_mapper.Map<FuncaoDto>(antigaParaAuditoria)); 
 
             
-            var funcaoParaAtualizar = await _unitOfWork.FuncaoRepository.GetByIdTrackingAsync(dto.Id); //
+            var funcaoParaAtualizar = await _unitOfWork.FuncaoRepository.GetByIdTrackingAsync(dto.Id); 
 
             if (funcaoParaAtualizar == null)
             {
@@ -86,6 +86,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
            
             funcaoParaAtualizar.UsuarioCadastroId = antigaParaAuditoria.UsuarioCadastroId;
             funcaoParaAtualizar.DataHoraCadastro = antigaParaAuditoria.DataHoraCadastro;
+
+            _unitOfWork.FuncaoRepository.Update(funcaoParaAtualizar);
 
             await _auditoriaService.RegistrarAtualizacaoAsync(antigaParaAuditoria, funcaoParaAtualizar, usuarioLogadoId);
 

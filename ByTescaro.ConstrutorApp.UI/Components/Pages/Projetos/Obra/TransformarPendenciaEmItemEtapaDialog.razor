@@ -1,0 +1,75 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<RadzenTemplateForm TItem="ObraItemEtapaPadraoDto" Data="@novoItemPadrao" Submit="@OnSubmit">
+    <RadzenCard Class="rz-p-4">
+        <RadzenText TextStyle="TextStyle.H6" Text="Transformar em Item de Etapa Padrão" Class="rz-mb-4" />
+
+        <RadzenStack Gap="1rem">
+            <RadzenFormField Text="Nome do Item (descrição da pendência)" Variant="Variant.Flat">
+                <RadzenTextBox @bind-Value="novoItemPadrao.Nome" Style="width: 100%;" Name="NomeItemPadrao" />
+                <RadzenRequiredValidator Component="NomeItemPadrao" Text="O nome do item é obrigatório" />
+            </RadzenFormField>
+
+            <RadzenFormField Text="Etapa Padrão a Relacionar" Variant="Variant.Flat">
+                <RadzenDropDown TValue="long"
+                                @bind-Value="novoItemPadrao.ObraEtapaPadraoId"
+                                Data="@EtapasPadrao"
+                                TextProperty="Nome"
+                                ValueProperty="Id"
+                                Placeholder="Selecione a Etapa Padrão"
+                                Style="width: 100%;"
+                                Name="EtapaPadraoDropDown" />
+                <RadzenRequiredValidator Component="EtapaPadraoDropDown" Text="A etapa padrão é obrigatória" />
+            </RadzenFormField>
+
+            <RadzenFormField Text="Dias para Prazo (opcional)" Variant="Variant.Flat">
+                <RadzenNumeric TValue="int?" @bind-Value="novoItemPadrao.DiasPrazo" Min="0" Style="width: 100%;" Name="DiasPrazo" />
+            </RadzenFormField>
+
+            <div class="rz-p-12 rz-text-align-center">
+                <RadzenCheckBox @bind-Value="novoItemPadrao.IsDataPrazo" Name="IsDataPrazoCheckbox" />
+                <RadzenLabel Text="Usar data de prazo (calcular com base nos dias)" Component="IsDataPrazoCheckbox" class="rz-ms-2" />
+            </div>
+
+            <RadzenText TextStyle="TextStyle.Caption" Text="Será criada uma nova ObraItemEtapaPadraoDto com Ordem 1. Esta pendência será excluída." />
+        </RadzenStack>
+
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem" Class="rz-mt-4">
+            <RadzenButton ButtonType="ButtonType.Submit" Text="Confirmar" Icon="check" ButtonStyle="ButtonStyle.Primary" />
+            <RadzenButton Text="Cancelar" Icon="cancel" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
+        </RadzenStack>
+    </RadzenCard>
+</RadzenTemplateForm>
+
+@code {
+    [Parameter] public string PendenciaDescricao { get; set; }
+    [Parameter] public List<ObraEtapaPadraoDto> EtapasPadrao { get; set; }
+
+    ObraItemEtapaPadraoDto novoItemPadrao = new();
+
+    protected override void OnInitialized()
+    {
+        novoItemPadrao.Nome = PendenciaDescricao;
+        novoItemPadrao.Ordem = 1; // Conforme solicitado, com ordem 1
+    }
+
+    void OnSubmit()
+    {
+        if (string.IsNullOrWhiteSpace(novoItemPadrao.Nome) || novoItemPadrao.ObraEtapaPadraoId == 0)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro de Validação", "Nome do item e Etapa Padrão são obrigatórios.");
+            return;
+        }
+
+        // Retorna o objeto ObraItemEtapaPadraoDto preenchido para o componente pai
+        DialogService.Close(novoItemPadrao);
+    }
+
+    void Cancel()
+    {
+        DialogService.Close(null);
+    }
+}

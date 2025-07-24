@@ -25,7 +25,31 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task RegistrarCriacaoAsync<T>(T entidadeNova, long usuarioId) where T : class
         {
+            var usuario = _usuarioRepository.GetByIdAsync(usuarioId).Result;
+            var usuarioNome = usuario != null ? usuario.Nome : string.Empty;
+
+            var entidade = typeof(T).Name;
+            var idProp = entidadeNova.GetType().GetProperty("Id");
+            var nomeProp = entidadeNova.GetType().GetProperty("Nome");
+            var descricaoProp = entidadeNova.GetType().GetProperty("Descricao");
+
+            var idValor = idProp != null ? idProp.GetValue(entidadeNova) : null;
+            var nomeValor = nomeProp != null ? nomeProp.GetValue(entidadeNova) : null;
+            var descricaoValor = descricaoProp != null ? descricaoProp.GetValue(entidadeNova) : null;
+
             var log = CriarLog(entidadeNova, null, usuarioId, TipoLogAuditoria.Criacao);
+
+            if (entidade == "ObraPendencia")
+            {
+                log.Descricao = $"{descricaoValor} de Id {idValor} foi {EnumHelper.ObterDescricaoEnum(TipoLogAuditoria.Criacao)} por {usuarioNome} em {DateTime.Now}";
+
+            }
+            else
+            {
+                log.Descricao = $"{nomeValor} de Id {idValor} foi {EnumHelper.ObterDescricaoEnum(TipoLogAuditoria.Criacao)} por {usuarioNome} em {DateTime.Now}";
+
+            }
+
             await _logRepository.RegistrarAsync(log);
         }
 
@@ -106,8 +130,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
     T novo,
     Dictionary<string, Dictionary<long, string>>? colecoesNomes = null) where T : class
         {
-           
-           
+
+
 
             var tipo = typeof(T);
             var propriedades = tipo.GetProperties(BindingFlags.Public | BindingFlags.Instance);

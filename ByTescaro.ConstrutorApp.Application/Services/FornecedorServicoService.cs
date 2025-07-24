@@ -67,49 +67,31 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
             var usuarioLogadoId = usuarioLogado?.Id ?? 0;
 
-            // 1. Busque a entidade antiga SOMENTE PARA FINS DE AUDITORIA, SEM RASTREAMENTO.
-            // Essa instância 'fornecedorServicoAntigoParaAuditoria' NÃO será modificada pelo AutoMapper,
-            // preservando o estado original para o log.
+        
             var fornecedorServicoAntigoParaAuditoria = await _unitOfWork.FornecedorServicoRepository.GetByIdNoTrackingAsync(dto.Id);
 
             if (fornecedorServicoAntigoParaAuditoria == null)
             {
-                // Se não encontrou, não há o que atualizar ou auditar para um ID existente.
                 throw new KeyNotFoundException($"Fornecedor de serviço com ID {dto.Id} não encontrado para auditoria.");
             }
 
-            // 2. Busque a entidade que REALMENTE SERÁ ATUALIZADA, COM RASTREAMENTO.
-            // Essa instância 'fornecedorServicoParaAtualizar' é a que o EF Core está monitorando
-            // e que terá suas propriedades alteradas.
+            
             var fornecedorServicoParaAtualizar = await _unitOfWork.FornecedorServicoRepository.GetByIdAsync(dto.Id);
 
             if (fornecedorServicoParaAtualizar == null)
             {
-                // Isso deve ser raro se 'fornecedorServicoAntigoParaAuditoria' foi encontrado,
-                // mas é uma boa verificação de segurança.
+         
                 throw new KeyNotFoundException($"Fornecedor de serviço com ID {dto.Id} não encontrado para atualização.");
             }
 
-            // 3. Mapeie as propriedades do DTO para a entidade 'fornecedorServicoParaAtualizar' (a rastreada).
-            // O AutoMapper irá aplicar as mudanças DIRETAMENTE nesta instância.
             _mapper.Map(dto, fornecedorServicoParaAtualizar);
 
-            // Se houver campos de auditoria de criação (UsuarioCadastroId, DataHoraCadastro)
-            // que não devem ser alterados pelo DTO, você pode reatribuí-los aqui,
-            // usando os valores de 'fornecedorServicoAntigoParaAuditoria':
-            // fornecedorServicoParaAtualizar.UsuarioCadastroId = fornecedorServicoAntigoParaAuditoria.UsuarioCadastroId;
-            // fornecedorServicoParaAtualizar.DataHoraCadastro = fornecedorServicoAntigoParaAuditoria.DataHoraCadastro;
+          
+            _unitOfWork.FornecedorServicoRepository.Update(fornecedorServicoParaAtualizar);
 
-            // A chamada a .Update() no repositório é geralmente redundante se a entidade já está
-            // rastreada e suas propriedades foram alteradas diretamente. O EF Core detecta isso.
-            // _unitOfWork.FornecedorServicoRepository.Update(fornecedorServicoParaAtualizar);
-
-            // 4. Registre a auditoria, passando a cópia original e a entidade atualizada.
-            // 'fornecedorServicoAntigoParaAuditoria' tem os dados ANTES da mudança.
-            // 'fornecedorServicoParaAtualizar' tem os dados DEPOIS da mudança.
+     
             await _auditoriaService.RegistrarAtualizacaoAsync(fornecedorServicoAntigoParaAuditoria, fornecedorServicoParaAtualizar, usuarioLogadoId);
 
-            // 5. Salve as alterações no banco de dados.
             await _unitOfWork.CommitAsync();
         }
 

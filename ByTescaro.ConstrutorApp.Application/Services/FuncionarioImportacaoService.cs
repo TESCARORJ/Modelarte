@@ -6,11 +6,6 @@ using ByTescaro.ConstrutorApp.Domain.Enums;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
 using ByTescaro.ConstrutorApp.Infrastructure.Data;
 using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Drawing;
-using DocumentFormat.OpenXml.Spreadsheet;
-using DocumentFormat.OpenXml.Wordprocessing;
-using System.Runtime.ConstrainedExecution;
-using System.Text;
 using System.Text.Json;
 
 namespace ByTescaro.ConstrutorApp.Application.Services
