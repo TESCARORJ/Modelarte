@@ -1,28 +1,31 @@
 ﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
 @inject DialogService DialogService
+@inject ObraItemEtapaPadraoApiService ObraItemEtapaPadraoApiService
 @inject NotificationService NotificationService
 
-<RadzenTemplateForm TItem="ObraItemEtapaDto" Data="@novoItem" Submit="@OnSubmit">
+<RadzenTemplateForm TItem="ObraItemEtapaPadraoDto" Data="@novoItem" Submit="@OnSubmit">
     <RadzenCard Class="rz-p-4">
-        <RadzenText TextStyle="TextStyle.H6" Text="Criar Novo Item de Etapa" Class="rz-mb-4" />
+        <RadzenText TextStyle="TextStyle.H6" Text="Criar Novo Item de Etapa Padrão" Class="rz-mb-4" />
 
         <RadzenStack Gap="1rem">
             <RadzenFormField Text="Nome do Item" Variant="Variant.Flat">
                 <RadzenTextBox @bind-Value="novoItem.Nome" Style="width: 100%;" />
-                <RadzenRequiredValidator Component="Nome" Text="O nome é obrigatório" />
+            </RadzenFormField>
+
+            <RadzenFormField Text="Ordem" Variant="Variant.Flat">
+                <RadzenNumeric TValue="int" @bind-Value="novoItem.Ordem" Min="1" Style="width: 100%;" />
             </RadzenFormField>
 
             <RadzenFormField Text="Dias para Prazo (opcional)" Variant="Variant.Flat">
                 <RadzenNumeric TValue="int?" @bind-Value="novoItem.DiasPrazo" Min="0" Style="width: 100%;" />
             </RadzenFormField>
 
-            <RadzenCheckBox TValue="bool" @bind-Value="novoItem.IsDataPrazo" Text="Usar data de prazo (calcular com base nos dias)" />
-
-            @* Ordem não será visível para o usuário, será calculada no componente pai *@
-            @* <RadzenFormField Text="Ordem" Variant="Variant.Flat">
-                <RadzenNumeric TValue="int" @bind-Value="novoItem.Ordem" Min="1" Style="width: 100%;" />
-                <RadzenRequiredValidator Component="Ordem" Text="A ordem é obrigatória" />
-            </RadzenFormField> *@
+           
+            <div class="rz-p-12 rz-text-align-center">
+                <RadzenCheckBox @bind-Value="novoItem.IsDataPrazo" Name="CheckBox1" />
+                <RadzenLabel Text="Usar data de prazo (calcular com base nos dias)" Component="CheckBox1" class="rz-ms-2" />
+            </div>
         </RadzenStack>
 
         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem" Class="rz-mt-4">
@@ -33,19 +36,37 @@
 </RadzenTemplateForm>
 
 @code {
-    [Parameter] public ObraEtapaDto ObraEtapa { get; set; } // Recebe a etapa para contextualização, se necessário
+    [Parameter] public ObraEtapaPadraoDto ObraEtapa { get; set; } // Agora recebe ObraEtapaPadraoDto
 
-    ObraItemEtapaDto novoItem = new();
+    ObraItemEtapaPadraoDto novoItem = new();
 
-    void OnSubmit()
+    protected override void OnInitialized()
     {
-        // Define o Id como 0 para indicar que é um novo item a ser salvo no backend
-        novoItem.Id = 0;
-        // Ordem será definida no componente pai (ObraEtapaTab.razor)
-        // Concluido sempre false para novos itens
-        novoItem.Concluido = false;
+        // Preenche o ID da etapa padrão no novo item
+        novoItem.ObraEtapaPadraoId = ObraEtapa?.Id ?? 0;
+        // Define uma ordem inicial, por exemplo, o próximo número disponível
+        novoItem.Ordem = (ObraEtapa?.Itens?.Any() ?? false) ? ObraEtapa.Itens.Max(i => i.Ordem) + 1 : 1;
+    }
 
-        DialogService.Close(novoItem);
+    private async Task OnSubmit()
+    {
+        if (string.IsNullOrWhiteSpace(novoItem.Nome) || novoItem.Ordem <= 0 || novoItem.ObraEtapaPadraoId == 0)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro de Validação", "Nome, Ordem e Etapa Padrão são obrigatórios.");
+            return;
+        }
+
+        try
+        {
+            // Persiste o novo ObraItemEtapaPadraoDto no backend
+            var itemCriado = await ObraItemEtapaPadraoApiService.CreateAsync(novoItem);
+            NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Item padrão de etapa criado com sucesso.");
+            DialogService.Close(itemCriado); // Retorna o item padrão criado
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Erro ao criar item padrão de etapa: {ex.Message}");
+        }
     }
 
     void Cancel()

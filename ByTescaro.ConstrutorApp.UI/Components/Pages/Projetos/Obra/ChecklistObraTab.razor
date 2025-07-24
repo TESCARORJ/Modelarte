@@ -5,6 +5,7 @@
 @inject NotificationService NotificationService
 @inject DialogService DialogService
 @inject ObraChecklistApiService ChecklistService
+@inject ObraApiService ObraApiService
 
 <RadzenCard Style="padding: 1rem">
     <RadzenRow Style="gap: 0.5rem; margin-bottom: 1rem;" AlignItems="AlignItems.End">
@@ -112,8 +113,8 @@
     [Parameter] public ObraDto Obra { get; set; } = new();
 
     private List<ObraEtapaPadraoDto> etapasPadrao = new();
-    private List<ObraItemEtapaPadraoDto> itensPadrao = new();
-    private List<ObraItemEtapaPadraoDto> todosItensPadrao = new();
+    private List<ObraItemEtapaPadraoDto> itensPadrao = new(); // Não diretamente usado, mas mantido para contexto
+    private List<ObraItemEtapaPadraoDto> todosItensPadrao = new(); // Lista completa de itens padrão
 
     private long etapaSelecionadaId = 0;
     private Dictionary<long, long> itemSelecionadoIds = new();
@@ -191,7 +192,7 @@
         if (!itemSelecionadoIds.TryGetValue(etapa.Ordem, out var itemId) || itemId == 0) return;
 
         var modelo = todosItensPadrao.FirstOrDefault(i => i.Id == itemId);
-        if (modelo == null) return; // Alterado para não notificar erro se modelo for nulo, já que o botão estará desabilitado.
+        if (modelo == null) return;
 
         if (etapa.Itens.Any(i => i.Nome.Equals(modelo.Nome, StringComparison.OrdinalIgnoreCase)))
         {
@@ -212,25 +213,49 @@
         itemSelecionadoIds[etapa.Ordem] = 0; // Limpa a seleção do dropdown
     }
 
-    private async Task AbrirModalCriarItem(ObraEtapaDto etapa)
+    private async Task AbrirModalCriarItem(ObraEtapaDto etapaInstance)
     {
-        var novoItem = await DialogService.OpenAsync<CriarObraItemEtapaDialog>("Criar Novo Item de Etapa",
-            new Dictionary<string, object>() { { "ObraEtapa", etapa } },
-            new DialogOptions() { Width = "500px", Height = "400px", Resizable = true, Draggable = true });
+        // Encontrar o ObraEtapaPadraoDto correspondente pelo nome da etapa
+        var etapaPadraoId = ObterIdEtapaPadraoPorNome(etapaInstance.Nome);
+        var etapaPadrao = etapasPadrao.FirstOrDefault(e => e.Id == etapaPadraoId);
 
-        if (novoItem != null)
+        if (etapaPadrao == null)
         {
-            if (etapa.Itens.Any(i => i.Nome.Equals(novoItem.Nome, StringComparison.OrdinalIgnoreCase)))
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", "Etapa padrão não encontrada para a etapa atual. Não é possível criar um novo item padrão para ela.");
+            return;
+        }
+
+        // Abrir a modal, passando o ObraEtapaPadraoDto
+        var novoItemPadrao = await DialogService.OpenAsync<CriarObraItemEtapaDialog>("Criar Novo Item de Etapa Padrão",
+            new Dictionary<string, object>() { { "ObraEtapa", etapaPadrao } }, // Passando ObraEtapaPadraoDto
+            new DialogOptions() { Width = "700px", Height = "600px", Resizable = true, Draggable = true });
+
+        if (novoItemPadrao != null)
+        {
+            // Verificar duplicatas no nível da instância da obra antes de adicionar
+            if (etapaInstance.Itens.Any(i => i.Nome.Equals(novoItemPadrao.Nome, StringComparison.OrdinalIgnoreCase)))
             {
-                NotificationService.Notify(NotificationSeverity.Warning, "Duplicado", $"O item '{novoItem.Nome}' já existe nesta etapa.");
+                NotificationService.Notify(NotificationSeverity.Warning, "Duplicado", $"O item '{novoItemPadrao.Nome}' já existe nesta etapa.");
                 return;
             }
-            // Definir a ordem do novo item. Pode ser o próximo da sequência ou um valor padrão.
-            // Para simplicidade, vamos usar o próximo número maior ou 1 se não houver itens.
-            novoItem.Ordem = etapa.Itens.Any() ? etapa.Itens.Max(i => i.Ordem) + 1 : 1;
-            novoItem.Concluido = false; // Novo item sempre começa como não concluído
-            etapa.Itens.Add(novoItem);
-            NotificationService.Notify(NotificationSeverity.Success, "Sucesso", $"Item '{novoItem.Nome}' adicionado à etapa '{etapa.Nome}'.");
+
+            // Criar uma nova instância de ObraItemEtapaDto baseada no item padrão criado
+            var newInstanceItem = new ObraItemEtapaDto
+            {
+                Id = 0, // Novo item de instância, ID 0 para ser salvo posteriormente
+                Nome = novoItemPadrao.Nome,
+                Ordem = etapaInstance.Itens.Any() ? etapaInstance.Itens.Max(i => i.Ordem) + 1 : 1, // Recalcular ordem para a instância
+                Concluido = false, // Um novo item sempre começa como não concluído
+                DiasPrazo = novoItemPadrao.DiasPrazo,
+                IsDataPrazo = novoItemPadrao.IsDataPrazo
+            };
+
+            etapaInstance.Itens.Add(newInstanceItem);
+            NotificationService.Notify(NotificationSeverity.Success, "Sucesso", $"Item '{newInstanceItem.Nome}' adicionado à etapa '{etapaInstance.Nome}'.");
+
+            // Recarregar a lista de todos os itens padrão para que o dropdown de seleção padrão seja atualizado
+            todosItensPadrao = await ItemPadraoApiService.GetAllAsync();
+
             StateHasChanged();
         }
     }
@@ -305,6 +330,17 @@
 
     private async Task SalvarChecklistAsync()
     {
+        var validationErrors = await ValidateForm(Obra);
+
+        if (validationErrors.Any())
+        {
+            foreach (var error in validationErrors)
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro de Validação", Detail = error, Duration = 5000 });
+            }
+            return;
+        }
+
         try
         {
             await ChecklistService.SaveEtapasAsync(Obra.Id, Obra.Etapas);
@@ -314,5 +350,27 @@
         {
             NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Erro ao salvar checklist: {ex.Message}");
         }
+    }
+
+    private async Task<List<string>> ValidateForm(ObraDto model)
+    {
+        var errors = new List<string>();
+
+        if (string.IsNullOrEmpty(model.Nome))
+        {
+            errors.Add("Campo Nome da Obra é obrigatório.");
+        }
+
+        if (model.ResponsavelMaterial == null)
+        {
+            errors.Add("Selecione o Responsável Materiais.");
+        }
+
+        if (model.ResponsavelObraId == null)
+        {
+            errors.Add("Selecione o Responsável Obra.");
+        }
+
+        return errors;
     }
 }

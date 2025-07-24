@@ -38,18 +38,7 @@
             <RadzenDataGridColumn TItem="ObraItemEtapaPadraoDto" Property="Nome" Title="Nome" />
             <RadzenDataGridColumn TItem="ObraItemEtapaPadraoDto" Property="Ordem" Title="Ordem" Width="100px" TextAlign="TextAlign.Center" />
             <RadzenDataGridColumn TItem="ObraItemEtapaPadraoDto" Property="ObraEtapaPadraoNome" Title="Etapa" />
-            <RadzenDataGridColumn TItem="ObraItemEtapaPadraoDto" Title="Dias de Prazo">
-                <Template Context="i">
-                    @if (i.IsDataPrazo)
-                    {
-                        <RadzenChip Text="@($"{i.DiasPrazo} dias")" Style="margin: 0;" Color="Color.Info" />
-                    }
-                    else
-                    {
-                        <RadzenChip Text="Não aplicável" Style="margin: 0; opacity: 0.6;" Color="Color.Default" />
-                    }
-                </Template>
-            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="ObraItemEtapaPadraoDto" Property="DiasPrazo" Title="Dias de Prazo" />
             <RadzenDataGridColumn TItem="ObraItemEtapaPadraoDto" Title="Ações" Filterable="false" Sortable="false" Width="140px">
                 <Template Context="i">
                     <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"

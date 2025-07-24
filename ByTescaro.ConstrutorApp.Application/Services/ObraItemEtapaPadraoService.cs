@@ -80,63 +80,40 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task AtualizarAsync(ObraItemEtapaPadraoDto dto)
         {
-            // Obtém o ID do usuário logado (usando 'await' para obter o resultado da Task de forma assíncrona e segura)
             var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
             var usuarioLogadoId = usuarioLogado?.Id ?? 0;
 
-            // Limpa espaços em branco do nome
             dto.Nome = dto.Nome.Trim();
 
-            // 1. Busque a entidade antiga SOMENTE PARA FINS DE AUDITORIA, SEM RASTREAMENTO.
-            // Essa instância 'obraItemEtapaPadraoAntigoParaAuditoria' NÃO será modificada pelo AutoMapper,
-            // preservando o estado original para o log de auditoria.
+       
             var obraItemEtapaPadraoAntigoParaAuditoria = await _unitOfWork.ObraItemEtapaPadraoRepository.GetByIdNoTrackingAsync(dto.Id);
 
             if (obraItemEtapaPadraoAntigoParaAuditoria == null)
             {
-                // Se a entidade não foi encontrada, não há o que atualizar ou auditar.
                 throw new KeyNotFoundException($"Obra Item Etapa Padrão com ID {dto.Id} não encontrada para auditoria.");
             }
 
-            // 2. Busque a entidade que REALMENTE SERÁ ATUALIZADA, COM RASTREAMENTO.
-            // Essa instância 'obraItemEtapaPadraoParaAtualizar' é a que o EF Core está monitorando
-            // e que terá suas propriedades alteradas e salvas no banco de dados.
+        
             var obraItemEtapaPadraoParaAtualizar = await _unitOfWork.ObraItemEtapaPadraoRepository.GetByIdAsync(dto.Id);
 
             if (obraItemEtapaPadraoParaAtualizar == null)
             {
-                // Isso deve ser raro se 'obraItemEtapaPadraoAntigoParaAuditoria' foi encontrado,
-                // mas é uma boa verificação de segurança para o fluxo de atualização.
                 throw new KeyNotFoundException($"Obra Item Etapa Padrão com ID {dto.Id} não encontrada para atualização.");
             }
 
-            // VERIFICAÇÃO DE DUPLICIDADE (ignorando o próprio ID)
             if (await _unitOfWork.ObraItemEtapaPadraoRepository.JaExisteAsync(dto.Nome, dto.ObraEtapaPadraoId, dto.Id))
             {
                 throw new DuplicateRecordException($"O item '{dto.Nome}' já existe para esta etapa padrão.");
             }
 
-            // 3. Mapeie as propriedades do DTO para a entidade 'obraItemEtapaPadraoParaAtualizar' (a rastreada).
-            // O AutoMapper irá aplicar as mudanças DIRETAMENTE nesta instância.
+      
             _mapper.Map(dto, obraItemEtapaPadraoParaAtualizar);
 
-            // Se houver campos de auditoria de criação (UsuarioCadastroId, DataHoraCadastro)
-            // que não devem ser alterados pelo DTO, você pode reatribuí-los aqui,
-            // usando os valores de 'obraItemEtapaPadraoAntigoParaAuditoria'.
-            // Exemplo:
-            // obraItemEtapaPadraoParaAtualizar.UsuarioCadastroId = obraItemEtapaPadraoAntigoParaAuditoria.UsuarioCadastroId;
-            // obraItemEtapaPadraoParaAtualizar.DataHoraCadastro = obraItemEtapaPadraoAntigoParaAuditoria.DataHoraCadastro;
-
-            // A chamada a .Update() no repositório é geralmente redundante se a entidade já está
-            // rastreada e suas propriedades foram alteradas diretamente. O EF Core detecta essas mudanças automaticamente.
-            // _unitOfWork.ObraItemEtapaPadraoRepository.Update(obraItemEtapaPadraoParaAtualizar);
-
-            // 4. Registre a auditoria, passando a cópia original e a entidade atualizada.
-            // 'obraItemEtapaPadraoAntigoParaAuditoria' tem os dados ANTES da mudança.
-            // 'obraItemEtapaPadraoParaAtualizar' tem os dados DEPOIS da mudança.
+            
             await _auditoriaService.RegistrarAtualizacaoAsync(obraItemEtapaPadraoAntigoParaAuditoria, obraItemEtapaPadraoParaAtualizar, usuarioLogadoId);
 
-            // 5. Salva TODAS as alterações no banco de dados em uma única transação.
+            _unitOfWork.ObraItemEtapaPadraoRepository.Update(obraItemEtapaPadraoParaAtualizar);
+
             await _unitOfWork.CommitAsync();
         }
 

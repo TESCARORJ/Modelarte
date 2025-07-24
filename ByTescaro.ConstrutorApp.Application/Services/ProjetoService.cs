@@ -81,14 +81,18 @@ public class ProjetoService : IProjetoService
         var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
         var usuarioLogadoId = usuarioLogado?.Id ?? throw new InvalidOperationException("Usuário não autenticado para criar projeto.");
 
-        // 1. Mapeie o DTO para a entidade Projeto.
-        var projetoEntity = _mapper.Map<Projeto>(dto);
+        // 1. Crie a entidade Projeto a partir do DTO, MAS SEM as Obras filhas por enquanto.
+        var projetoEntity = _mapper.Map<Projeto>(dto, opts => opts.Items["IgnoreObras"] = true); // Usaremos um truque com AutoMapper
 
-        // 2. Defina os dados de auditoria do Projeto (pai).
+        // 2. Defina os dados de auditoria do Projeto.
         projetoEntity.UsuarioCadastroId = usuarioLogadoId;
         projetoEntity.DataHoraCadastro = DateTime.Now;
 
-        // 3. Lógica para Endereço (opcional)
+        // 3. Adicione o Projeto ao contexto IMEDIATAMENTE.
+        // Agora o EF Core está rastreando esta instância.
+        _unitOfWork.ProjetoRepository.Add(projetoEntity);
+
+        // 4. Lógica para Endereço (se houver)
         if (!string.IsNullOrWhiteSpace(dto.CEP))
         {
             var enderecoEntity = _mapper.Map<Endereco>(dto);
@@ -96,28 +100,24 @@ public class ProjetoService : IProjetoService
             projetoEntity.Endereco = enderecoEntity;
         }
 
-        // 4. Itere sobre cada Obra filha para estabelecer o vínculo.
-        // Com a entidade Obra corrigida, esta lógica agora funciona perfeitamente.
-        foreach (var obra in projetoEntity.Obras)
+        // 5. AGORA, crie e associe as Obras à instância de Projeto que já está sendo rastreada.
+        foreach (var obraDto in dto.Obras)
         {
-            // Esta linha informa ao EF que esta 'obra' pertence a 'projetoEntity'.
-            obra.Projeto = projetoEntity;
+            var obraEntity = _mapper.Map<Obra>(obraDto);
+            obraEntity.UsuarioCadastroId = usuarioLogadoId;
+            obraEntity.DataHoraCadastro = DateTime.Now;
 
-            obra.UsuarioCadastroId = usuarioLogadoId;
-            obra.DataHoraCadastro = DateTime.Now;
+            // A MÁGICA: Adicione a nova obra DIRETAMENTE à coleção do projeto JÁ RASTREADO.
+            // O EF Core automaticamente entende que esta obra pertence a este projeto e definirá o ProjetoId.
+            projetoEntity.Obras.Add(obraEntity);
         }
 
-        // 5. Adicione APENAS a entidade raiz (Projeto) ao contexto.
-        _unitOfWork.ProjetoRepository.Add(projetoEntity);
-
-        // 6. Salve tudo em uma única transação.
-        // O EF irá inserir o Projeto, obter o ID, e então usar esse ID para inserir as Obras.
+        // 6. Salve tudo.
         await _unitOfWork.CommitAsync();
 
-        // Auditoria
+        // 7. Auditoria (agora com o serializador corrigido)
         await _auditoriaService.RegistrarCriacaoAsync(projetoEntity, usuarioLogadoId);
 
-        // Retorne o DTO mapeado da entidade, agora com todos os IDs preenchidos.
         return _mapper.Map<ProjetoDto>(projetoEntity);
     }
 

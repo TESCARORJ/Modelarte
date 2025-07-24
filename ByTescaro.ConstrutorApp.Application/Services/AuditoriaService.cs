@@ -6,6 +6,7 @@ using ByTescaro.ConstrutorApp.Domain.Interfaces;
 using System.Collections;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 
 namespace ByTescaro.ConstrutorApp.Application.Services
@@ -72,6 +73,13 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var usuario = _usuarioRepository.GetByIdAsync(usuarioId).Result;
             var usuarioNome = usuario != null ? usuario.Nome : string.Empty;
 
+            var serializerOptions = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                // Esta opção resolve o erro de ciclo de referência
+                ReferenceHandler = ReferenceHandler.Preserve
+            };
+
             return new LogAuditoria
             {
                 UsuarioId = usuarioId,
@@ -81,12 +89,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 TipoLogAuditoria = acao,
                 Descricao = $"{entidade} foi {EnumHelper.ObterDescricaoEnum(acao)} por {usuarioNome} em {DateTime.Now}",
                 DataHora = DateTime.Now,
-                DadosAtuais = dadosNovos != null
-                    ? JsonSerializer.Serialize(dadosNovos, new JsonSerializerOptions { WriteIndented = true })
-                    : null,
-                DadosAnteriores = dadosAntigos != null
-                    ? JsonSerializer.Serialize(dadosAntigos, new JsonSerializerOptions { WriteIndented = true })
-                    : null
+                DadosAtuais = dadosNovos != null ? JsonSerializer.Serialize(dadosNovos, serializerOptions) : null,
+                DadosAnteriores = dadosAntigos != null ? JsonSerializer.Serialize(dadosAntigos, serializerOptions) : null
             };
         }
 

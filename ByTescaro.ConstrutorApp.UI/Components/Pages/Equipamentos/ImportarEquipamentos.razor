@@ -1,0 +1,170 @@
+﻿@page "/equipamentos/importar"
+@inject HttpClient Http
+@inject EquipamentoImportacaoApiService ImportacaoService
+@inject NotificationService NotificationService
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Components.Forms
+@using Radzen
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+
+<RadzenCard Style="max-width: 1300px; margin: auto; padding: 2rem;">
+    <RadzenHeading Size="H4" Text="Importador de Equipamentos" />
+
+    <!-- Upload Excel -->
+    <div class="rz-mb-4" style="display: flex; gap: 1rem; align-items: center;">
+        <div style="position: relative; display: inline-block;">
+            <RadzenButton Text="Selecionar Excel"
+                          Icon="upload"
+                          ButtonStyle="ButtonStyle.Primary"
+                          class="rz-button-md rz-button-solid"
+                          style="pointer-events: none; opacity: 1; position: relative; z-index: 1;" />
+            <InputFile OnChange="OnFileSelected"
+                       accept=".xlsx,.xls"
+                       style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer; z-index: 2;" />
+        </div>
+
+        <RadzenButton Text="Modelo de Unidades"
+                      Icon="file_download"
+                      ButtonStyle="ButtonStyle.Light"
+                      Click="@DownloadModeloUnidades" />
+
+        <RadzenButton Text="Modelo de Importação"
+                      Icon="file_download"
+                      ButtonStyle="ButtonStyle.Secondary"
+                      Click="@DownloadModeloImportacao" />
+    </div>
+
+
+    <!-- Preview Editável -->
+    @if (equipamentosPreview?.Any() == true)
+    {
+        <RadzenDataGrid TItem="EquipamentoDto" Data="@equipamentosPreview" @ref="grid" Editable="true" EditMode="DataGridEditMode.Single">
+            <Columns>
+                <RadzenDataGridColumn TItem="EquipamentoDto" Property="Nome" Title="Nome" />
+                <RadzenDataGridColumn TItem="EquipamentoDto" Property="Descricao" Title="Descrição" />
+                
+                <RadzenDataGridColumn TItem="EquipamentoDto">
+                    <Template Context="item">
+                        <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="() => grid.EditRow(item)" />
+                    </Template>
+                    <EditTemplate Context="item">
+                        <RadzenButton Icon="check" Size="ButtonSize.Small" Click="() => grid.UpdateRow(item)" Text="Salvar" />
+                        <RadzenButton Icon="close" Size="ButtonSize.Small" Click="() => grid.CancelEditRow(item)" Text="Cancelar" />
+
+
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+
+        <RadzenButton Text="Importar"
+                      Style="margin-top: 1.5rem"
+                      Icon="upload"
+                      ButtonStyle="ButtonStyle.Primary"
+                      Click="@Importar" />
+    }
+
+    <!-- Lista de Erros -->
+    @if (errosImportacao?.Any() == true)
+    {
+        <RadzenPanel Text="Erros encontrados durante a importação" Style="margin-top:2rem;">
+            <ul>
+                @foreach (var erro in errosImportacao)
+                {
+                    <li><b>@erro.Referencia:</b> @erro.Mensagem</li>
+                }
+            </ul>
+        </RadzenPanel>
+    }
+</RadzenCard>
+
+@code {
+    private List<EquipamentoDto> equipamentosPreview = new();
+    private List<ErroImportacaoDto> errosImportacao = new();
+    private RadzenDataGrid<EquipamentoDto>? grid;
+
+    private List<UnidadeMedidaOption> Unidades => Enum.GetValues(typeof(UnidadeMedida))
+        .Cast<UnidadeMedida>()
+        .Select(e => new UnidadeMedidaOption
+            {
+                Value = e,
+                Label = e.GetType().GetMember(e.ToString())
+                             .FirstOrDefault()?
+                             .GetCustomAttribute<DisplayAttribute>()?.Name ?? e.ToString()
+            }).ToList();
+
+    private async Task OnFileSelected(InputFileChangeEventArgs args)
+    {
+        try
+        {
+            var file = args.File;
+            if (file == null)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "Nenhum arquivo selecionado.");
+                return;
+            }
+
+            using var stream = file.OpenReadStream();
+            equipamentosPreview = await ImportacaoService.PreviewExcelEquipamentosAsync(stream, file.Name);
+
+            NotificationService.Notify(NotificationSeverity.Success, "Pré-visualização pronta", "Dados carregados com sucesso.");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", ex.Message);
+        }
+    }
+
+    private async Task Importar()
+    {
+        try
+        {
+            errosImportacao = await ImportacaoService.ImportarEquipamentosAsync(equipamentosPreview);
+
+            if (errosImportacao.Count == 0)
+            {
+                equipamentosPreview.Clear();
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Sucesso",
+                        Detail = "Todos os equipamentos foram importados!",
+                        Duration = 4000
+                    });
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Importação parcial", "Alguns equipamentos não foram importados.");
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro ao importar", ex.Message);
+        }
+    }
+
+    private void DownloadModeloUnidades()
+    {
+        NavigationManager.NavigateTo("/modelos/Modelo_UnidadesMedida.xlsx", true);
+    }
+
+    private void DownloadModeloImportacao()
+    {
+        NavigationManager.NavigateTo("/modelos/Modelo_Importacao_Equipamentos.xlsx", true);
+    }
+
+
+    [Inject] NavigationManager NavigationManager { get; set; } 
+
+    private class UnidadeMedidaOption
+    {
+        public UnidadeMedida Value { get; set; }
+        public string? Label { get; set; } = string.Empty;
+    }
+
+
+}

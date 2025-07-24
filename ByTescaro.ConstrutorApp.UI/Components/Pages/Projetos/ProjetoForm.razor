@@ -4,6 +4,7 @@
 @using ByTescaro.ConstrutorApp.Application.DTOs
 @using ByTescaro.ConstrutorApp.Application.Utils
 @using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Components.Pages.Projetos.Obra
 @using ByTescaro.ConstrutorApp.UI.Services
 @using ByTescaro.ConstrutorApp.UI.Utils
 @using System.ComponentModel.DataAnnotations
@@ -156,7 +157,6 @@ else
     </RadzenCard>
 }
 
-
 @code {
     [Parameter] public long Id { get; set; }
 
@@ -176,14 +176,11 @@ else
     {
         isLoading = true;
 
-        // Inicia o carregamento dos clientes em paralelo para otimizar o tempo
-        var clientesTask = ClienteApiService.GetAllAsync();
+        var clientesTask = ClienteApiService.GetAllAsync(); // Inicia o carregamento em paralelo
 
-        if (Id != 0) // Modo de Edição
+        if (Id != 0) // Modo de Edição (lógica existente está correta)
         {
-            // 2. Faz uma ÚNICA chamada otimizada que busca o projeto e toda a sua árvore de dados
             projeto = await ProjetoApiService.GetByIdAsync(Id);
-
             if (projeto == null)
             {
                 NotificationService.Notify(NotificationSeverity.Error, "Não Encontrado", "O projeto solicitado não existe.");
@@ -191,38 +188,57 @@ else
                 return;
             }
         }
-        else // Modo de Criação
+        else // Modo de Criação (lógica corrigida)
         {
-            // Apenas inicializa um novo DTO
-            projeto = new ProjetoDto();
-            projeto = await ProjetoApiService.CreateAsync(projeto);
-            AdicionarNovaObra(); // Garante que todo novo projeto já comece com uma obra principal
+            try
+            {
+                // 1. Cria um DTO mínimo para o projeto "rascunho"
+                var projetoRascunho = new ProjetoDto
+                {
+                    Nome = "Novo Projeto (rascunho)", // Nome temporário
+                    DataInicio = DateOnly.FromDateTime(DateTime.Now),
+                    Status = StatusProjeto.EmPlanejamento
+                };
+
+                // 2. Chama a API para criar o projeto e sua obra principal no banco
+                var projetoCriado = await ProjetoApiService.CreateAsync(projetoRascunho);
+
+                // 3. REDIRECIONA para a página de edição com o novo ID
+                if (projetoCriado?.Id > 0)
+                {
+                    Navigation.NavigateTo($"/projetos/editar/{projetoCriado.Id}", forceLoad: true);
+                }
+                else
+                {
+                    NotificationService.Notify(NotificationSeverity.Error, "Erro", "Não foi possível iniciar um novo projeto.");
+                }
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Erro Crítico", $"Falha ao criar projeto inicial: {ex.Message}");
+            }
+            return; // Interrompe a execução aqui, pois a página será recarregada
         }
 
-        // Aguarda a conclusão da busca de clientes
-        clientes = await clientesTask;
-
-        // Finaliza o carregamento e permite a renderização do formulário
+        clientes = await clientesTask; // Aguarda a conclusão do carregamento dos clientes
         isLoading = false;
     }
 
-    async Task AdicionarNovaObra()
+    // CORRIGIDO: Este método agora só manipula objetos em memória. Não é mais 'async'.
+    void AdicionarNovaObra()
     {
-        // Se for a primeira obra, nomeia como "Obra Principal". Senão, numera as novas.
         string nomeObra = !projeto.Obras.Any() ? "Obra Principal" : $"Nova Obra {projeto.Obras.Count + 1}";
-        // long projetoId = projeto.Id;
-        var obra = new ObraDto { Nome = nomeObra, Status = StatusObra.NaoIniciada, ProjetoId = projeto.Id };
-        var obraCriada = await ObraApiService.CreateAsync(obra);
-        if (obraCriada != null)
-        {
-            projeto.Obras.Add(obraCriada);
-        }
-        else
-        {
-            NotificationService.Notify(NotificationSeverity.Error, "Erro ao criar a obra. ObraCriada retornou nulo.");
-        }
 
-        StateHasChanged(); // Garante que a UI seja atualizada para mostrar o novo item do Accordion
+        // Apenas adiciona o novo DTO à lista EM MEMÓRIA.
+        projeto.Obras.Add(new ObraDto
+        {
+            Nome = nomeObra,
+            Status = StatusObra.NaoIniciada
+            // Não precisa definir o ProjetoId aqui. O backend cuidará disso
+            // ao salvar o grafo de objetos (Projeto com suas Obras).
+        });
+
+        StateHasChanged(); // Garante que a UI seja atualizada
     }
 
     void RemoverObra(ObraDto obra)
@@ -248,17 +264,18 @@ else
 
     async Task SalvarProjeto(ProjetoDto model)
     {
-        isLoading = true; // Desabilita os botões durante o salvamento
+        isLoading = true;
 
         try
         {
             if (model.Id == 0) // Criação
             {
+                // O 'model' agora contém o Projeto e sua lista de Obras
                 var resultado = await ProjetoApiService.CreateAsync(model);
                 if (resultado?.Id > 0)
                 {
                     NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Projeto criado com sucesso!");
-                    // Navega para a página de edição para continuar o trabalho, forçando o recarregamento completo.
+                    // Navega para a página de edição para continuar o trabalho
                     Navigation.NavigateTo($"/projetos/editar/{resultado.Id}", forceLoad: true);
                 }
             }
@@ -274,7 +291,7 @@ else
         }
         finally
         {
-            isLoading = false; // Reabilita os botões
+            isLoading = false;
             StateHasChanged();
         }
     }

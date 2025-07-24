@@ -245,6 +245,9 @@
                 .ToList();
 
             NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Etapa e insumos salvos com sucesso.");
+
+            Navigation.NavigateTo("/obraitensetapapadrao");
+
         }
         catch (Exception ex)
         {

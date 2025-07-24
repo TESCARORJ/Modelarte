@@ -31,7 +31,7 @@
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="6">
-            <RadzenButton Text="Salvar Equipamentos" Icon="save" ButtonStyle="ButtonStyle.Primary"
+            <RadzenButton Text="Salvar Funcionários" Icon="save" ButtonStyle="ButtonStyle.Primary"
                           Style="width: 100%;"
                           Click="SalvarFuncionariosAsync" Disabled="@IsBotaoSalvarDesabilitado" />
         </RadzenColumn>
@@ -175,30 +175,22 @@
 
     private async Task SalvarFuncionariosAsync()
     {
-        if (!Obra.Funcionarios.Any())
+
+        var validationErrors = await ValidateForm(Obra);
+
+
+        if (validationErrors.Any())
         {
-            NotificationService.Notify(NotificationSeverity.Warning, "Nenhum funcionário", "Adicione ao menos um funcionário.");
+            foreach (var error in validationErrors)
+            {
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro de Validação", Detail = error, Duration = 5000 });
+            }
             return;
         }
 
-        var erros = new List<string>();
 
-        foreach (var func in Obra.Funcionarios)
-        {
-            if (func.DataInicio == default)
-                erros.Add($"Funcionário '{func.FuncionarioNome}' está sem data de início.");
 
-            if (func.DataFim.HasValue && func.DataFim < func.DataInicio)
-                erros.Add($"Funcionário '{func.FuncionarioNome}' possui data de fim anterior à de início.");
-        }
-
-        if (erros.Any())
-        {
-            foreach (var erro in erros)
-                NotificationService.Notify(NotificationSeverity.Error, "Erro de Validação", erro);
-            return;
-        }
-
+       
         try
         {
             // 🔁 Atualizar e adicionar
@@ -238,6 +230,50 @@
             NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Erro ao salvar funcionários: {ex.Message}");
         }
     }
+
+    private async Task<List<string>> ValidateForm(ObraDto model)
+    {
+        var errors = new List<string>();
+
+
+        if (string.IsNullOrEmpty(model.Nome))
+        {
+            errors.Add("Campo Noome da Obra é obrigatório.");
+        }
+
+
+        if (model.ResponsavelMaterial == null)
+        {
+            errors.Add("Selecione o Responsável Materiais.");
+        }
+
+
+        if (model.ResponsavelObraId == null)
+        {
+            errors.Add("Selecione o Responsável Obra.");
+        }
+
+
+        if (!Obra.Funcionarios.Any())
+        {
+            errors.Add("Adicione ao menos um funcionário.");
+        }
+
+        var erros = new List<string>();
+
+        foreach (var func in Obra.Funcionarios)
+        {
+            if (func.DataInicio == default)
+                erros.Add($"Funcionário '{func.FuncionarioNome}' está sem data de início.");
+
+            if (func.DataFim.HasValue && func.DataFim < func.DataInicio)
+                erros.Add($"Funcionário '{func.FuncionarioNome}' possui data de fim anterior à de início.");
+        }        
+
+
+        return errors;
+    }
+
 
 
 }

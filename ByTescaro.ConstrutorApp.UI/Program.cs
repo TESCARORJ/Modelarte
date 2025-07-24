@@ -314,6 +314,12 @@ builder.Services.AddScoped<ConfiguracaoLembreteDiarioApiService>(sp =>
     return new ConfiguracaoLembreteDiarioApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
 });
 
+builder.Services.AddScoped<EquipamentoImportacaoApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new EquipamentoImportacaoApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
+
 
 
 #endregion
@@ -376,6 +382,7 @@ builder.Services.AddScoped<ILogAuditoriaService, LogAuditoriaService>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<IProjetoService, ProjetoService>();
 builder.Services.AddScoped<IEquipamentoService, EquipamentoService>();
+builder.Services.AddScoped<IEquipamentoImportacaoService, EquipamentoImportacaoService>();
 builder.Services.AddScoped<IFuncionarioService, FuncionarioService>();
 builder.Services.AddScoped<IObraService, ObraService>();
 builder.Services.AddScoped<IObraEtapaPadraoService, ObraEtapaPadraoService>();

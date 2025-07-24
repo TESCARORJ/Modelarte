@@ -10,16 +10,16 @@ namespace ByTescaro.ConstrutorApp.Application.Services
     public class ObraFuncionarioService : IObraFuncionarioService
     {
         private readonly IMapper _mapper;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IAuditoriaService _auditoriaService;
         private readonly IUsuarioLogadoService _usuarioLogadoService;
 
-        public ObraFuncionarioService(IMapper mapper, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
+        public ObraFuncionarioService(IMapper mapper, IUnitOfWork unitOfWork, IAuditoriaService auditoriaService, IUsuarioLogadoService usuarioLogadoService)
         {
-            _mapper = mapper;            
-            _httpContextAccessor = httpContextAccessor;
+            _mapper = mapper;
             _unitOfWork = unitOfWork;
+            _auditoriaService = auditoriaService;
+            _usuarioLogadoService = usuarioLogadoService;
         }
 
         public async Task<List<ObraFuncionarioDto>> ObterPorObraIdAsync(long obraId)

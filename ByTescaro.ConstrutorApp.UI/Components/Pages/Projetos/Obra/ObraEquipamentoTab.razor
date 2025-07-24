@@ -178,49 +178,18 @@
 
     private async Task SalvarEquipamentosAsync()
     {
-        var patrimonios = Obra.Equipamentos
-            .Select(e => EquipamentosDisponiveis.FirstOrDefault(ed => ed.Id == e.EquipamentoId)?.Patrimonio)
-            .Where(p => !string.IsNullOrWhiteSpace(p))
-            .ToList();
+        var validationErrors = await ValidateForm(Obra);
 
-        var duplicados = patrimonios
-            .GroupBy(p => p)
-            .Where(g => g.Count() > 1)
-            .Select(g => g.Key)
-            .ToList();
 
-        if (duplicados.Any())
+        if (validationErrors.Any())
         {
-            foreach (var pat in duplicados)
+            foreach (var error in validationErrors)
             {
-                NotificationService.Notify(NotificationSeverity.Error, "Patrimônio duplicado", $"O patrimônio '{pat}' está alocado mais de uma vez.");
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro de Validação", Detail = error, Duration = 5000 });
             }
             return;
         }
 
-        if (Obra.Equipamentos == null || !Obra.Equipamentos.Any())
-        {
-            NotificationService.Notify(NotificationSeverity.Warning, "Nenhum equipamento", "Adicione ao menos um equipamento.");
-            return;
-        }
-
-        var erros = new List<string>();
-
-        foreach (var eq in Obra.Equipamentos)
-        {
-            if (eq.DataInicioUso == default)
-                erros.Add($"Equipamento '{eq.EquipamentoNome}' está sem data de início.");
-
-            if (eq.DataFimUso.HasValue && eq.DataFimUso < eq.DataInicioUso)
-                erros.Add($"Equipamento '{eq.EquipamentoNome}' possui data de fim anterior à de início.");
-        }
-
-        if (erros.Any())
-        {
-            foreach (var erro in erros)
-                NotificationService.Notify(NotificationSeverity.Error, "Erro de Validação", erro);
-            return;
-        }
 
         try
         {
@@ -254,5 +223,67 @@
         {
             NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Erro ao salvar equipamentos: {ex.Message}");
         }
+    }
+
+    private async Task<List<string>> ValidateForm(ObraDto model)
+    {
+        var errors = new List<string>();
+
+
+        if (string.IsNullOrEmpty(model.Nome))
+        {
+            errors.Add("Campo Noome da Obra é obrigatório.");
+        }
+
+
+        if (model.ResponsavelMaterial == null)
+        {
+            errors.Add("Selecione o Responsável Materiais.");
+        }
+
+
+        if (model.ResponsavelObraId == null)
+        {
+            errors.Add("Selecione o Responsável Obra.");
+        }
+
+
+        var patrimonios = Obra.Equipamentos
+            .Select(e => EquipamentosDisponiveis.FirstOrDefault(ed => ed.Id == e.EquipamentoId)?.Patrimonio)
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .ToList();
+
+        var duplicados = patrimonios
+            .GroupBy(p => p)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+
+        if (duplicados.Any())
+        {
+            foreach (var pat in duplicados)
+            {
+                errors.Add($"O patrimônio '{pat}' está alocado mais de uma vez.");
+            }
+        }
+
+        if (Obra.Equipamentos == null || !Obra.Equipamentos.Any())
+        {
+            errors.Add("Adicione ao menos um equipamento.");
+        }
+
+        var erros = new List<string>();
+
+        foreach (var eq in Obra.Equipamentos)
+        {
+            if (eq.DataInicioUso == default)
+                erros.Add($"Equipamento '{eq.EquipamentoNome}' está sem data de início.");
+
+            if (eq.DataFimUso.HasValue && eq.DataFimUso < eq.DataInicioUso)
+                erros.Add($"Equipamento '{eq.EquipamentoNome}' possui data de fim anterior à de início.");
+        }
+
+
+        return errors;
     }
 }
