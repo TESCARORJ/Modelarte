@@ -6,6 +6,7 @@ using ByTescaro.ConstrutorApp.Infrastructure.Data;
 using ByTescaro.ConstrutorApp.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
 public class UsuarioLogadoService : IUsuarioLogadoService
@@ -13,13 +14,16 @@ public class UsuarioLogadoService : IUsuarioLogadoService
     private readonly IHttpContextAccessor _httpContextAccessor;
     // Injeta a FACTORY, não a UnitOfWork
     private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+    private readonly ILogger<UnitOfWork> _unitOfWorkLogger;
 
     public UsuarioLogadoService(
         IHttpContextAccessor httpContextAccessor,
-        IDbContextFactory<ApplicationDbContext> contextFactory)
+        IDbContextFactory<ApplicationDbContext> contextFactory,
+        ILogger<UnitOfWork> unitOfWorkLogger)
     {
         _httpContextAccessor = httpContextAccessor;
         _contextFactory = contextFactory;
+        _unitOfWorkLogger = unitOfWorkLogger;
     }
 
     public async Task<Usuario?> ObterUsuarioAtualAsync()
@@ -29,7 +33,7 @@ public class UsuarioLogadoService : IUsuarioLogadoService
 
         // Cria uma UnitOfWork nova e de curta duração para esta operação específica.
         // O 'using' garante que o DbContext interno seja descartado ao final.
-        await using var unitOfWork = new UnitOfWork(_contextFactory);
+        await using var unitOfWork = new UnitOfWork(_contextFactory, _unitOfWorkLogger);
 
         // Garante que o usuário é obtido sem ser rastreado pelo DbContext.
         // Isso é crucial se o UsuarioRepository não usar AsNoTracking por padrão.

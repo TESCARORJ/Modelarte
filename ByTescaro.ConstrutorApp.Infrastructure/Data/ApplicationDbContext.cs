@@ -875,7 +875,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
 
                 builder.HasKey(e => e.Id);
                 builder.Property(e => e.Titulo).HasMaxLength(200);
-                builder.Property(e => e.Descricao).HasMaxLength(2000);
+                builder.Property(e => e.Descricao);
                 builder.Property(e => e.Ativo);
                 builder.Property(e => e.IsRecorrente);
                 builder.Property(e => e.FrequenciaRecorrencia).HasColumnType("int");

@@ -23,6 +23,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         private readonly ILembreteEventoRepository _lembreteEventoRepository;
         private readonly ILogAuditoriaRepository _logRepo;
         private readonly IUsuarioLogadoService _usuarioLogadoService;
+        private readonly ILogger<AgendaService> _logger;
+
 
         public AgendaService(IEventoRepository eventoRepository,
                              IParticipanteEventoRepository participanteEventoRepository,
@@ -32,7 +34,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                              IMapper mapper,
                              ILembreteEventoRepository lembreteEventoRepository,
                              ILogAuditoriaRepository logRepo,
-                             IUsuarioLogadoService usuarioLogadoService)
+                             IUsuarioLogadoService usuarioLogadoService,
+                             ILogger<AgendaService> logger)
         {
             _eventoRepository = eventoRepository;
             _participanteEventoRepository = participanteEventoRepository;
@@ -43,15 +46,16 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             _lembreteEventoRepository = lembreteEventoRepository;
             _logRepo = logRepo;
             _usuarioLogadoService = usuarioLogadoService;
+            _logger = logger;
         }
 
         public async Task<EventoDto> CriarCompromissoAsync(CriarEventoRequest request, long UsuarioCadastroId)
         {
             var evento = _mapper.Map<Evento>(request);
+            var usuarioLogado = await _usuarioRepository.GetByIdAsync(UsuarioCadastroId);
             evento.UsuarioCadastroId = UsuarioCadastroId;
             evento.DataHoraCadastro = DateTime.Now;
 
-            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
 
 
             try
@@ -109,7 +113,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     _unitOfWork.ParticipanteEventoRepository.Add(participante);
 
 
-                  
+
 
                     var usuarioConvidado = allParticipantsUsers.FirstOrDefault(u => u.Id == participanteId);
                     if (usuarioConvidado != null && !string.IsNullOrEmpty(usuarioConvidado.TelefoneWhatsApp))
@@ -294,67 +298,85 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             await _unitOfWork.CommitAsync();
         }
 
+
         public async Task<EventoDto> AtualizarEventoAsync(AtualizarEventoRequest request, long usuarioId)
         {
             try
             {
+                // 1. Buscar o evento existente COM RASTREAMENTO.
+                // Isso garante que o EF Core conheça esta instância e evite conflitos.
                 var eventoExistente = await _unitOfWork.EventoRepository.GetByIdTrackingAsync(request.Id);
-                var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+                var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
 
                 if (eventoExistente == null)
                 {
+                    _logger.LogWarning($"Evento com ID {request.Id} não encontrado para atualização.");
                     throw new ApplicationException("Evento não encontrado para atualização.");
                 }
 
                 if (eventoExistente.UsuarioCadastroId != usuarioId)
                 {
+                    _logger.LogWarning($"Usuário {usuarioId} tentou editar evento {request.Id} sem permissão. Criador: {eventoExistente.UsuarioCadastroId}");
                     throw new UnauthorizedAccessException("Você não tem permissão para editar este evento.");
                 }
 
-                _mapper.Map(request, eventoExistente);
-                _unitOfWork.EventoRepository.Update(eventoExistente);
+                // 2. Buscar os participantes atuais COM RASTREAMENTO antes de qualquer modificação.
+                var participantesAtuais = (await _unitOfWork.ParticipanteEventoRepository
+                    .FindAllWithIncludesAsync(p => p.EventoId == request.Id, p => p.Usuario))
+                    .ToList();
 
-                var participantesAtuais = (await _unitOfWork.ParticipanteEventoRepository.GetParticipantesByEventoIdAsync(eventoExistente.Id)).ToList();
+                // 3. Mapear as propriedades do request para a entidade JÁ RASTREADA.
+                // O EF Core detectará automaticamente as alterações.
+                _mapper.Map(request, eventoExistente);
+
+                // Não é mais necessário chamar _unitOfWork.EventoRepository.Update(eventoExistente);
+                // porque a entidade já está sendo rastreada e as modificações são detectadas.
+
                 var idsParticipantesAtuais = participantesAtuais.Select(p => p.UsuarioId).ToList();
                 var idsParticipantesNovos = request.IdsParticipantesConvidados ?? new List<long>();
+                string participantesString = string.Empty;
 
+                // Remover participantes que não estão mais na lista
                 var participantesParaRemover = participantesAtuais
                     .Where(p => !idsParticipantesNovos.Contains(p.UsuarioId) && p.UsuarioId != usuarioId)
                     .ToList();
-                foreach (var participante in participantesParaRemover)
+
+                if (participantesParaRemover.Any())
                 {
-                    _unitOfWork.ParticipanteEventoRepository.Remove(participante);
-                    var usuarioRemovido = await _unitOfWork.UsuarioRepository.GetByIdAsync(participante.UsuarioId);
-                    if (usuarioRemovido != null && !string.IsNullOrEmpty(usuarioRemovido.TelefoneWhatsApp))
+                    foreach (var participante in participantesParaRemover)
                     {
-                        var mensagem = $"Olá {usuarioRemovido.Nome}, o evento '{eventoExistente.Titulo}' foi atualizado e você foi removido como participante.";
-                        await _zApiNotificationService.SendWhatsAppMessageAsync(usuarioRemovido.TelefoneWhatsApp, mensagem);
+                        // Notificação para usuário removido
+                        if (participante.Usuario != null && !string.IsNullOrEmpty(participante.Usuario.TelefoneWhatsApp))
+                        {
+                            var mensagem = $"Olá {participante.Usuario.Nome}, o evento '{eventoExistente.Titulo}' foi atualizado e você foi removido como participante.";
+                            await _zApiNotificationService.SendWhatsAppMessageAsync(participante.Usuario.TelefoneWhatsApp, mensagem);
+                        }
                     }
+                    _unitOfWork.ParticipanteEventoRepository.RemoveRange(participantesParaRemover);
                 }
 
+
+                // Adicionar novos participantes
                 var idsNovosParticipantesParaAdicionar = idsParticipantesNovos
                     .Except(idsParticipantesAtuais)
-                    .Where(id => id != usuarioId)
                     .ToList();
+
                 foreach (var participanteId in idsNovosParticipantesParaAdicionar)
                 {
                     var novoParticipante = new ParticipanteEvento
                     {
                         EventoId = eventoExistente.Id,
                         UsuarioId = participanteId,
-                        StatusParticipacao = StatusParticipacao.Pendente,
-                        DataResposta = default(DateTime) // Nulo até que o usuário responda
+                        StatusParticipacao = StatusParticipacao.Pendente
                     };
                     _unitOfWork.ParticipanteEventoRepository.Add(novoParticipante);
+
                     var usuarioAdicionado = await _usuarioRepository.GetByIdAsync(participanteId);
                     if (usuarioAdicionado != null && !string.IsNullOrEmpty(usuarioAdicionado.TelefoneWhatsApp))
                     {
                         var mensagemBase = new StringBuilder();
                         mensagemBase.AppendLine($"Olá *{usuarioAdicionado.Nome}*, você foi convidado para o evento '{eventoExistente.Titulo}' que foi atualizado!");
                         mensagemBase.AppendLine($"Ocorrerá de {eventoExistente.DataHoraInicio:dd/MM/yyyy HH:mm} a {eventoExistente.DataHoraFim:dd/MM/yyyy HH:mm}.");
-
-                        var customId = $"EVENTO_CONVITE_{eventoExistente.Id}_{participanteId}";
-
                         await _zApiNotificationService.SendWhatsAppMessageAsync(
                             usuarioAdicionado.TelefoneWhatsApp,
                             mensagemBase.ToString()
@@ -362,23 +384,40 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     }
                 }
 
-               
-
-                var participantesNomes = participantesAtuais
-                    .OrderBy(u => u.Usuario.Nome)
-                    .Select(u => u.Usuario.Nome)
+                // Notificar participantes que permaneceram no evento sobre as mudanças
+                var idsParticipantesQuePermaneceram = idsParticipantesAtuais
+                    .Intersect(idsParticipantesNovos)
+                    .Where(id => id != usuarioId)
                     .ToList();
 
-                string participantesString = participantesAtuais.Any() ? string.Join(", ", participantesNomes) : "Nenhum participante adicionado (além do criador).";
+                var todosUsuariosParaNotificar = new List<long>();
+                todosUsuariosParaNotificar.AddRange(idsNovosParticipantesParaAdicionar);
+                todosUsuariosParaNotificar.AddRange(idsParticipantesQuePermaneceram);
 
-                foreach (var participante in participantesAtuais.Where(p => p.UsuarioId != usuarioId && idsParticipantesNovos.Contains(p.UsuarioId)))
+                // Regenerar string de participantes para log/notificações
+                var allFinalParticipantIds = new List<long>(idsParticipantesNovos) { usuarioId };
+                var allFinalParticipantsUsers = new List<Usuario>();
+                foreach (var pId in allFinalParticipantIds.Distinct())
                 {
-                    var usuarioNotificar = await _unitOfWork.UsuarioRepository.GetByIdAsync(participante.UsuarioId);
+                    var user = await _unitOfWork.UsuarioRepository.GetByIdAsync(pId);
+                    if (user != null)
+                    {
+                        allFinalParticipantsUsers.Add(user);
+                    }
+                }
+                participantesString = allFinalParticipantsUsers.Any()
+                                    ? string.Join(", ", allFinalParticipantsUsers.OrderBy(u => u.Nome).Select(u => u.Nome))
+                                    : "Nenhum participante adicionado (além do criador).";
+
+                // Notificar apenas os que permaneceram sobre a atualização (os novos já receberam convite)
+                foreach (var participanteId in idsParticipantesQuePermaneceram)
+                {
+                    var usuarioNotificar = await _unitOfWork.UsuarioRepository.GetByIdAsync(participanteId);
                     if (usuarioNotificar != null && !string.IsNullOrEmpty(usuarioNotificar.TelefoneWhatsApp))
                     {
                         var mensagemBase = new StringBuilder();
                         mensagemBase.AppendLine($"Olá *{usuarioNotificar.Nome}*!");
-                        mensagemBase.AppendLine("Atualizado compromisso relacionado:");
+                        mensagemBase.AppendLine("O compromisso a seguir foi atualizado:");
                         mensagemBase.AppendLine();
                         mensagemBase.AppendLine($"*Título*: {request.Titulo}");
                         mensagemBase.AppendLine($"*Início*: {request.DataHoraInicio:dd/MM/yyyy HH:mm}");
@@ -387,23 +426,19 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                         mensagemBase.AppendLine($"{request.Descricao}");
                         mensagemBase.AppendLine($"*Participantes*: {participantesString}");
 
-
-                       // var mensagem = $"O evento '{eventoExistente.Titulo}' foi atualizado e ocorrerá de {eventoExistente.DataHoraInicio:dd/MM/yyyy HH:mm} a {eventoExistente.DataHoraFim:dd/MM/yyyy HH:mm}. Verifique os detalhes na aplicação.";
                         await _zApiNotificationService.SendWhatsAppMessageAsync(usuarioNotificar.TelefoneWhatsApp, mensagemBase.ToString());
                     }
                 }
 
-
                 await _logRepo.RegistrarAsync(new LogAuditoria
                 {
-                    UsuarioId = usuarioLogado == null ? 0 : usuarioLogado.Id,
-                    UsuarioNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome,
+                    UsuarioId = usuarioLogado?.Id ?? 0,
+                    UsuarioNome = usuarioLogado?.Nome ?? "Sistema/Desconhecido",
                     Entidade = nameof(Evento),
                     TipoLogAuditoria = TipoLogAuditoria.Atualizacao,
-                    Descricao = $"Compromisso atualizado por '{usuarioLogado}' em {DateTime.Now}. Título: {eventoExistente.Titulo} --- Início: {eventoExistente.DataHoraInicio} - Fim: {eventoExistente.DataHoraFim} ---  Descrição: {eventoExistente.Descricao} --- Paticipantes: {participantesString} ",
-                    DadosAtuais = JsonSerializer.Serialize(eventoExistente) // Serializa o DTO para o log
+                    Descricao = $"Compromisso atualizado por '{usuarioLogado?.Nome ?? "Sistema"}' em {DateTime.Now}. Título: {eventoExistente.Titulo} --- Início: {eventoExistente.DataHoraInicio} - Fim: {eventoExistente.DataHoraFim} --- Descrição: {eventoExistente.Descricao} --- Participantes: {participantesString} ",
+                    DadosAtuais = JsonSerializer.Serialize(request)
                 });
-
 
                 await _unitOfWork.CommitAsync();
 
@@ -411,15 +446,17 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erro ao atualizar evento: {ex.Message}");
+                _logger.LogError(ex, $"Erro ao atualizar evento: {ex.Message}");
                 throw;
             }
         }
 
+
+
         public async Task ExcluirEventoAsync(long eventoId, long usuarioId)
         {
             var evento = await _unitOfWork.EventoRepository.GetByIdTrackingAsync(eventoId);
-            var usuarioLogado = _usuarioLogadoService.ObterUsuarioAtualAsync().Result;
+            var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
 
 
             if (evento == null)
@@ -433,46 +470,50 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             }
 
             var participantes = await _unitOfWork.ParticipanteEventoRepository.GetParticipantesByEventoIdAsync(evento.Id);
-            var lembretesDoEvento = await _unitOfWork.LembreteEventoRepository.GetLembretesByEventoIdAsync(evento.Id);
 
-            var participantesNomes = participantes
-                 .OrderBy(u => u.Usuario.Nome)
-                 .Select(u => u.Usuario.Nome)
-                 .ToList();
-            string participantesString = participantes.Any() ? string.Join(", ", participantesNomes) : "Nenhum participante adicionado (além do criador).";
-
-            foreach (var participante in participantes)
+            if (participantes.Count() > 1)
             {
-                var usuario = await _unitOfWork.UsuarioRepository.GetByIdTrackingAsync(participante.UsuarioId);
-                if (usuario != null && !string.IsNullOrEmpty(usuario.TelefoneWhatsApp))
+
+                var lembretesDoEvento = await _unitOfWork.LembreteEventoRepository.GetLembretesByEventoIdAsync(evento.Id);
+
+                var participantesNomes = participantes
+                     .OrderBy(u => u.Usuario.Nome)
+                     .Select(u => u.Usuario.Nome)
+                     .ToList();
+                string participantesString = participantes.Any() ? string.Join(", ", participantesNomes) : "Nenhum participante adicionado (além do criador).";
+
+                foreach (var participante in participantes)
                 {
-                    var mensagem = $"O evento '{evento.Titulo}' que ocorreria em {evento.DataHoraInicio:dd/MM/yyyy HH:mm} foi cancelado.";
-                    await _zApiNotificationService.SendWhatsAppMessageAsync(usuario.TelefoneWhatsApp, mensagem);
+                    var usuario = await _unitOfWork.UsuarioRepository.GetByIdTrackingAsync(participante.UsuarioId);
+                    if (usuario != null && !string.IsNullOrEmpty(usuario.TelefoneWhatsApp))
+                    {
+                        var mensagem = $"O evento '{evento.Titulo}' que ocorreria em {evento.DataHoraInicio:dd/MM/yyyy HH:mm} foi cancelado.";
+                        await _zApiNotificationService.SendWhatsAppMessageAsync(usuario.TelefoneWhatsApp, mensagem);
+                    }
                 }
-            }
 
-            if (lembretesDoEvento != null && lembretesDoEvento.Any())
-            {
-                _unitOfWork.LembreteEventoRepository.RemoveRange(lembretesDoEvento);
-            }
+                if (lembretesDoEvento != null && lembretesDoEvento.Any())
+                {
+                    _unitOfWork.LembreteEventoRepository.RemoveRange(lembretesDoEvento);
+                }
 
-            if (participantes != null && participantes.Any())
-            {
-                _unitOfWork.ParticipanteEventoRepository.RemoveRange(participantes);
-            }
+                if (participantes != null && participantes.Any())
+                {
+                    _unitOfWork.ParticipanteEventoRepository.RemoveRange(participantes);
+                }
 
-            await _logRepo.RegistrarAsync(new LogAuditoria
-            {
-                UsuarioId = usuarioLogado == null ? 0 : usuarioLogado.Id,
-                UsuarioNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome,
-                Entidade = nameof(Evento),
-                TipoLogAuditoria = TipoLogAuditoria.Criacao,
-                Descricao = $"Compromisso excluído por '{usuarioLogado}' em {DateTime.Now}. Título: {evento.Titulo} --- Início: {evento.DataHoraInicio} - Fim: {evento.DataHoraFim} ---  Descrição: {evento.Descricao} --- Paticipantes: {participantesString} ",
-                DadosAtuais = JsonSerializer.Serialize(evento) // Serializa o DTO para o log
-            });
+                await _logRepo.RegistrarAsync(new LogAuditoria
+                {
+                    UsuarioId = usuarioLogado == null ? 0 : usuarioLogado.Id,
+                    UsuarioNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome,
+                    Entidade = nameof(Evento),
+                    TipoLogAuditoria = TipoLogAuditoria.Criacao,
+                    Descricao = $"Compromisso excluído por '{usuarioLogado}' em {DateTime.Now}. Título: {evento.Titulo} --- Início: {evento.DataHoraInicio} - Fim: {evento.DataHoraFim} ---  Descrição: {evento.Descricao} --- Paticipantes: {participantesString} ",
+                    DadosAtuais = JsonSerializer.Serialize(evento) // Serializa o DTO para o log
+                });
+
+            }
             _unitOfWork.EventoRepository.Remove(evento);
-
-
 
             await _unitOfWork.CommitAsync();
         }

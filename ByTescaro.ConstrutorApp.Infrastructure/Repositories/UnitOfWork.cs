@@ -3,6 +3,7 @@ using ByTescaro.ConstrutorApp.Domain.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Interfaces.ByTescaro.ConstrutorApp.Domain.Interfaces;
 using ByTescaro.ConstrutorApp.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 {
@@ -12,11 +13,12 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         private readonly ApplicationDbContext _context;
 
         // Recebe a fábrica
-        public UnitOfWork(IDbContextFactory<ApplicationDbContext> contextFactory)
+        public UnitOfWork(IDbContextFactory<ApplicationDbContext> contextFactory, ILogger<UnitOfWork> logger)
         {
             _contextFactory = contextFactory;
             // Cria uma instância do DbContext para esta unidade de trabalho
             _context = _contextFactory.CreateDbContext();
+            _logger = logger;
         }
 
 
@@ -58,6 +60,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         private IParticipanteEventoRepository? _participanteEventoRepository;
         private ILembreteEventoRepository? _lembreteEventoRepository;
         private IConfiguracaoLembreteDiarioRepository? _configuracaoLembreteDiarioRepository;
+        private readonly ILogger<UnitOfWork> _logger;
 
         #endregion
 
@@ -107,7 +110,45 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 
         public async Task<int> CommitAsync(CancellationToken cancellationToken = default)
         {
-            return await _context.SaveChangesAsync(cancellationToken);
+            // NOVO: Log de depuração para o Change Tracker
+            _logger.LogInformation("--- Início do CommitAsync ---");
+            foreach (var entry in _context.ChangeTracker.Entries())
+            {
+                _logger.LogInformation($"Entidade: {entry.Entity.GetType().Name}, Estado: {entry.State}");
+                if (entry.State == EntityState.Modified)
+                {
+                    foreach (var property in entry.Properties)
+                    {
+                        if (property.IsModified)
+                        {
+                            _logger.LogInformation($"  Propriedade '{property.Metadata.Name}' modificada. Valor Antigo: '{property.OriginalValue}', Valor Novo: '{property.CurrentValue}'");
+                        }
+                    }
+                }
+            }
+            _logger.LogInformation("--- Fim do Log do ChangeTracker ---");
+
+            try
+            {
+                var affectedRows = await _context.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation($"SaveChanges executado. Linhas afetadas: {affectedRows}");
+                return affectedRows;
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                _logger.LogError(ex, "Erro de concorrência ao salvar mudanças no banco de dados.");
+                throw; // Ou trate de forma específica
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Erro de atualização do banco de dados ao salvar mudanças.");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro inesperado ao salvar mudanças no banco de dados.");
+                throw;
+            }
         }
 
         public void Dispose()

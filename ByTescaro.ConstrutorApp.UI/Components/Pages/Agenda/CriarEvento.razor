@@ -196,11 +196,11 @@
         //     errors.Add("Título deve ter entre 3 e 100 caracteres.");
         // }
 
-        // Validação de Descrição (opcional, se for um campo que pode ser vazio)
-        // if (string.IsNullOrWhiteSpace(model.Descricao))
-        // {
-        //     errors.Add("Descrição é obrigatória.");
-        // }
+        //Validação de Descrição (opcional, se for um campo que pode ser vazio)
+        if (string.IsNullOrWhiteSpace(model.Descricao))
+        {
+            errors.Add("Descrição é obrigatória.");
+        }
 
         // Validação de DataHoraInicio
         if (model.DataHoraInicio == default(DateTime)) // Verifica se a data é o valor padrão (não foi selecionada)

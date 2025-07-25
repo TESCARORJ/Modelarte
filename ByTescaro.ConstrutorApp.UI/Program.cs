@@ -456,6 +456,13 @@ builder.Services.AddControllers().AddJsonOptions(opt =>
 builder.Services.AddHttpContextAccessor();
 
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+builder.Services.AddLogging();
+
+
+
 #region [ Build & Configure App ]
 
 var app = builder.Build();

@@ -44,7 +44,7 @@
                             <RadzenLabel Text="Descrição: *" Component="Descricao" /> @* Adicionei o '*' para indicar que é obrigatório *@
                         </RadzenColumn>
                         <RadzenColumn Size="12" SizeMD="8">
-                            <RadzenTextArea @bind-Value="eventoRequest.Descricao" Style="width:100%; height:300px" Name="Descricao" ReadOnly="@(!IsCriador)" />
+                            <RadzenTextArea @bind-Value="eventoRequest.Descricao"  Style="width:100%; height:300px" Name="Descricao" ReadOnly="@(!IsCriador)" />
                         </RadzenColumn>
                     </RadzenRow>
                     <RadzenRow AlignItems="AlignItems.Center">
@@ -198,6 +198,14 @@
             NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = "Usuário não autenticado." });
             DialogService.Close(false);
         }
+    }
+
+
+      private void OnDescricaoChanged(string value)
+    {
+        eventoRequest.Descricao = value ?? string.Empty;
+        // Notifica o EditContext que o campo mudou para que a validação (ValidateField) possa ser disparada se necessário
+        editContext?.NotifyFieldChanged(new FieldIdentifier(eventoRequest, nameof(eventoRequest.Descricao)));
     }
 
     private async Task CarregarDetalhesEvento()
