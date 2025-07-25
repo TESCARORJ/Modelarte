@@ -44,7 +44,12 @@
                             <RadzenLabel Text="Descrição: *" Component="Descricao" /> @* Adicionei o '*' para indicar que é obrigatório *@
                         </RadzenColumn>
                         <RadzenColumn Size="12" SizeMD="8">
-                            <RadzenTextArea @bind-Value="eventoRequest.Descricao"  Style="width:100%; height:300px" Name="Descricao" ReadOnly="@(!IsCriador)" />
+                            <RadzenTextArea Value="@eventoRequest.Descricao"
+                                            ValueChanged="@((string value) => OnDescricaoChanged(value))"
+                                            ValueExpression="() => eventoRequest.Descricao"
+                                            Style="width:100%; height:300px"
+                                            Name="Descricao"
+                                            ReadOnly="@(!IsCriador)" />
                         </RadzenColumn>
                     </RadzenRow>
                     <RadzenRow AlignItems="AlignItems.Center">
@@ -148,7 +153,7 @@
     [Parameter]
     public long EventoId { get; set; }
 
-    private AtualizarEventoRequest eventoRequest;
+    private AtualizarEventoRequest? eventoRequest;
     private EventoDto? eventoSelecionado;
     private EditContext? editContext;
     private ValidationMessageStore? messageStore; // Adicionado para exibir erros customizados no ValidationSummary
@@ -158,6 +163,8 @@
 
     // A lista de visibilidade não deve incluir nulo se queremos garantir uma seleção padrão
     private List<EnumOption<Visibilidade>> VisibilidadeList = EnumHelper.ListarOpcoes<Visibilidade>(incluirNulo: false);
+
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -201,11 +208,13 @@
     }
 
 
-      private void OnDescricaoChanged(string value)
+    private Task OnDescricaoChanged(string value)
     {
+        if (eventoRequest is null) return Task.CompletedTask;
+
         eventoRequest.Descricao = value ?? string.Empty;
-        // Notifica o EditContext que o campo mudou para que a validação (ValidateField) possa ser disparada se necessário
         editContext?.NotifyFieldChanged(new FieldIdentifier(eventoRequest, nameof(eventoRequest.Descricao)));
+        return Task.CompletedTask;
     }
 
     private async Task CarregarDetalhesEvento()
@@ -216,18 +225,18 @@
             if (eventoSelecionado != null)
             {
                 eventoRequest = new AtualizarEventoRequest
-                {
-                    Id = eventoSelecionado.Id,
-                    Titulo = eventoSelecionado.Titulo ?? string.Empty,
-                    Descricao = eventoSelecionado.Descricao ?? string.Empty,
-                    DataHoraInicio = eventoSelecionado.DataHoraInicio,
-                    DataHoraFim = eventoSelecionado.DataHoraFim,
-                    EhRecorrente = eventoSelecionado.EhRecorrente,
-                    FrequenciaRecorrencia = eventoSelecionado.FrequenciaRecorrencia,
-                    DataFimRecorrencia = eventoSelecionado.DataFimRecorrencia,
-                    Visibilidade = eventoSelecionado.Visibilidade,
-                    IdsParticipantesConvidados = eventoSelecionado.Participantes?.Select(p => p.UsuarioId).ToList() ?? new List<long>()
-                };
+                    {
+                        Id = eventoSelecionado.Id,
+                        Titulo = eventoSelecionado.Titulo ?? string.Empty,
+                        Descricao = eventoSelecionado.Descricao ?? string.Empty,
+                        DataHoraInicio = eventoSelecionado.DataHoraInicio,
+                        DataHoraFim = eventoSelecionado.DataHoraFim,
+                        EhRecorrente = eventoSelecionado.EhRecorrente,
+                        FrequenciaRecorrencia = eventoSelecionado.FrequenciaRecorrencia,
+                        DataFimRecorrencia = eventoSelecionado.DataFimRecorrencia,
+                        Visibilidade = eventoSelecionado.Visibilidade,
+                        IdsParticipantesConvidados = eventoSelecionado.Participantes?.Select(p => p.UsuarioId).ToList() ?? new List<long>()
+                    };
             }
             else
             {
@@ -245,7 +254,7 @@
     private void ValidateField(FieldIdentifier fieldIdentifier)
     {
         // Só valida campos se o usuário for o criador
-        if (!IsCriador) return;
+        if (!IsCriador || eventoRequest is null) return;
 
         messageStore?.Clear(fieldIdentifier);
 
@@ -279,12 +288,18 @@
             return;
         }
 
+        if (eventoRequest is null || editContext is null)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro Interno", Detail = "O formulário não foi inicializado corretamente." });
+            return;
+        }
+
         // Limpa todas as mensagens de validação existentes no EditContext antes de revalidar
         messageStore?.Clear();
-        editContext?.NotifyValidationStateChanged(); // Notifica para limpar os erros visíveis
+        editContext.NotifyValidationStateChanged(); // Notifica para limpar os erros visíveis
 
         // Primeiro, o DataAnnotationsValidator (se você tiver atributos [Required] etc. no DTO)
-        var isValidDataAnnotations = editContext!.Validate();
+        var isValidDataAnnotations = editContext.Validate();
 
         // Validação customizada
         var validationErrors = ValidateForm(eventoRequest);
@@ -298,7 +313,7 @@
                 // Para associar a campos específicos, seria preciso uma lógica mais complexa em ValidateForm.
                 messageStore?.Add(new FieldIdentifier(eventoRequest, ""), error);
             }
-            editContext?.NotifyValidationStateChanged(); // Notifica o EditContext para atualizar a UI
+            editContext.NotifyValidationStateChanged(); // Notifica o EditContext para atualizar a UI
 
             // Notifica o usuário com mensagens pop-up também
             foreach (var error in validationErrors)
@@ -384,10 +399,15 @@
         var confirm = await DialogService.Confirm("Tem certeza que deseja remover este participante?", "Confirmação", new ConfirmOptions { OkButtonText = "Sim", CancelButtonText = "Não" });
         if (confirm == true)
         {
+            if (eventoRequest is null) return;
+
             try
             {
                 eventoRequest.IdsParticipantesConvidados = eventoRequest.IdsParticipantesConvidados.Where(id => id != usuarioId).ToList();
-                eventoSelecionado.Participantes = eventoSelecionado.Participantes.Where(p => p.UsuarioId != usuarioId).ToList();
+                if (eventoSelecionado?.Participantes != null)
+                {
+                    eventoSelecionado.Participantes = eventoSelecionado.Participantes.Where(p => p.UsuarioId != usuarioId).ToList();
+                }
 
                 // Atualiza o evento no serviço, passando o ID do criador para validação
                 await AgendaService.AtualizarEventoAsync(eventoRequest, usuarioLogadoId);
@@ -395,6 +415,7 @@
                 NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Participante removido com sucesso!" });
                 // Re-carregar detalhes para garantir que a UI reflita o estado mais recente
                 await CarregarDetalhesEvento();
+                StateHasChanged(); // Força a atualização da UI
             }
             catch (Exception ex)
             {

@@ -329,7 +329,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 // O EF Core detectará automaticamente as alterações.
                 _mapper.Map(request, eventoExistente);
 
-                // Não é mais necessário chamar _unitOfWork.EventoRepository.Update(eventoExistente);
+                //_unitOfWork.EventoRepository.Update(eventoExistente);
                 // porque a entidade já está sendo rastreada e as modificações são detectadas.
 
                 var idsParticipantesAtuais = participantesAtuais.Select(p => p.UsuarioId).ToList();
@@ -440,7 +440,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     DadosAtuais = JsonSerializer.Serialize(request)
                 });
 
-                await _unitOfWork.CommitAsync();
+                 await _unitOfWork.CommitAsync();
 
                 return _mapper.Map<EventoDto>(eventoExistente);
             }

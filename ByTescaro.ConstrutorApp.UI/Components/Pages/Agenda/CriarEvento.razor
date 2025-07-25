@@ -36,9 +36,14 @@
                         <RadzenColumn Size="12" SizeMD="4">
                             <RadzenLabel Text="Descrição: *" Component="Descricao" />
                         </RadzenColumn>
-                        <RadzenColumn Size="12" SizeMD="8">
-                            <RadzenTextArea @bind-Value="eventoRequest.Descricao" Style="width:100%; height:300px" Name="Descricao" />
-                        </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenTextArea Value="@eventoRequest.Descricao"
+                                                ValueChanged="@((string value) => OnDescricaoChanged(value))"
+                                                ValueExpression="() => eventoRequest.Descricao"
+                                                Style="width:100%; height:300px"
+                                                Name="Descricao"
+                                               />
+                            </RadzenColumn>
                     </RadzenRow>
                     <RadzenRow AlignItems="AlignItems.Center">
                         <RadzenColumn Size="12" SizeMD="4">
@@ -119,6 +124,16 @@
     private IEnumerable<UsuarioDto> usuariosDisponiveis = new List<UsuarioDto>();
     private long usuarioLogadoId;
     private List<EnumOption<Visibilidade>> VisibilidadeList = EnumHelper.ListarOpcoes<Visibilidade>(incluirNulo: false); // Removido 'incluirNulo: true'
+
+    private Task OnDescricaoChanged(string value)
+    {
+        if (eventoRequest is null) return Task.CompletedTask;
+
+        eventoRequest.Descricao = value ?? string.Empty;
+        editContext?.NotifyFieldChanged(new FieldIdentifier(eventoRequest, nameof(eventoRequest.Descricao)));
+        return Task.CompletedTask;
+    }
+
 
     protected override async Task OnInitializedAsync()
     {
