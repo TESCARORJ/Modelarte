@@ -7,6 +7,8 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
         public long Id { get; set; }
         public long ProjetoId { get; set; }
         public string? Nome { get; set; } = string.Empty;
+        public string? ProjetoNome { get; set; }
+        public string? ClienteNome { get; set; }
         public StatusObra? Status { get; set; }
         public DateTime? DataInicioExecucao { get; set; }
 

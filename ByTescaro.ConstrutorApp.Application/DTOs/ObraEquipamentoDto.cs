@@ -19,6 +19,9 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
         public DateTime DataHoraCadastro { get; set; }
         public long? UsuarioCadastroId { get; set; }
         public string? UsuarioCadastroNome { get; set; } = string.Empty;
+
+        public List<MovimentacaoEquipamentoDto> Movimentacoes { get; set; } = new();
+
     }
 
 }

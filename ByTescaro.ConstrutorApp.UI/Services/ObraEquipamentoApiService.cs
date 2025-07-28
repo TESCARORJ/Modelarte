@@ -26,5 +26,9 @@ namespace ByTescaro.ConstrutorApp.UI.Services
 
         public async Task DeleteAsync(long id) =>
             await _http.DeleteAsync($"api/obraequipamento/{id}");
+    
+
+        public async Task MoverEquipamentoAsync(MovimentacaoEquipamentoDto dto) =>
+            await _http.PostAsJsonAsync("api/obraequipamento/mover", dto);
     }
 }

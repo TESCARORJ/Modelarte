@@ -195,7 +195,9 @@ public class ApplicationProfile : Profile
 
         // ==== Obra ====
         CreateMap<Obra, ObraDto>()
-           .ForMember(dest => dest.UsuarioCadastroNome, opt => opt.MapFrom(src => src.UsuarioCadastro != null ? src.UsuarioCadastro.Nome : string.Empty));
+           .ForMember(dest => dest.UsuarioCadastroNome, opt => opt.MapFrom(src => src.UsuarioCadastro != null ? src.UsuarioCadastro.Nome : string.Empty))
+           .ForMember(dest => dest.ProjetoNome, opt => opt.MapFrom(src => src.Projeto.Nome))
+           .ForMember(dest => dest.ClienteNome, opt => opt.MapFrom(src => src.Projeto.Cliente.Nome));
 
         CreateMap<ObraDto, Obra>()
            .ForMember(dest => dest.Id, opt => opt.Ignore())

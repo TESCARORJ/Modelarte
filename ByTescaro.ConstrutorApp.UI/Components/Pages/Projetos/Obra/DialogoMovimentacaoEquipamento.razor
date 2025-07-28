@@ -1,0 +1,84 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using Radzen.Blazor
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+
+<RadzenStack Gap="1rem">
+    <RadzenText TextStyle="TextStyle.Subtitle2">
+        Movimentar @EquipamentoParaMovimentar.EquipamentoNome (Patrimônio: @(EquipamentosDisponiveisNoPai.FirstOrDefault(e => e.Id == EquipamentoParaMovimentar.EquipamentoId)?.Patrimonio ?? "N/A"))
+        da Obra: @ObraAtualNome
+    </RadzenText>
+    <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-mb-2">
+        Para a Obra:
+    </RadzenText>
+    <RadzenDropDown Data="@ObrasDisponiveisParaMovimentacao" ValueProperty="Id"
+                    TextProperty="Nome"
+                    @bind-Value="ObraDestinoSelecionada"
+                    Placeholder="Selecionar Obra de Destino"
+                    Style="width:100%" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+        <Template Context="obra">
+            @if (obra is ObraDto obraDto)
+            {
+                @($"Cliente: {obraDto.ClienteNome} - Projeto: {obraDto.ProjetoNome} - Obra: {obraDto.Nome}")
+            }
+        </Template>
+    </RadzenDropDown>
+
+    <RadzenDatePicker @bind-Value="DataMovimentacao"
+                      DateFormat="dd/MM/yyyy"
+                      Placeholder="Data da Movimentação" Style="width:100%" />
+
+    <RadzenTextBox @bind-Value="MotivoMovimentacao"
+                   MaxLength="255" Placeholder="Motivo da Movimentação (opcional)" Style="width:100%" />
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem" Class="rz-mt-3">
+        <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="OnCancel" />
+        <RadzenButton Text="Confirmar Movimentação" ButtonStyle="ButtonStyle.Primary"
+                      Click="OnConfirm"
+                      Disabled="@(ObraDestinoSelecionada == 0 || DataMovimentacao == default)" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    // Parâmetros de ENTRADA para o diálogo
+    [Parameter] public ObraEquipamentoDto EquipamentoParaMovimentar { get; set; } = new();
+    [Parameter] public string ObraAtualNome { get; set; } = string.Empty;
+    [Parameter] public List<EquipamentoDto> EquipamentosDisponiveisNoPai { get; set; } = new(); // Nome mais claro
+    [Parameter] public List<ObraDto> ObrasDisponiveisParaMovimentacao { get; set; } = new();
+
+    // Parâmetros de SAÍDA (valores que o usuário seleciona/digita no diálogo)
+    [Parameter] public long ObraDestinoSelecionada { get; set; }
+    [Parameter] public DateTime DataMovimentacao { get; set; }
+    [Parameter] public string MotivoMovimentacao { get; set; } = string.Empty;
+
+    // Métodos chamados pelos botões do diálogo
+    private void OnCancel()
+    {
+        // Fecha o diálogo com um resultado que indica cancelamento
+        DialogService.Close(new MovimentacaoDialogResult { Confirmed = false });
+    }
+
+    private void OnConfirm()
+    {
+        // Validações internas do diálogo antes de fechar
+        if (ObraDestinoSelecionada == 0)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro de Validação", "Selecione a obra de destino.");
+            return;
+        }
+        if (DataMovimentacao == default)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro de Validação", "Selecione a data da movimentação.");
+            return;
+        }
+
+        // Fecha o diálogo passando o objeto de resultado
+        DialogService.Close(new MovimentacaoDialogResult
+        {
+            ObraDestinoId = ObraDestinoSelecionada,
+            DataMovimentacao = DataMovimentacao,
+            Motivo = MotivoMovimentacao,
+            Confirmed = true
+        });
+    }
+}

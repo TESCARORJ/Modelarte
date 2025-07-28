@@ -1,6 +1,7 @@
 ﻿@using ByTescaro.ConstrutorApp.Application.DTOs
 @using ByTescaro.ConstrutorApp.UI.Services
 @inject ObraEquipamentoApiService ObraEquipamentoApiService
+@inject ObraApiService ObraApiService
 @inject NotificationService NotificationService
 @inject DialogService DialogService
 
@@ -12,7 +13,7 @@
     <RadzenDropDown Data="@EquipamentosDisponiveis" TextProperty="Nome" ValueProperty="Id"
                     Multiple="true" @bind-Value="_equipamentosSelecionados"
                     Placeholder="Selecionar Equipamentos" Style="width:100%"
-                    Class="rz-mb-2" 
+                    Class="rz-mb-2"
                     FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.StartsWith" AllowFiltering="true" />
 
     <RadzenRow Style="margin-bottom: 1rem; gap: 0.5rem">
@@ -34,7 +35,7 @@
         <div style="overflow-x: auto;">
             <RadzenDataGrid @ref="grid" Data="@Obra.Equipamentos" TItem="ObraEquipamentoDto" ShowPagingSummary="false" AllowPaging="false" AllowColumnResize="true" AllowSorting="true" PagerHorizontalAlign="HorizontalAlign.Left" ColumnWidth="300px">
                 <Columns>
-                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="EquipamentoNome" Title="Nome"/>
+                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="EquipamentoNome" Title="Nome" />
                     <RadzenDataGridColumn TItem="ObraEquipamentoDto" Title="Patrimônio" Width="60px">
                         <Template Context="equip">
                             @{
@@ -47,12 +48,12 @@
 
                     <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataInicioUso" Title="Início" FormatString="{0:dd/MM/yyyy}" Width="60px" />
                     <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataFimUso" Title="Fim" FormatString="{0:dd/MM/yyyy}" Width="60px" />
-@*                     <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataHoraCadastro" Title="Data Cadastro" FormatString="{0:dd/MM/yyyy}" />
-                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="UsuarioCadastro" Title="Cadastrado por" /> *@
-                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Title="" Width="30px">
+                    <RadzenDataGridColumn TItem="ObraEquipamentoDto" Title="Ações" Width="120px" TextAlign="TextAlign.Center">
                         <Template Context="equip">
-                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Class="rz-mr-1"
                                           Click="@(() => ConfirmarRemocao(equip))" />
+                            <RadzenButton Icon="sync_alt" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
+                                          Click="@(() => AbrirDialogoMovimentacao(equip))" />
                         </Template>
                     </RadzenDataGridColumn>
                 </Columns>
@@ -64,6 +65,7 @@
         <RadzenAlert Severity="AlertSeverity.Info" Style="margin-top: 1rem">Nenhum equipamento adicionado à obra.</RadzenAlert>
     }
 </RadzenCard>
+
 
 @code {
     private bool isMobile;
@@ -78,6 +80,40 @@
     private RadzenDataGrid<ObraEquipamentoDto>? grid;
     private bool isLoading = true;
 
+    // Campos para movimentação (agora preenchidos pelo resultado do diálogo)
+    private ObraEquipamentoDto? _equipamentoParaMovimentar;
+    private List<ObraDto> _todasObras = new();
+    // Estas variáveis agora são simplesmente para o resultado do diálogo
+    private long _obraDestinoSelecionadaResultado; // Variável para capturar o ID do diálogo
+    private DateTime _dataMovimentacaoResultado; // Variável para capturar a data do diálogo
+    private string _motivoMovimentacaoResultado = string.Empty; // Variável para capturar o motivo do diálogo
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!EquipamentosDisponiveis.Any())
+        {
+            EquipamentosDisponiveis = (await ObraEquipamentoApiService.GetEquipamentosDisponiveisAsync(Obra.Id)).ToList();
+        }
+
+        // Carregar todas as obras para o dropdown de movimentação
+        _todasObras = await ObraApiService.GetAllAsync();
+        // Remover a obra atual da lista de destino
+        _todasObras = _todasObras.Where(o => o.Id != Obra.Id).ToList();
+
+
+        _equipamentosOriginais = await ObraEquipamentoApiService.GetByObraIdAsync(Obra.Id);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Obra != null && Obra.Id > 0)
+        {
+            isLoading = true;
+            Obra.Equipamentos = await ObraEquipamentoApiService.GetByObraIdAsync(Obra.Id);
+            isLoading = false;
+        }
+    }
 
     private void AdicionarEquipamentos()
     {
@@ -88,10 +124,10 @@
 
         foreach (var id in _equipamentosSelecionados)
         {
-            if (Obra.Equipamentos.Any(e => e.EquipamentoId == id))
+            if (Obra.Equipamentos.Any(e => e.EquipamentoId == id && !e.DataFimUso.HasValue)) // Verifica apenas os ativos
             {
                 var nome = EquipamentosDisponiveis.FirstOrDefault(e => e.Id == id)?.Nome ?? "Equipamento";
-                NotificationService.Notify(NotificationSeverity.Warning, "Já adicionado", $"{nome} já foi adicionado à obra.");
+                NotificationService.Notify(NotificationSeverity.Warning, "Já adicionado", $"{nome} já foi adicionado à obra e está ativo.");
                 continue;
             }
 
@@ -99,25 +135,26 @@
             if (equipamento is null)
                 continue;
 
-            var patrimonioDuplicado = Obra.Equipamentos.Any(e =>
+            // Lógica de verificação de patrimônio duplicado para equipamentos ATIVOS na obra
+            var patrimonioDuplicadoAtivo = Obra.Equipamentos.Any(e =>
             {
                 var existente = EquipamentosDisponiveis.FirstOrDefault(ed => ed.Id == e.EquipamentoId);
-                return existente?.Patrimonio == equipamento.Patrimonio;
+                return existente?.Patrimonio == equipamento.Patrimonio && !e.DataFimUso.HasValue;
             });
 
-            if (patrimonioDuplicado)
+            if (patrimonioDuplicadoAtivo)
             {
-                NotificationService.Notify(NotificationSeverity.Warning, "Duplicado", $"Já existe um equipamento com o patrimônio '{equipamento.Patrimonio}' na obra.");
+                NotificationService.Notify(NotificationSeverity.Warning, "Duplicado", $"Já existe um equipamento com o patrimônio '{equipamento.Patrimonio}' ativo na obra.");
                 continue;
             }
 
             novos.Add(new ObraEquipamentoDto
-                {
-                    ObraId = Obra.Id,
-                    EquipamentoId = equipamento.Id,
-                    EquipamentoNome = equipamento.Nome,
-                    DataInicioUso = DateTime.Today
-                });
+            {
+                ObraId = Obra.Id,
+                EquipamentoId = equipamento.Id,
+                EquipamentoNome = equipamento.Nome,
+                DataInicioUso = DateTime.Today
+            });
         }
 
         if (novos.Any())
@@ -131,55 +168,30 @@
 
     private async Task ConfirmarRemocao(ObraEquipamentoDto equipamento)
     {
-        bool? confirm = await DialogService.Confirm($"Deseja realmente remover a equipamento '{equipamento.EquipamentoNome}'?", "Remover Equipamento");
+        bool? confirm = await DialogService.Confirm($"Deseja realmente remover o equipamento '{equipamento.EquipamentoNome}' da obra?", "Remover Equipamento");
 
         if (confirm == true)
         {
-            Obra.Equipamentos = Obra.Equipamentos
-                                    .Where(f => f.EquipamentoId != equipamento.EquipamentoId)
-                                    .ToList();
-            NotificationService.Notify(NotificationSeverity.Warning, "Removido", "Equipamento removido da lista.");
+            // Se o equipamento já existe no banco de dados (tem um ID), marcá-lo para exclusão
+            if (equipamento.Id > 0)
+            {
+                // Adiciona à lista de _equipamentosOriginais para ser removido no SalvarEquipamentosAsync
+                // Se já estiver na lista, não adiciona novamente
+                if (!_equipamentosOriginais.Any(e => e.Id == equipamento.Id))
+                {
+                    _equipamentosOriginais.Add(equipamento);
+                }
+            }
+            // Remove da lista exibida na UI
+            Obra.Equipamentos = Obra.Equipamentos.Where(f => f.EquipamentoId != equipamento.EquipamentoId || f.Id != equipamento.Id).ToList();
+            NotificationService.Notify(NotificationSeverity.Warning, "Removido", "Equipamento marcado para remoção da lista.");
             StateHasChanged();
         }
-    }
-
-
-    /// OnParametersSetAsync é usado para carregar os dados do checklist
-    /// sempre que os parâmetros do componente (como 'Obra') forem definidos.
-    /// </summary>
-    protected override async Task OnParametersSetAsync()
-    {
-        // Garante que o Obra.Id seja válido antes de buscar os dados
-        if (Obra != null && Obra.Id > 0)
-        {
-            isLoading = true;
-
-            // Chama o serviço para carregar o checklist associado a esta obra
-            Obra.Equipamentos = await ObraEquipamentoApiService.GetByObraIdAsync(Obra.Id);
-
-            isLoading = false;
-        }
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        if (!EquipamentosDisponiveis.Any())
-        {
-            EquipamentosDisponiveis = (await ObraEquipamentoApiService.GetEquipamentosDisponiveisAsync(Obra.Id)).ToList();
-        }
-
-        // _equipamentosOriginais = Obra.Equipamentos?
-        //     .Select(e => new ObraEquipamentoDto { Id = e.Id, EquipamentoId = e.EquipamentoId, ObraId = e.ObraId })
-        //     .ToList() ?? new();
-
-        _equipamentosOriginais = await ObraEquipamentoApiService.GetByObraIdAsync(Obra.Id);
-
     }
 
     private async Task SalvarEquipamentosAsync()
     {
         var validationErrors = await ValidateForm(Obra);
-
 
         if (validationErrors.Any())
         {
@@ -190,32 +202,41 @@
             return;
         }
 
-
         try
         {
             foreach (var equipamento in Obra.Equipamentos)
             {
-                if (equipamento.Id == 0)
+                if (equipamento.Id == 0) // Novo equipamento
+                {
                     await ObraEquipamentoApiService.CreateAsync(equipamento);
-                else
+                }
+                else // Equipamento existente (apenas datas podem ter sido alteradas)
+                {
+                    // Você pode adicionar uma lógica para verificar se houve mudanças antes de atualizar
+                    // Por simplicidade, vamos atualizar de qualquer forma
                     await ObraEquipamentoApiService.UpdateAsync(equipamento);
+                }
             }
 
-            var idsAtuais = Obra.Equipamentos.Select(e => e.Id).ToHashSet();
-            var removidos = _equipamentosOriginais
-                .Where(e => !idsAtuais.Contains(e.Id) && e.Id > 0)
+            var idsAtuaisNaUI = Obra.Equipamentos.Where(e => e.Id > 0).Select(e => e.Id).ToHashSet();
+            var removidosDoBanco = _equipamentosOriginais
+                .Where(e => !idsAtuaisNaUI.Contains(e.Id) && e.Id > 0)
                 .ToList();
 
-            foreach (var rem in removidos)
+            foreach (var rem in removidosDoBanco)
                 await ObraEquipamentoApiService.DeleteAsync(rem.Id);
 
+            // Recarregar os equipamentos após salvar para obter IDs de novos itens e refletir exclusões
+            await OnParametersSetAsync();
+
+            // Atualizar _equipamentosOriginais com o estado atual do banco
             _equipamentosOriginais = Obra.Equipamentos
                 .Select(e => new ObraEquipamentoDto
-                    {
-                        Id = e.Id,
-                        ObraId = e.ObraId,
-                        EquipamentoId = e.EquipamentoId
-                    }).ToList();
+                {
+                    Id = e.Id,
+                    ObraId = e.ObraId,
+                    EquipamentoId = e.EquipamentoId
+                }).ToList();
 
             NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Equipamentos salvos com sucesso.");
         }
@@ -229,61 +250,154 @@
     {
         var errors = new List<string>();
 
-
         if (string.IsNullOrEmpty(model.Nome))
         {
-            errors.Add("Campo Noome da Obra é obrigatório.");
+            errors.Add("Campo Nome da Obra é obrigatório.");
         }
-
 
         if (model.ResponsavelMaterial == null)
         {
             errors.Add("Selecione o Responsável Materiais.");
         }
 
-
         if (model.ResponsavelObraId == null)
         {
             errors.Add("Selecione o Responsável Obra.");
         }
 
-
-        var patrimonios = Obra.Equipamentos
+        // Validação de patrimônios duplicados ativos
+        var patrimoniosAtivos = Obra.Equipamentos
+            .Where(e => !e.DataFimUso.HasValue) // Considera apenas equipamentos ativos
             .Select(e => EquipamentosDisponiveis.FirstOrDefault(ed => ed.Id == e.EquipamentoId)?.Patrimonio)
             .Where(p => !string.IsNullOrWhiteSpace(p))
             .ToList();
 
-        var duplicados = patrimonios
+        var duplicadosAtivos = patrimoniosAtivos
             .GroupBy(p => p)
             .Where(g => g.Count() > 1)
             .Select(g => g.Key)
             .ToList();
 
-        if (duplicados.Any())
+        if (duplicadosAtivos.Any())
         {
-            foreach (var pat in duplicados)
+            foreach (var pat in duplicadosAtivos)
             {
-                errors.Add($"O patrimônio '{pat}' está alocado mais de uma vez.");
+                errors.Add($"O patrimônio '{pat}' está alocado mais de uma vez (ativo).");
             }
         }
 
-        if (Obra.Equipamentos == null || !Obra.Equipamentos.Any())
+        if (Obra.Equipamentos == null || !Obra.Equipamentos.Any(e => !e.DataFimUso.HasValue))
         {
-            errors.Add("Adicione ao menos um equipamento.");
+            errors.Add("Adicione ao menos um equipamento ativo.");
         }
-
-        var erros = new List<string>();
 
         foreach (var eq in Obra.Equipamentos)
         {
-            if (eq.DataInicioUso == default)
-                erros.Add($"Equipamento '{eq.EquipamentoNome}' está sem data de início.");
+            if (!eq.DataFimUso.HasValue) // Apenas valida se ainda está ativo
+            {
+                if (eq.DataInicioUso == default)
+                    errors.Add($"Equipamento '{eq.EquipamentoNome}' está sem data de início.");
 
-            if (eq.DataFimUso.HasValue && eq.DataFimUso < eq.DataInicioUso)
-                erros.Add($"Equipamento '{eq.EquipamentoNome}' possui data de fim anterior à de início.");
+                if (eq.DataFimUso.HasValue && eq.DataFimUso < eq.DataInicioUso)
+                    errors.Add($"Equipamento '{eq.EquipamentoNome}' possui data de fim anterior à de início.");
+            }
         }
 
-
         return errors;
+    }
+
+    private async Task AbrirDialogoMovimentacao(ObraEquipamentoDto equipamento)
+    {
+        // Só permite movimentar equipamentos que estão ativos na obra atual (sem DataFimUso)
+        if (equipamento.DataFimUso.HasValue)
+        {
+            NotificationService.Notify(NotificationSeverity.Info, "Movimentação", "Este equipamento já foi finalizado nesta obra e não pode ser movimentado novamente daqui.");
+            return;
+        }
+
+        _equipamentoParaMovimentar = equipamento;
+        _dataMovimentacaoResultado = DateTime.Today; // Data padrão para o diálogo
+        _motivoMovimentacaoResultado = string.Empty; // Motivo padrão para o diálogo
+        _obraDestinoSelecionadaResultado = 0; // Garante que a seleção inicial no dropdown seja vazia
+
+        // Filtra a obra atual da lista de obras destino
+        var obrasDisponiveisParaMovimentacao = _todasObras.Where(o => o.Id != Obra.Id).ToList();
+
+        var dialogParameters = new Dictionary<string, object>()
+        {
+            { nameof(DialogoMovimentacaoEquipamento.EquipamentoParaMovimentar), _equipamentoParaMovimentar },
+            { nameof(DialogoMovimentacaoEquipamento.ObraAtualNome), Obra.Nome },
+            { nameof(DialogoMovimentacaoEquipamento.EquipamentosDisponiveisNoPai), EquipamentosDisponiveis },
+            { nameof(DialogoMovimentacaoEquipamento.ObrasDisponiveisParaMovimentacao), obrasDisponiveisParaMovimentacao },
+            { nameof(DialogoMovimentacaoEquipamento.ObraDestinoSelecionada), _obraDestinoSelecionadaResultado },
+            { nameof(DialogoMovimentacaoEquipamento.DataMovimentacao), _dataMovimentacaoResultado },
+            { nameof(DialogoMovimentacaoEquipamento.MotivoMovimentacao), _motivoMovimentacaoResultado }
+        };
+
+        var dialogOptions = new Radzen.DialogOptions()
+        {
+            Width = "600px",
+            Height = "auto",
+            ShowClose = true,
+            // Remova a propriedade Responsive, ela pode não existir em algumas versões do Radzen
+            // Responsive = true
+        };
+
+        // A ABORDAGEM ALTERNATIVA E MAIS COMPATÍVEL:
+        // Use OpenAsync com Type e faça o cast do resultado.
+        var dialogResultRaw = await DialogService.OpenAsync(
+            "Movimentar Equipamento",
+            typeof(DialogoMovimentacaoEquipamento), // Tipo do componente a ser aberto
+            dialogParameters,                      // Parâmetros para o componente
+            dialogOptions                          // Opções do diálogo
+        );
+
+        // Faça o cast do resultado retornado
+        var result = dialogResultRaw as MovimentacaoDialogResult;
+
+        // Se o diálogo foi fechado com sucesso e o usuário confirmou
+        if (result != null && result.Confirmed)
+        {
+            _obraDestinoSelecionadaResultado = result.ObraDestinoId;
+            _dataMovimentacaoResultado = result.DataMovimentacao;
+            _motivoMovimentacaoResultado = result.Motivo ?? string.Empty;
+
+            await ConfirmarMovimentacao();
+        }
+    }
+
+    // Método ConfirmarMovimentacao não precisa mais do parâmetro DialogService
+    private async Task ConfirmarMovimentacao()
+    {
+        // As validações já foram feitas no diálogo, mas é bom ter uma verificação final
+        if (_equipamentoParaMovimentar == null || _obraDestinoSelecionadaResultado == 0 || _dataMovimentacaoResultado == default)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", "Dados de movimentação incompletos.");
+            return;
+        }
+
+        try
+        {
+            var movimentacaoDto = new MovimentacaoEquipamentoDto
+            {
+                EquipamentoId = _equipamentoParaMovimentar.EquipamentoId,
+                ObraOrigemId = Obra.Id,
+                ObraDestinoId = _obraDestinoSelecionadaResultado,
+                DataMovimentacao = _dataMovimentacaoResultado,
+                Motivo = _motivoMovimentacaoResultado
+            };
+
+            await ObraEquipamentoApiService.MoverEquipamentoAsync(movimentacaoDto);
+
+            NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Equipamento movimentado com sucesso.");
+            // Não chame ds.Close() aqui, pois o diálogo já foi fechado pelo componente filho ou o fluxo de OpenAsync terminou.
+
+            await OnParametersSetAsync(); // Recarrega os dados da grid
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Erro ao movimentar equipamento: {ex.Message}");
+        }
     }
 }

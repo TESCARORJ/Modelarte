@@ -114,7 +114,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task<List<ObraDto>> ObterTodosAsync()
         {
-            var obras = await _unitOfWork.ObraRepository.GetAllAsync();
+            var obras = await _unitOfWork.ObraRepository.GetAllWithRelacionamentosAsync();
             return _mapper.Map<List<ObraDto>>(obras);
         }
 

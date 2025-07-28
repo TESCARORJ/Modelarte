@@ -9,9 +9,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
     {
         public ObraRepository(ApplicationDbContext context) : base(context)
         {
-        }
-
-       
+        }       
 
         public async Task<Obra?> GetByIdWithRelacionamentosAsync(long id)
         {
@@ -36,6 +34,34 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
                 .Include(o => o.Documentos)
                 .Include(o => o.Imagens)
                 .FirstOrDefaultAsync(o => o.Id == id);
+        }
+        public async Task<List<Obra>> GetAllWithRelacionamentosAsync()
+        {
+            return await _dbSet
+                .Include(o => o.Projeto)
+                    .ThenInclude(p => p.Cliente)
+                .Include(o => o.Funcionarios)
+                .Include(o => o.Funcionarios)
+                .Include(o => o.Fornecedores)
+                .Include(o => o.Insumos)
+                .Include(o => o.ListasInsumo)
+                    .ThenInclude(l => l.Responsavel)
+                .Include(o => o.ListasInsumo)
+                    .ThenInclude(l => l.Itens)
+                        .ThenInclude(i => i.Insumo)
+                .Include(o => o.ListasServico)
+                    .ThenInclude(l => l.Responsavel)
+                .Include(o => o.ListasServico)
+                    .ThenInclude(l => l.Itens)
+                        .ThenInclude(i => i.Servico)
+                .Include(o => o.Equipamentos)
+                .Include(o => o.Etapas).ThenInclude(e => e.Itens)
+                .Include(o => o.Retrabalhos)
+                .Include(o => o.Pendencias)
+                .Include(o => o.Documentos)
+                .Include(o => o.Imagens)
+                .AsNoTracking()
+                .ToListAsync();
         }
 
         public async Task<List<Obra>> GetByProjetoIdAsync(long projetoId)
@@ -64,7 +90,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
                 .AsNoTracking()
                 .ToListAsync();
         }
-
 
         public async Task<Obra?> GetByItemEtapaIdAsync(long itemId)
         {
@@ -104,6 +129,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         private IQueryable<Obra> GetQueryWithAllIncludes()
         {
             return _dbSet
+                .Include(o => o.Projeto)
+                    .ThenInclude(p => p.Cliente)
                 .Include(o => o.Funcionarios)
                 .Include(o => o.Fornecedores)
                 .Include(o => o.ListasInsumo)

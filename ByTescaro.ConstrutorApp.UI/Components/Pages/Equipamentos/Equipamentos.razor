@@ -1,10 +1,12 @@
 ﻿@page "/equipamentos"
 @using ByTescaro.ConstrutorApp.Application.DTOs
 @using ByTescaro.ConstrutorApp.Application.Utils
+@using ByTescaro.ConstrutorApp.Domain.Enums
 @using ByTescaro.ConstrutorApp.UI.Components.Utils
 @using ByTescaro.ConstrutorApp.UI.Services
 @using Microsoft.AspNetCore.Authorization
 @inject EquipamentoApiService EquipamentoApiService
+@inject ObraEquipamentoApiService ObraEquipamentoApiService
 @inject NavigationManager Navigation
 @inject DialogService DialogService
 @inject NotificationService NotificationService
@@ -38,12 +40,13 @@
                     ShowPagingSummary="true"
                     FilterMode="FilterMode.Advanced"
                     Responsive="true"
+                    ColumnWidth="300px"
                     EmptyText="Não contém registros.">
 
         <Columns>
-            <RadzenDataGridColumn TItem="EquipamentoDto" Property="Nome" Title="Nome" />
-            <RadzenDataGridColumn TItem="EquipamentoDto" Property="Patrimonio" Title="Patrimônio" />
-            <RadzenDataGridColumn TItem="EquipamentoDto" Title="Status">
+            <RadzenDataGridColumn TItem="EquipamentoDto" Property="Nome" Title="Nome" Width="200px" />
+            <RadzenDataGridColumn TItem="EquipamentoDto" Property="Patrimonio" Title="Patrimônio" Width="200px" />
+            <RadzenDataGridColumn TItem="EquipamentoDto" Title="Status" Width="200px">
                 <Template Context="e">
                     @EnumHelper.ObterDescricaoEnum(e.Status)
                 </Template>
@@ -53,12 +56,29 @@
                     R$ @e.CustoLocacaoDiaria?.ToString("N2")
                 </Template>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="EquipamentoDto" Title="Ações" Filterable="false" Sortable="false">
-                <Template Context="e">
-                    <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Click="@(() => VerDetalhes(e.Id))" Style="margin-right: 0.25rem;" />
-                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Click="@(() => EditarEquipamento(e.Id))" Style="margin-right: 0.25rem;" />
-                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => ConfirmarExclusao(e.Id))" />
+
+            @* Novas Colunas de Alocação/Histórico - se desejar mostrar a obra atual *@
+            <RadzenDataGridColumn TItem="EquipamentoDto" Property="ObraNomeAtual" Title="Obra Atual" Width="400px">
+                <Template Context="equip">
+                    @if (!string.IsNullOrEmpty(equip.ObraNomeAtual))
+                    {
+                        <span>@equip.ClienteNomeAtual - @equip.ProjetoNomeAtual - @equip.ObraNomeAtual</span>
+                    }
+                    else
+                    {
+                        <span>Não Alocado</span>
+                    }
                 </Template>
+            </RadzenDataGridColumn>
+@*             <RadzenDataGridColumn TItem="EquipamentoDto" Property="DataInicioUsoAtual" Title="Início Uso" FormatString="{0:dd/MM/yyyy}" Width="150px" />
+            <RadzenDataGridColumn TItem="EquipamentoDto" Property="DataFimUsoAtual" Title="Fim Uso" FormatString="{0:dd/MM/yyyy}" Width="150px" /> *@
+
+            <RadzenDataGridColumn TItem="EquipamentoDto" Title="Ações" Filterable="false" Sortable="false" TextAlign="TextAlign.Center">
+                    <Template Context="e">
+                        <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Click="@(() => VerDetalhes(e.Id))" Style="margin-right: 0.25rem;" />
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Click="@(() => EditarEquipamento(e.Id))" Style="margin-right: 0.25rem;" />
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => ConfirmarExclusao(e.Id))" />
+                    </Template>
             </RadzenDataGridColumn>
         </Columns>
     </RadzenDataGrid>
@@ -82,12 +102,17 @@
         string.IsNullOrWhiteSpace(_filtro)
             ? _equipamentos
             : _equipamentos.Where(e =>
-                e.Nome.Contains(_filtro, StringComparison.OrdinalIgnoreCase) ||
-                e.Patrimonio.Contains(_filtro, StringComparison.OrdinalIgnoreCase));
+                (e.Nome?.Contains(_filtro, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (e.Patrimonio?.Contains(_filtro, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (e.ObraNomeAtual?.Contains(_filtro, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (e.ProjetoNomeAtual?.Contains(_filtro, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (e.ClienteNomeAtual?.Contains(_filtro, StringComparison.OrdinalIgnoreCase) ?? false)
+                );
 
     protected override async Task OnInitializedAsync()
     {
-        _equipamentos = (await EquipamentoApiService.GetAllAsync()).ToList();
+        // Altere esta chamada para usar o novo método que traz informações de alocação
+        _equipamentos = (await ObraEquipamentoApiService.GetEquipamentosAlocadosAsync()).ToList();
     }
 
     private void NovoEquipamento() =>
@@ -112,24 +137,25 @@
         try
         {
             await EquipamentoApiService.DeleteAsync(id);
-            _equipamentos = (await EquipamentoApiService.GetAllAsync()).ToList();
+            // Recarregue os equipamentos após a exclusão
+            _equipamentos = (await ObraEquipamentoApiService.GetEquipamentosAlocadosAsync()).ToList();
             NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Success,
-                    Summary = "Sucesso",
-                    Detail = "Equipamento excluído com sucesso",
-                    Duration = 4000
-                });
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Sucesso",
+                Detail = "Equipamento excluído com sucesso",
+                Duration = 4000
+            });
         }
         catch (Exception ex)
         {
             NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "Erro",
-                    Detail = $"Erro ao excluir equipamento: {ex.Message}",
-                    Duration = 5000
-                });
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Erro",
+                Detail = $"Erro ao excluir equipamento: {ex.Message}",
+                Duration = 5000
+            });
         }
     }
 }

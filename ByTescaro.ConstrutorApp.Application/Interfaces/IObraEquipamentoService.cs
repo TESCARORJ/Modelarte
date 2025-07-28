@@ -11,6 +11,7 @@ namespace ByTescaro.ConstrutorApp.Application.Interfaces
         Task<List<EquipamentoDto>> ObterEquipamentosDisponiveisAsync(long obraId);
         Task<List<EquipamentoDto>> ObterEquipamentosTotalDisponiveisAsync();
         Task<List<EquipamentoDto>> ObterEquipamentosTotalAlocadosAsync();
+        Task MoverEquipamentoAsync(MovimentacaoEquipamentoDto dto);
 
     }
 }

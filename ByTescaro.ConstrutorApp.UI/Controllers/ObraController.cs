@@ -2,6 +2,7 @@
 using ByTescaro.ConstrutorApp.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 
 namespace ByTescaro.ConstrutorApp.UI.Controllers
 {
@@ -11,17 +12,29 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
     public class ObraController : ControllerBase
     {
         private readonly IObraService _service;
+        private readonly ILogger<ObraController> _logger;
 
-        public ObraController(IObraService service)
+        public ObraController(IObraService service, ILogger<ObraController> logger)
         {
             _service = service;
+            _logger = logger;
         }
 
         [HttpGet]
         public async Task<IActionResult> Get()
         {
-            var obras = await _service.ObterTodosAsync();
-            return Ok(obras);
+            try
+            {
+                var obras = await _service.ObterTodosAsync();
+                return Ok(obras);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao obter todas as obras.");
+                // Retorna um 500 Internal Server Error com uma mensagem genérica.
+                // Os detalhes do erro estarão no log do servidor.
+                return StatusCode(500, "Ocorreu um erro interno no servidor.");
+            }
         }
 
         [HttpGet("{id}")]

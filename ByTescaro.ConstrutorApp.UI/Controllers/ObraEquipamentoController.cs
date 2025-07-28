@@ -11,10 +11,12 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
     public class ObraEquipamentoController : ControllerBase
     {
         private readonly IObraEquipamentoService _service;
+        private readonly IObraService _obraService;
 
-        public ObraEquipamentoController(IObraEquipamentoService service)
+        public ObraEquipamentoController(IObraEquipamentoService service, IObraService obraService)
         {
             _service = service;
+            _obraService = obraService;
         }
 
         [HttpGet("{obraId}")]
@@ -59,6 +61,21 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
             var disponiveis = await _service.ObterEquipamentosTotalAlocadosAsync();
             return Ok(disponiveis);
         }
+
+        [HttpPost("mover")]
+        public async Task<IActionResult> MoverEquipamento([FromBody] MovimentacaoEquipamentoDto dto)
+        {
+            if (dto.ObraOrigemId == dto.ObraDestinoId)
+            {
+                return BadRequest("Obra de origem e obra de destino não podem ser as mesmas.");
+            }
+
+            await _service.MoverEquipamentoAsync(dto);
+            return Ok();
+        }
+
+        
+       
     }
 
 }

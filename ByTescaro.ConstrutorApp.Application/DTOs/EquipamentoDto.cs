@@ -18,6 +18,14 @@ public class EquipamentoDto
     public string? ProjetoNome { get; set; } = string.Empty;
     public string? ClienteNome { get; set; } = string.Empty;
 
+
+    public long? ObraIdAtual { get; set; } // ID da obra atual se estiver em uso
+    public string? ObraNomeAtual { get; set; } = string.Empty; // Nome da obra atual
+    public string? ProjetoNomeAtual { get; set; } = string.Empty; // Nome do projeto da obra atual
+    public string? ClienteNomeAtual { get; set; } = string.Empty; // Nome do cliente do projeto da obra atual
+    public DateTime? DataInicioUsoAtual { get; set; } // Data de início de uso na obra atual
+    public DateTime? DataFimUsoAtual { get; set; } // Data de fim de uso na obra atual (se já finalizado)
+
     /// <summary>
     /// Cria uma cópia superficial (shallow copy) da instância atual do EquipamentoDto.
     /// Este método é útil para preservar o estado original do DTO em operações de edição.
