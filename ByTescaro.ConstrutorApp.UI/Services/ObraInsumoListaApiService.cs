@@ -18,6 +18,12 @@ namespace ByTescaro.ConstrutorApp.UI.Services
         public async Task<ObraInsumoListaDto?> CreateAsync(ObraInsumoListaDto dto)
         {
             var response = await _http.PostAsJsonAsync("api/obrainsumolista", dto);
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Erro ao criar lista de insumos: {response.StatusCode} - {errorContent}");
+            }
+
             return await response.Content.ReadFromJsonAsync<ObraInsumoListaDto>();
         }
 

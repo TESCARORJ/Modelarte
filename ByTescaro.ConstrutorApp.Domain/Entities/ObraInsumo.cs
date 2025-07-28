@@ -10,6 +10,8 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public long ObraInsumoListaId { get; set; }
         public long InsumoId { get; set; }
         public decimal Quantidade { get; set; }
+        public bool IsRecebido { get; set; } = false;
+        public DateTime? DataRecebimento { get; set; }
 
         // Navegação
         public ObraInsumoLista Lista { get; set; } 

@@ -3,10 +3,13 @@
 @using ByTescaro.ConstrutorApp.UI.Services
 @using System.ComponentModel.DataAnnotations
 @using System.Reflection
+@using Microsoft.JSInterop
+
 @inject ObraInsumoApiService InsumoService
 @inject ObraInsumoListaApiService ListaService
 @inject NotificationService NotificationService
 @inject DialogService DialogService
+@inject IJSRuntime JSRuntime
 
 <RadzenCard Style="padding: 1rem; margin-bottom: 1rem">
     <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="1rem" Class="rz-mb-4">
@@ -73,19 +76,27 @@
                       Click="@AdicionarInsumos" />
     </RadzenStack>
 
-    <RadzenDataGrid TItem="ObraInsumoDto" Data="@Lista.Itens"
+    <RadzenDataGrid @ref="grid" TItem="ObraInsumoDto" Data="@Lista.Itens"
                     Responsive="true"
                     ShowPagingSummary="false" AllowPaging="false" AllowColumnResize="true"
                     AllowSorting="true" PagerHorizontalAlign="HorizontalAlign.Left"
-                    ColumnWidth="200px"
                     Editable="true" EditMode="DataGridEditMode.Single"
-                    AutoGenerateColumns="false" Class="rz-mt-2">
+                    AutoGenerateColumns="false" Class="rz-mt-2"
+                    RowUpdate="@OnRowUpdate"
+                    CellClick="@OnCellClick"
+                    Sort="@(args => ResetEditingState())"
+                    Page="@(args => ResetEditingState())"
+                    Filter="@(args => ResetEditingState())">
         <Columns>
             <RadzenDataGridColumn TItem="ObraInsumoDto" Property="InsumoNome" Title="Insumo" />
 
-            <RadzenDataGridColumn TItem="ObraInsumoDto" Property="Quantidade" Title="Quantidade">
+            <RadzenDataGridColumn TItem="ObraInsumoDto" Property="Quantidade" Title="Quantidade" IsInEditMode="@IsEditing">
+                <Template Context="item">
+                    <RadzenText Text="@item.Quantidade.ToString("N2")" />
+                </Template>
                 <EditTemplate Context="item">
-                    <RadzenNumeric TValue="decimal" @bind-Value="item.Quantidade" Style="width:100%;" />
+                    @* Não precisa do Change handler se o Update é no RowUpdate do grid *@
+                    <RadzenNumeric @bind-Value="item.Quantidade" Style="width:100%;" TValue="decimal" />
                 </EditTemplate>
             </RadzenDataGridColumn>
 
@@ -95,6 +106,26 @@
                 </Template>
             </RadzenDataGridColumn>
 
+            <RadzenDataGridColumn TItem="ObraInsumoDto" Property="IsRecebido" Title="Recebido" Width="150px" TextAlign="TextAlign.Center" IsInEditMode="@IsEditing">
+                <Template Context="item">
+                    <RadzenCheckBox Value="item.IsRecebido" TValue="bool" Disabled="true" />
+                </Template>
+                <EditTemplate Context="item">
+                    @* Não precisa do Change handler se o Update é no RowUpdate do grid *@
+                    <RadzenCheckBox @ref="editor" @bind-Value="item.IsRecebido" TValue="bool" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="ObraInsumoDto" Property="DataRecebimento" Title="Data Recebimento" Width="200px" IsInEditMode="@IsEditing">
+                <Template Context="item">
+                    @item.DataRecebimento?.ToString("dd/MM/yyyy")
+                </Template>
+                <EditTemplate Context="item">
+                    @* Não precisa do Change handler se o Update é no RowUpdate do grid *@
+                    <RadzenDatePicker @ref="editor" @bind-Value="item.DataRecebimento" DateFormat="dd/MM/yyyy" Style="width:100%;" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
             <RadzenDataGridColumn TItem="ObraInsumoDto" Title="" Width="60px" Sortable="false" TextAlign="TextAlign.Center">
                 <Template Context="item">
                     <RadzenButton Icon="delete"
@@ -102,12 +133,6 @@
                                   Size="ButtonSize.Small"
                                   Click="@(() => ConfirmarRemocaoItem(item))" />
                 </Template>
-                <EditTemplate Context="item">
-                    <RadzenButton Icon="delete"
-                                  ButtonStyle="ButtonStyle.Danger"
-                                  Size="ButtonSize.Small"
-                                  Click="@(() => ConfirmarRemocaoItem(item))" />
-                </EditTemplate>
             </RadzenDataGridColumn>
         </Columns>
     </RadzenDataGrid>
@@ -117,7 +142,6 @@
     [Parameter] public ObraInsumoListaDto? Lista { get; set; }
     [Parameter] public ObraDto Obra { get; set; } = new();
 
-    // Renomeado para melhor clareza. Indica que uma mudança na lista ocorreu.
     [Parameter] public EventCallback OnListChanged { get; set; }
 
     private List<InsumoDto> InsumosDisponiveis = new();
@@ -128,33 +152,24 @@
 
     private decimal QuantidadeSelecionada { get; set; } = 1;
 
-    private List<ObraInsumoDto> _insumosOriginais = new();
     private List<long> _insumosRemovidos = new();
+
+    RadzenDataGrid<ObraInsumoDto> grid = default!;
+    string? columnEditing;
+    ObraInsumoDto? itemEditing; // Agora pode ser null
+    IRadzenFormComponent? editor; // Usado apenas para o foco
+    bool editorFocused;
 
     protected override async Task OnInitializedAsync()
     {
-        // Se Lista for nula, inicialize-a para evitar NullReferenceException
         Lista ??= new ObraInsumoListaDto
-            {
-                ObraId = Obra.Id,
-                Data = DateOnly.FromDateTime(DateTime.Today),
-                Itens = new List<ObraInsumoDto>()
-            };
+        {
+            ObraId = Obra.Id,
+            Data = DateOnly.FromDateTime(DateTime.Today),
+            Itens = new List<ObraInsumoDto>()
+        };
 
         await LoadInsumosData();
-
-        if (Lista.Itens != null)
-        {
-            _insumosOriginais = Lista.Itens.Select(i => new ObraInsumoDto
-                {
-                    Id = i.Id,
-                    ObraInsumoListaId = i.ObraInsumoListaId,
-                    InsumoId = i.InsumoId,
-                    InsumoNome = i.InsumoNome,
-                    UnidadeMedida = i.UnidadeMedida,
-                    Quantidade = i.Quantidade
-                }).ToList();
-        }
     }
 
     private async Task LoadInsumosData()
@@ -165,16 +180,18 @@
 
         InsumosRelacionadosEtapa = relacionadosEtapa
           .Select(p => new InsumoDto
-              {
-                  Id = p.Id,
-                  Nome = p.Nome,
-                  UnidadeMedida = p.UnidadeMedida
-              })
+          {
+              Id = p.Id,
+              Nome = p.Nome,
+              UnidadeMedida = p.UnidadeMedida
+          })
           .ToList();
     }
 
     private async Task SalvarLista()
     {
+        ResetEditingState(); // Garante que o estado de edição é limpo ao salvar a lista
+
         if (Lista is null || Lista.Itens is null || !Lista.Itens.Any())
         {
             NotificationService.Notify(NotificationSeverity.Warning, "Validação", "Adicione ao menos um item à lista.");
@@ -188,9 +205,7 @@
                 var novaLista = await ListaService.CreateAsync(Lista);
                 if (novaLista is not null)
                 {
-                    // A substituição da lista no Obra.ListasInsumo deve ser feita no componente pai
-                    // ou o pai deve recarregar a Obra completa.
-                    Lista = novaLista; // Atualiza a instância local do Lista
+                    Lista = novaLista;
                     NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Nova lista de insumos criada com sucesso.");
                 }
                 else
@@ -201,13 +216,18 @@
             }
             else
             {
+                foreach (var insumoId in _insumosRemovidos)
+                {
+                    // Lógica para remover itens do banco de dados (se necessário)
+                }
+                _insumosRemovidos.Clear();
+
                 await ListaService.UpdateAsync(Lista);
                 NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Lista de insumos atualizada com sucesso.");
             }
 
-            // Notificar o componente pai que uma mudança na lista ocorreu, para que ele recarregue a Obra.
             await OnListChanged.InvokeAsync();
-            StateHasChanged(); // Renderiza este componente para refletir o ID, se aplicável
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -217,17 +237,29 @@
 
     private async Task ConfirmarRemocaoItem(ObraInsumoDto item)
     {
+        // Se o item que está sendo removido for o item atualmente em edição, resete o estado de edição.
+        if (itemEditing == item)
+        {
+            ResetEditingState();
+        }
+
         bool? confirm = await DialogService.Confirm($"Remover o insumo '{item.InsumoNome}'?", "Confirmação");
         if (confirm == true)
         {
-            _insumosRemovidos.Add(item.InsumoId);
-            Lista!.Itens = Lista.Itens.Where(i => i.InsumoId != item.InsumoId).ToList();
+            if (item.Id > 0)
+            {
+                _insumosRemovidos.Add(item.Id);
+            }
+            Lista!.Itens.Remove(item);
+            NotificationService.Notify(NotificationSeverity.Success, "Item Removido", $"O insumo '{item.InsumoNome}' foi removido da lista localmente. Salve para persistir a alteração.");
             StateHasChanged();
         }
     }
 
     private async Task ConfirmarRemocaoLista()
     {
+        ResetEditingState(); // Garante que o estado de edição é limpo ao remover a lista
+
         bool? confirm = await DialogService.Confirm($"Excluir a lista de {Lista!.NomeResponsavel}?", "Excluir Lista");
         if (confirm == true)
         {
@@ -238,17 +270,17 @@
             }
             else
             {
-                // Se a lista ainda não foi salva (Id == 0), apenas remova-a localmente
-                // (a ação de remover do Obra.ListasInsumo será feita no pai ao recarregar a Obra)
+                NotificationService.Notify(NotificationSeverity.Info, "Lista Removida", "A lista não salva foi descartada.");
             }
 
-            // Notificar o componente pai para recarregar a Obra após a exclusão da lista.
             await OnListChanged.InvokeAsync();
         }
     }
 
     private async Task AdicionarInsumos()
     {
+        ResetEditingState();
+
         Lista!.Itens ??= new();
 
         var todosSelecionados = _insumosSelecionados
@@ -257,12 +289,13 @@
           .ToList();
 
         var baseAtualizada = Lista.Itens
-          .Where(i => !_insumosRemovidos.Contains(i.InsumoId)) // Considera itens já removidos
+          .Where(i => !_insumosRemovidos.Contains(i.InsumoId))
           .ToList();
 
         foreach (var id in todosSelecionados)
         {
-            if (!baseAtualizada.Any(i => i.InsumoId == id))
+            var existingItem = baseAtualizada.FirstOrDefault(i => i.InsumoId == id);
+            if (existingItem == null)
             {
                 var insumo = InsumosDisponiveis.Concat(InsumosRelacionadosEtapa)
                   .FirstOrDefault(i => i.Id == id);
@@ -270,31 +303,38 @@
                 if (insumo is not null)
                 {
                     baseAtualizada.Add(new ObraInsumoDto
-                        {
-                            ObraInsumoListaId = Lista.Id,
-                            InsumoId = insumo.Id,
-                            InsumoNome = insumo.Nome,
-                            UnidadeMedida = insumo.UnidadeMedida,
-                            Quantidade = QuantidadeSelecionada
-                        });
+                    {
+                        ObraInsumoListaId = Lista.Id,
+                        InsumoId = insumo.Id,
+                        InsumoNome = insumo.Nome,
+                        UnidadeMedida = insumo.UnidadeMedida,
+                        Quantidade = QuantidadeSelecionada,
+                        IsRecebido = false,
+                        DataRecebimento = null,
+                        ObraId = Obra.Id
+                    });
+                }
+            }
+            else
+            {
+                if (_insumosRemovidos.Contains(existingItem.Id))
+                {
+                    _insumosRemovidos.Remove(existingItem.Id);
                 }
             }
         }
 
         Lista.Itens = baseAtualizada;
 
-        // Limpa as seleções após adicionar
         _insumosSelecionados.Clear();
         _insumosRelacionadosSelecionados.Clear();
         QuantidadeSelecionada = 1;
 
-        // Se a lista já tem um ID, salva as alterações dos itens imediatamente
-        // Caso contrário, eles serão salvos quando a lista principal for salva
         if (Lista.Id > 0)
         {
             try
             {
-                await ListaService.UpdateAsync(Lista); // Salva as alterações dos itens
+                await ListaService.UpdateAsync(Lista);
                 NotificationService.Notify(NotificationSeverity.Success, "Atualizado", "Itens adicionados e salvos com sucesso.");
             }
             catch (Exception ex)
@@ -308,6 +348,96 @@
         }
 
         StateHasChanged();
+    }
+
+    // Este método verifica se a célula da coluna especificada para o item está em modo de edição.
+    // É usado pela propriedade IsInEditMode de cada RadzenDataGridColumn editável.
+    bool IsEditing(string columnName, ObraInsumoDto item)
+    {
+        return columnEditing == columnName && itemEditing == item;
+    }
+
+    // Reseta o estado de edição atual do grid.
+    // Renomeado de Reset() para ResetEditingState() para clareza e para evitar confusão com o antigo Update().
+    void ResetEditingState()
+    {
+        editorFocused = false;
+        columnEditing = null;
+        itemEditing = null;
+    }
+
+    // Este evento é disparado quando uma célula do grid é clicada.
+    // Ele inicia o modo de edição para a célula clicada, se for editável.
+    async Task OnCellClick(DataGridCellMouseEventArgs<ObraInsumoDto> args)
+    {
+        // Define quais colunas NÃO devem ser editáveis ao clicar na célula.
+        var nonEditableProperties = new HashSet<string> { "InsumoNome", "UnidadeMedida", "" };
+
+        if (!grid.IsValid ||
+            (itemEditing == args.Data && columnEditing == args.Column.Property) ||
+            nonEditableProperties.Contains(args.Column.Property))
+        {
+            return;
+        }
+
+        // Se houver um item (linha) que estava sendo editado anteriormente (e não é o mesmo item clicado),
+        // força o RadzenDataGrid a sair do modo de edição para aquela linha/célula.
+        // O RowUpdate do grid será disparado neste momento.
+        if (itemEditing != null && itemEditing != args.Data)
+        {
+            await grid.UpdateRow(itemEditing);
+            // ResetEditingState() não é chamado imediatamente aqui. O RowUpdate fará isso.
+        }
+
+        // Define a coluna e o item que agora estão em modo de edição.
+        columnEditing = args.Column.Property;
+        itemEditing = args.Data;
+
+        // Diz ao RadzenDataGrid para colocar a linha do item clicado em modo de edição.
+        await grid.EditRow(itemEditing);
+
+        // Reseta a flag de foco do editor para que o novo editor possa ser focado.
+        editorFocused = false;
+        StateHasChanged(); // Força a re-renderização do componente para aplicar o modo de edição.
+    }
+
+    // Este método é o handler para o evento RowUpdate do RadzenDataGrid.
+    // Ele é chamado quando uma linha editada sai do modo de edição (ex: usuário clica fora da linha).
+    async Task OnRowUpdate(ObraInsumoDto item) // O Radzen passa o item editado aqui
+    {
+        // As propriedades do 'item' já foram atualizadas na coleção 'Lista.Itens'
+        // devido ao two-way binding (@bind-Value) nos EditTemplates.
+        // Você pode adicionar validações aqui se quiser.
+
+        // Notifique que a alteração foi aplicada localmente. O salvamento para o banco
+        // de dados ocorre no método SalvarLista(), quando o botão "Salvar Alterações" é clicado.
+        NotificationService.Notify(NotificationSeverity.Info, "Alteração Local", $"Item '{item.InsumoNome}' atualizado localmente. Salve a lista para persistir.");
+
+        // IMPORTANTE: Resete o estado de edição APÓS o RowUpdate ter sido processado.
+        // Este é o ponto onde o itemEditing pode ser seguramente zerado.
+        ResetEditingState(); // Agora este é o único local onde Reset é chamado após uma edição de linha.
+    }
+
+
+    // Garante que o componente de edição (`editor`) receba o foco após ser renderizado,
+    // melhorando a usabilidade.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (!editorFocused && editor != null)
+        {
+            editorFocused = true;
+            try
+            {
+                await editor.FocusAsync();
+            }
+            catch (Exception ex)
+            {
+                // Ignorar exceções de foco, que podem ocorrer se o componente for removido do DOM rapidamente
+                Console.WriteLine($"Erro ao focar editor: {ex.Message}");
+            }
+        }
     }
 
     private static string ObterNomeUnidade(UnidadeMedida? unidade)

@@ -117,7 +117,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     // Atualize as propriedades que podem mudar
                     existingItem.InsumoId = itemDto.InsumoId;
                     existingItem.Quantidade = itemDto.Quantidade;
-                
+                    existingItem.IsRecebido = itemDto.IsRecebido; 
+                    existingItem.DataRecebimento = itemDto.DataRecebimento; 
+
+
 
                     // Não é necessário chamar _unitOfWork.ObraInsumoRepository.Update(existingItem);
                     // O EF Core já está rastreando existingItem e detectará as mudanças.

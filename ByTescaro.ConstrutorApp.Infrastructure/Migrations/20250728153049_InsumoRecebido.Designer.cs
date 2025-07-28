@@ -4,6 +4,7 @@ using ByTescaro.ConstrutorApp.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250728153049_InsumoRecebido")]
+    partial class InsumoRecebido
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -826,7 +829,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Migrations
                     b.Property<long>("InsumoId")
                         .HasColumnType("bigint");
 
-                    b.Property<bool>("IsRecebido")
+                    b.Property<bool?>("IsRecebido")
                         .HasColumnType("bit");
 
                     b.Property<long>("ObraId")
