@@ -26,6 +26,7 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs.Relatorios
         public List<ObraEquipamentoRelatorioDto> Equipamentos { get; set; } = new List<ObraEquipamentoRelatorioDto>();
         public List<ObraDocumentoRelatorioDto> Documentos { get; set; } = new List<ObraDocumentoRelatorioDto>();
         public List<ObraImagemRelatorioDto> Imagens { get; set; } = new List<ObraImagemRelatorioDto>();
-        // Adicione outras propriedades conforme a necessidade do relatório
+        public List<ObraRetrabalhoRelatorioDto> Retrabalhos { get; set; } = new List<ObraRetrabalhoRelatorioDto>();
+        public List<ObraPendenciaRelatorioDto> Pendencias { get; set; } = new List<ObraPendenciaRelatorioDto>();
     }
 }

@@ -406,7 +406,7 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.PercentualConclusao, opt => opt.Ignore()) // Calcular no serviço
             .ForMember(dest => dest.Itens, opt => opt.MapFrom(src => src.Itens));
 
-        CreateMap<ObraItemEtapa, ObraItemEtapaRelatorioDto>().ReverseMap();
+        CreateMap<ObraItemEtapa, ObraItemEtapaRelatorioDto>();
 
         //CreateMap<ObraInsumoLista, ObraInsumoListaRelatorioDto>()
         //        .ForMember(dest => dest.NomeResponsavel, opt => opt.MapFrom(src => src.Responsavel.Nome)) // Assumindo 'Responsavel' na entidade ObraInsumoLista
@@ -428,5 +428,11 @@ public class ApplicationProfile : Profile
 
         CreateMap<ObraDocumento, ObraDocumentoRelatorioDto>();
         CreateMap<ObraImagem, ObraImagemRelatorioDto>();
+        CreateMap<ObraRetrabalho, ObraRetrabalhoRelatorioDto>()
+            .ForMember(dest => dest.NomeResponsavel, opt => opt.MapFrom(src => src.Responsavel != null ? src.Responsavel.Nome : string.Empty));
+
+        CreateMap<ObraPendencia, ObraPendenciaRelatorioDto>()
+            .ForMember(dest => dest.NomeResponsavel, opt => opt.MapFrom(src => src.Responsavel != null ? src.Responsavel.Nome : string.Empty));
+
     }
 }

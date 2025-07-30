@@ -19,10 +19,7 @@
                     Class="rz-mb-2"
     FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.StartsWith" AllowFiltering="true" @bind-Value="_funcionariosSelecionados" />
 
-@*     <RadzenButton Text="Adicionar Selecionados"
-    Style="margin-top: 1rem; margin-bottom: 1rem;"
-    Disabled="@(!_funcionariosSelecionados.Any())"
-    Click="AdicionarFuncionarios" /> *@
+
 
     <RadzenRow Style="margin-bottom: 1rem; gap: 0.5rem">
         <RadzenColumn Size="12" SizeMD="6">
@@ -48,8 +45,7 @@
                 <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="FuncaoNoObra" Title="Função" />
                 <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="DataInicio" Title="Início" FormatString="{0:dd/MM/yyyy}" />
                 <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="DataFim" Title="Fim" FormatString="{0:dd/MM/yyyy}" />
-@*                 <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="DataHoraCadastro" Title="Data Cadastro" FormatString="{0:dd/MM/yyyy}" />
-                <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="UsuarioCadastro" Title="Cadastrador por" /> *@
+
                 <RadzenDataGridColumn TItem="ObraFuncionarioDto">
                     <Template Context="funcionario">
                         <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => ConfirmarRemocao(funcionario))" />
@@ -62,13 +58,7 @@
     {
         <RadzenText Text="Nenhum funcionário adicionado à obra." />
     }
-@*     <RadzenButton Text="Salvar Funcionários"
-    Icon="save"
-    ButtonStyle="ButtonStyle.Primary"
-    Style="margin-top: 1rem;"
-    Click="SalvarFuncionariosAsync"
-    Disabled="@IsBotaoSalvarDesabilitado" />
- *@
+
 
 </RadzenCard>
 

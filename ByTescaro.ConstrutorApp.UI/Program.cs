@@ -320,6 +320,19 @@ builder.Services.AddScoped<EquipamentoImportacaoApiService>(sp =>
     return new EquipamentoImportacaoApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
 });
 
+builder.Services.AddScoped<ObraDocumentoApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new ObraDocumentoApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
+
+
+builder.Services.AddScoped<ObraImagemApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new ObraImagemApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
+
 
 
 #endregion
@@ -419,6 +432,8 @@ builder.Services.AddHostedService<DailyReminderBackgroundService>();
 builder.Services.AddScoped<IHolidaysService, BrazilHolidayService>();
 builder.Services.AddScoped<IHolidaysService, HolidayService>();
 builder.Services.AddScoped<IRelatorioObraService, RelatorioObraService>();
+builder.Services.AddScoped<IObraDocumentoService, ObraDocumentoService>();
+builder.Services.AddScoped<IObraImagemService, ObraImagemService>();
 
 
 

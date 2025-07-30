@@ -1,17 +1,13 @@
 ﻿using AutoMapper;
 using ByTescaro.ConstrutorApp.Application.DTOs.Relatorios;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
-using ByTescaro.ConstrutorApp.Application.Utils; // Adicionado para Path.Combine e File.Exists
+using ByTescaro.ConstrutorApp.Application.Utils; // Para EnumHelper
 using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 
 namespace ByTescaro.ConstrutorApp.Application.Services
 {
@@ -45,15 +41,11 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var obraRelatorioDto = _mapper.Map<ObraRelatorioDto>(obra);
 
             obraRelatorioDto.ProgressoAtual = CalcularProgressoObra(obra);
-            //obraRelatorioDto.OrcamentoTotal = CalcularOrcamentoTotalObra(obra); // Certifique-se de que este método está descomentado e funcional.
+            //obraRelatorioDto.OrcamentoTotal = CalcularOrcamentoTotalObra(obra);
 
             foreach (var etapa in obraRelatorioDto.Etapas)
             {
-                // Aqui, a propriedade Nome da Etapa (Domain) deve ser mapeada para Nome (DTO)
-                // Se o nome da propriedade na entidade for 'NomeEtapa', o mapeamento deve ser:
-                // CreateMap<ObraEtapa, ObraEtapaRelatorioDto>().ForMember(dest => dest.Nome, opt => opt.MapFrom(src => src.NomeEtapa));
-                // Caso contrário, se for apenas 'Nome', a linha abaixo está correta.
-                var etapaOriginal = obra.Etapas.FirstOrDefault(e => e.Nome == etapa.Nome); // Assumindo que ObraEtapa tem NomeEtapa
+                var etapaOriginal = obra.Etapas.FirstOrDefault(e => e.Nome == etapa.Nome);
                 if (etapaOriginal != null)
                 {
                     etapa.PercentualConclusao = CalcularProgressoEtapa(etapaOriginal);
@@ -101,10 +93,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                 table.Cell().Text(obraRelatorioDto.DataConclusaoPrevista?.ToShortDateString() ?? "N/A");
                                 table.Cell().Text("Progresso Atual:").SemiBold();
                                 table.Cell().Text($"{obraRelatorioDto.ProgressoAtual}%");
-                                //table.Cell().Text("Orçamento Total:").SemiBold();
-                                //table.Cell().Text(obraRelatorioDto.OrcamentoTotal.ToString("C"));
-                                //table.Cell().Text("Descrição:").SemiBold();
-                                //table.Cell().Text(obraRelatorioDto.Descricao);
+                                table.Cell().Text("Orçamento Total:").SemiBold();
+                                table.Cell().Text(obraRelatorioDto.OrcamentoTotal.ToString("C"));
+                                table.Cell().Text("Descrição:").SemiBold();
+                                table.Cell().Text(obraRelatorioDto.Descricao);
                             });
 
                             if (obraRelatorioDto.Etapas.Any())
@@ -114,9 +106,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
                                 foreach (var etapa in obraRelatorioDto.Etapas.OrderBy(e => e.DataInicioPrevista))
                                 {
-                                    // APLICAR ESTILOS AO CONTAINER DO ITEM, NÃO AO RESULTADO DA DEFINIÇÃO DA COLUNA INTERNA
                                     column.Item()
-                                        .BorderBottom(1).BorderColor(Colors.Grey.Lighten2).PaddingBottom(10) // <-- CORREÇÃO AQUI
+                                        .BorderBottom(1).BorderColor(Colors.Grey.Lighten2).PaddingBottom(10)
                                         .Column(etapaColumn =>
                                         {
                                             etapaColumn.Spacing(5);
@@ -136,35 +127,34 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                                         .FontSize(10);
                                                 }
                                             }
-                                        }); // Removidos os estilos daqui
+                                        });
                                 }
                             }
 
-                            if (obraRelatorioDto.Insumos.Any()) // ObraRelatorioDto.Insumos é novamente uma lista plana
+                            if (obraRelatorioDto.Insumos.Any())
                             {
                                 column.Item().PaddingTop(10)
                                     .Text("Insumos Utilizados").SemiBold().FontSize(14);
 
                                 var insumosAgrupados = obraRelatorioDto.Insumos
-                                    .GroupBy(i => i.ResponsavelRecbimentoNome ?? "Não Informado") // Agrupa por responsável
+                                    .GroupBy(i => i.ResponsavelRecbimentoNome ?? "Não Informado")
                                     .OrderBy(g => g.Key);
 
                                 foreach (var grupoResponsavel in insumosAgrupados)
                                 {
                                     column.Item()
-                                        .BorderBottom(1).BorderColor(Colors.Grey.Lighten3).PaddingBottom(10) // Estilos no item que contém a coluna
+                                        .BorderBottom(1).BorderColor(Colors.Grey.Lighten3).PaddingBottom(10)
                                         .Column(responsavelColumn =>
                                         {
                                             responsavelColumn.Spacing(5);
-                                            responsavelColumn.Item().PaddingBottom(5)
-                                                .Text($"Recebido por: {grupoResponsavel.Key}") // Nome do responsável
+                                            responsavelColumn.Item().PaddingBottom(5).Text($"Recebido por: {grupoResponsavel.Key}")
                                                 .SemiBold().FontSize(12);
 
                                             responsavelColumn.Item().Table(table =>
                                             {
                                                 table.ColumnsDefinition(columns =>
                                                 {
-                                                    columns.RelativeColumn();
+                                                    columns.RelativeColumn(3);
                                                     columns.RelativeColumn();
                                                     columns.RelativeColumn();
                                                     columns.RelativeColumn();
@@ -173,20 +163,20 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
                                                 table.Header(header =>
                                                 {
-                                                    header.Cell().Text("Insumo").SemiBold();
-                                                    header.Cell().Text("Unidade").SemiBold();
-                                                    header.Cell().Text("Qtd").SemiBold();
-                                                    header.Cell().Text("Recebido?").SemiBold();
-                                                    header.Cell().Text("Recebido em:").SemiBold();
+                                                    header.Cell().BorderBottom(1).Padding(5).Text("Insumo").SemiBold();
+                                                    header.Cell().BorderBottom(1).Padding(5).Text("Unidade").SemiBold();
+                                                    header.Cell().BorderBottom(1).Padding(5).Text("Qtd").SemiBold();
+                                                    header.Cell().BorderBottom(1).Padding(5).Text("Recebido?").SemiBold();
+                                                    header.Cell().BorderBottom(1).Padding(5).Text("Recebido em:").SemiBold();
                                                 });
 
-                                                foreach (var insumo in grupoResponsavel.OrderBy(i => i.InsumoNome)) // Ordenar insumos dentro do grupo
+                                                foreach (var insumo in grupoResponsavel.OrderBy(i => i.InsumoNome))
                                                 {
-                                                    table.Cell().Text(insumo.InsumoNome);
-                                                    table.Cell().Text(EnumHelper.ObterDescricaoEnum(insumo.UnidadeMedida));
-                                                    table.Cell().Text(insumo.Quantidade.ToString("N2"));
-                                                    table.Cell().Text(insumo.IsRecebido ? "Sim" : "Não");
-                                                    table.Cell().Text(insumo.DataRecebimento?.ToShortDateString() ?? string.Empty);
+                                                    table.Cell().Padding(2).Text(insumo.InsumoNome);
+                                                    table.Cell().Padding(2).Text(EnumHelper.ObterDescricaoEnum(insumo.UnidadeMedida));
+                                                    table.Cell().Padding(2).AlignRight().Text(insumo.Quantidade.ToString("N2"));
+                                                    table.Cell().Padding(2).AlignRight().Text(insumo.IsRecebido ? "Sim" : "Não");
+                                                    table.Cell().Padding(2).AlignRight().Text(insumo.DataRecebimento?.ToShortDateString() ?? string.Empty);
                                                 }
                                             });
                                         });
@@ -262,6 +252,66 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                     }
                                 });
                             }
+                            
+                            if (obraRelatorioDto.Retrabalhos.Any())
+                            {
+                                column.Item().PaddingTop(10)
+                                    .Text("Retrabalhos").SemiBold().FontSize(14);
+                                column.Item().Table(table =>
+                                {
+                                    table.ColumnsDefinition(columns =>
+                                    {
+                                        columns.RelativeColumn(2);
+                                        columns.RelativeColumn();
+                                        columns.RelativeColumn();
+                                        
+                                    });
+
+                                    table.Header(header =>
+                                    {
+                                        header.Cell().BorderBottom(1).Padding(5).Text("Descrição").SemiBold();
+                                        header.Cell().BorderBottom(1).Padding(5).Text("Responsável").SemiBold();
+                                        header.Cell().BorderBottom(1).Padding(5).Text("Status").SemiBold();
+                                    });
+
+                                    foreach (var retrab in obraRelatorioDto.Retrabalhos)
+                                    {
+                                        table.Cell().Padding(2).Text(retrab.Descricao);
+                                        table.Cell().Padding(2).Text(retrab.NomeResponsavel);
+                                        table.Cell().Padding(2).Text(EnumHelper.ObterDescricaoEnum(retrab.Status));
+                                    }
+                                });
+                            }
+
+                            if (obraRelatorioDto.Pendencias.Any())
+                            {
+                                column.Item().PaddingTop(10)
+                                    .Text("Pendências").SemiBold().FontSize(14);
+                                column.Item().Table(table =>
+                                {
+                                    table.ColumnsDefinition(columns =>
+                                    {
+                                        columns.RelativeColumn(2);
+                                        columns.RelativeColumn();
+                                        columns.RelativeColumn();
+
+                                    });
+
+                                    table.Header(header =>
+                                    {
+                                        header.Cell().BorderBottom(1).Padding(5).Text("Descrição").SemiBold();
+                                        header.Cell().BorderBottom(1).Padding(5).Text("Responsável").SemiBold();
+                                        header.Cell().BorderBottom(1).Padding(5).Text("Status").SemiBold();
+                                    });
+
+                                    foreach (var pend in obraRelatorioDto.Pendencias)
+                                    {
+                                        table.Cell().Padding(2).Text(pend.Descricao);
+                                        table.Cell().Padding(2).Text(pend.NomeResponsavel);
+                                        table.Cell().Padding(2).Text(EnumHelper.ObterDescricaoEnum(pend.Status));
+                                    }
+                                });
+                            }
 
                             if (obraRelatorioDto.Documentos.Any())
                             {
@@ -269,7 +319,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                     .Text("Documentos").SemiBold().FontSize(14);
                                 foreach (var doc in obraRelatorioDto.Documentos)
                                 {
-                                    column.Item().Text($"- {doc.NomeDocumento} ({doc.TipoArquivo})");
+                                    column.Item().Text($"- {doc.NomeOriginal} ({doc.Extensao})");
                                 }
                             }
 
@@ -277,31 +327,64 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                             {
                                 column.Item().PaddingTop(10)
                                     .Text("Imagens").SemiBold().FontSize(14);
-                                column.Item().Grid(grid =>
+
+                                // Substituído Grid por Column e Row
+                                column.Item().Column(imageContainer =>
                                 {
-                                    grid.Columns(3); // 3 imagens por linha
-                                    foreach (var img in obraRelatorioDto.Imagens)
+                                    const int colunas = 3; // Número de colunas desejado
+                                    var imagens = obraRelatorioDto.Imagens.ToList();
+
+                                    // Iterar pelas imagens em blocos de 'colunas'
+                                    for (int i = 0; i < imagens.Count; i += colunas)
                                     {
-                                        try
+                                        var imagensDaLinha = imagens.Skip(i).Take(colunas).ToList();
+
+                                        imageContainer.Item().Row(row =>
                                         {
-                                            var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", img.CaminhoImagem.TrimStart('/'));
-                                            if (System.IO.File.Exists(imagePath))
+                                            row.Spacing(5); // Espaçamento entre as imagens na linha
+
+                                            foreach (var img in imagensDaLinha)
                                             {
-                                                grid.Item().Height(100).Width(100).Padding(5)
-                                                    .Image(imagePath).FitArea();
+                                                row.RelativeItem().Column(imgCol => // Usar Column dentro de Row para cada imagem
+                                                {
+                                                    try
+                                                    {
+                                                        var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", img.CaminhoRelativo.TrimStart('/'));
+                                                        if (System.IO.File.Exists(imagePath))
+                                                        {
+                                                            imgCol.Item().Height(100).Width(100).Padding(5)
+                                                                .Image(imagePath).FitArea();
+                                                        }
+                                                        else
+                                                        {
+                                                            _logger.LogWarning($"Imagem não encontrada no caminho: {imagePath}");
+                                                            imgCol.Item().Height(100).Width(100).Padding(5)
+                                                                .AlignCenter().AlignMiddle()
+                                                                .Text("Imagem não encontrada").FontSize(8);
+                                                        }
+                                                    }
+                                                    catch (Exception ex)
+                                                    {
+                                                        _logger.LogError(ex, $"Erro ao carregar imagem para o relatório: {img.CaminhoRelativo}");
+                                                        imgCol.Item().Height(100).Width(100).Padding(5)
+                                                            .AlignCenter().AlignMiddle()
+                                                            .Text("Erro ao carregar imagem").FontSize(8);
+                                                    }
+                                                });
                                             }
-                                            else
+
+                                            // Adicionar itens vazios para preencher a linha se houver menos imagens que o número de colunas
+                                            int colunasFaltantes = colunas - imagensDaLinha.Count;
+                                            for (int j = 0; j < colunasFaltantes; j++)
                                             {
-                                                _logger.LogWarning($"Imagem não encontrada no caminho: {imagePath}");
-                                                grid.Item().Height(100).Width(100).Padding(5)
-                                                    .Text("Imagem não encontrada").FontSize(8).AlignCenter();
+                                                row.RelativeItem().Text(string.Empty); // Adiciona um espaço vazio
                                             }
-                                        }
-                                        catch (Exception ex)
+                                        });
+
+                                        // Adicionar um pequeno padding entre as linhas de imagens
+                                        if (i + colunas < imagens.Count)
                                         {
-                                            _logger.LogError(ex, $"Erro ao carregar imagem para o relatório: {img.CaminhoImagem}");
-                                            grid.Item().Height(100).Width(100).Padding(5)
-                                                .Text("Erro ao carregar imagem").FontSize(8).AlignCenter();
+                                            imageContainer.Item().PaddingBottom(5).Text(string.Empty);
                                         }
                                     }
                                 });
@@ -325,7 +408,6 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             return document.GeneratePdf();
         }
 
-        // Métodos auxiliares (podem ser movidos para um utilitário se usados em mais lugares)
         private int CalcularProgressoObra(Obra obra)
         {
             if (obra == null || !obra.Etapas.Any())

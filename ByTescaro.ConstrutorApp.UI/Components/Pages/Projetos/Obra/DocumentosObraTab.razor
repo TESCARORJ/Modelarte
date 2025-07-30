@@ -1,18 +1,13 @@
 ﻿@using ByTescaro.ConstrutorApp.Application.DTOs
-@using ByTescaro.ConstrutorApp.Application.Interfaces
-@using ByTescaro.ConstrutorApp.Domain.Entities
+@using ByTescaro.ConstrutorApp.UI.Services 
 @using ByTescaro.ConstrutorApp.Domain.Enums
 @using ByTescaro.ConstrutorApp.Application.Utils
-@using ByTescaro.ConstrutorApp.Domain.Interfaces
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
-@inject IUsuarioLogadoService UsuarioLogadoService
 @inject NotificationService NotificationService
 @inject DialogService DialogService
-@inject IUnitOfWork UnitOfWork 
-@inject IAuditoriaService AuditoriaService
-
-
+@inject ObraDocumentoApiService ObraDocumentoApiService 
+@inject ObraApiService ObraApiService 
 
 <RadzenCard Class="rz-p-4">
     <RadzenHeading Size="H6" Text="Upload de Documentos" />
@@ -55,20 +50,25 @@
 
 @code {
     [Parameter] public ObraDto Obra { get; set; } = new();
-    private long usuarioLogadoId;
-    private string? usuarioLogadoNome;
 
     private string accepts => string.Join(", ", Enum.GetValues<ExtensaoDocumentoPermitida>().Select(e => $".{e.ToString().ToLower()}"));
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        var usuario = await UsuarioLogadoService.ObterUsuarioAtualAsync();
-        usuarioLogadoNome = usuario?.Nome ?? "Sistema";
-        usuarioLogadoId = usuario?.Id ?? 0;
+        // Garante que o Obra.Id seja válido antes de buscar os dados
+        if (Obra != null && Obra.Id > 0)
+        {
+            // Carrega os documentos associados a esta obra
+            Obra.Documentos = await ObraDocumentoApiService.GetByObraIdAsync(Obra.Id);
+            StateHasChanged();
+        }
     }
 
     private async void ProcessarUpload(UploadChangeEventArgs args)
     {
+        if (Obra.Documentos == null)
+            Obra.Documentos = new List<ObraDocumentoDto>();
+
         foreach (var file in args.Files)
         {
             var extensao = Path.GetExtension(file.Name).ToLower().TrimStart('.');
@@ -87,39 +87,29 @@
 
                 var caminhoFinal = Path.Combine(pastaDestino, nomeOriginal);
 
+                // Comprimir e salvar o arquivo físico
                 await using var streamComprimido = await DocumentoCompressorService.ComprimirSeNecessarioAsync(file);
                 await using var fs = File.Create(caminhoFinal);
                 await streamComprimido.CopyToAsync(fs);
 
                 var tamanhoKb = streamComprimido.Length / 1024;
 
-                var documento = new ObraDocumentoDto
-                    {
-                        ObraId = Obra.Id,
-                        NomeOriginal = nomeOriginal,
-                        CaminhoRelativo = Path.Combine("Uploads", "Projetos", Obra.ProjetoId.ToString(), Obra.Id.ToString(), "Documentos", nomeOriginal).Replace("\\", "/"),
-                        Extensao = extensao,
-                        TamanhoEmKb = tamanhoKb,
-                        DataHoraCadastro = DateTime.Now,
-                        UsuarioCadastroNome = usuarioLogadoNome ?? "Sistema"
-                    };
+                var documentoDto = new ObraDocumentoDto
+                {
+                    ObraId = Obra.Id,
+                    NomeOriginal = nomeOriginal,
+                    CaminhoRelativo = Path.Combine("Uploads", "Projetos", Obra.ProjetoId.ToString(), Obra.Id.ToString(), "Documentos", nomeOriginal).Replace("\\", "/"),
+                    Extensao = extensao,
+                    TamanhoEmKb = tamanhoKb,
+                    DataHoraCadastro = DateTime.Now,
+                    // UsuarioCadastroId e UsuarioCadastroNome serão preenchidos no serviço, se necessário, ou via DTO
+                };
 
-                var entity = new ObraDocumento
-                    {
-                        ObraId = documento.ObraId,
-                        NomeOriginal = documento.NomeOriginal,
-                        CaminhoRelativo = documento.CaminhoRelativo,
-                        Extensao = documento.Extensao,
-                        TamanhoEmKb = documento.TamanhoEmKb,
-                        DataHoraCadastro = documento.DataHoraCadastro,
-                        UsuarioCadastroId = documento.UsuarioCadastroId
-                    };
+                // Chamar o serviço de API para criar o registro no banco de dados
+                await ObraDocumentoApiService.CreateAsync(documentoDto);
 
-                UnitOfWork.ObraDocumentoRepository.Add(entity);
-                await AuditoriaService.RegistrarCriacaoAsync(documento, usuarioLogadoId);
-
-                documento.Id = entity.Id;
-                Obra.Documentos.Add(documento);
+                // O documentoDto agora deve ter o Id preenchido pelo serviço
+                Obra.Documentos.Add(documentoDto);
 
                 NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = $"Documento '{nomeOriginal}' salvo com sucesso." });
             }
@@ -142,32 +132,23 @@
 
     private async Task ConfirmarRemocao(ObraDocumentoDto doc)
     {
-        bool? confirm = await DialogService.Confirm($"Deseja realmente remover a documento '{doc.NomeOriginal}'?", "Remover Documento");
+        bool? confirm = await DialogService.Confirm($"Deseja realmente remover o documento '{doc.NomeOriginal}'?", "Remover Documento");
 
         if (confirm == true)
         {
             try
             {
-                var caminhoFisico = Path.Combine("wwwroot", doc.CaminhoRelativo.Replace("/", Path.DirectorySeparatorChar.ToString()));
-                if (File.Exists(caminhoFisico))
-                {
-                    File.Delete(caminhoFisico);
-                }
+                // A remoção do arquivo físico e do registro no BD será feita pelo serviço
+                await ObraDocumentoApiService.DeleteAsync(doc.Id);
+
+                Obra.Documentos.Remove(doc);
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Info, Summary = "Removido", Detail = $"Documento '{doc.NomeOriginal}' removido." });
             }
             catch (Exception ex)
             {
-                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Atenção", Detail = $"Erro ao excluir o arquivo físico: {ex.Message}" });
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao remover o documento: {ex.Message}" });
             }
-
-            var entity = UnitOfWork.ObraDocumentoRepository.GetByIdAsync(doc.Id).Result;
-            if (entity is not null)
-            {
-                UnitOfWork.ObraDocumentoRepository.Remove(entity);
-                await AuditoriaService.RegistrarExclusaoAsync(doc, usuarioLogadoId);
-            }
-
-            Obra.Documentos.Remove(doc);
-            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Info, Summary = "Removido", Detail = $"Documento '{doc.NomeOriginal}' removido." });
         }
+        StateHasChanged();
     }
 }

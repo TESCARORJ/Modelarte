@@ -31,8 +31,8 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
             return Ok();
         }
 
-        [HttpPut]
-        public async Task<IActionResult> Put([FromBody] ObraRetrabalhoDto dto)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Put(long id, [FromBody] ObraRetrabalhoDto dto)
         {
             await _service.AtualizarAsync(dto);
             return Ok();

@@ -7,7 +7,6 @@
         <RadzenCarousel @ref=carousel @bind-SelectedIndex="@selectedIndex" Auto="false" AllowPaging="@allowPaging"
                         Style="height: 400px;" PagerPosition="@pagerPosition" PagerOverlay="@pagerOverlay">
             <Items>
-
                 @foreach (var imagem in Imagens)
                 {
                     <RadzenCarouselItem>
@@ -41,6 +40,19 @@
 
     [Parameter] public List<ObraImagemDto> Imagens { get; set; } = new();
     [Parameter] public ObraImagemDto? ImagemInicial { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        // Se uma imagem inicial for fornecida, tenta encontrar seu índice
+        if (ImagemInicial != null && Imagens != null && Imagens.Any())
+        {
+            var initialIndex = Imagens.FindIndex(img => img.Id == ImagemInicial.Id);
+            if (initialIndex >= 0)
+            {
+                selectedIndex = initialIndex;
+            }
+        }
+    }
 
     private void Fechar()
     {

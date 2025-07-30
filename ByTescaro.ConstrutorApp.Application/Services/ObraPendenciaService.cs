@@ -76,10 +76,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             obraPendenciaParaAtualizar.UsuarioCadastroId = obraPendenciaAntigaParaAuditoria.UsuarioCadastroId;
             obraPendenciaParaAtualizar.DataHoraCadastro = obraPendenciaAntigaParaAuditoria.DataHoraCadastro;
 
+            _unitOfWork.ObraPendenciaRepository.Update(obraPendenciaParaAtualizar);
 
             await _auditoriaService.RegistrarAtualizacaoAsync(obraPendenciaAntigaParaAuditoria, obraPendenciaParaAtualizar, usuarioLogadoId);
 
-            _unitOfWork.ObraPendenciaRepository.Update(obraPendenciaParaAtualizar);
 
             await _unitOfWork.CommitAsync();
         }

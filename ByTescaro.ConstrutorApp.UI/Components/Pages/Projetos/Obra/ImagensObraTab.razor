@@ -1,23 +1,17 @@
-﻿@using AutoMapper
 ﻿@using ByTescaro.ConstrutorApp.Application.DTOs
-@using ByTescaro.ConstrutorApp.Application.Interfaces
-@using ByTescaro.ConstrutorApp.Domain.Entities
-@using ByTescaro.ConstrutorApp.Domain.Interfaces
+@using ByTescaro.ConstrutorApp.UI.Services // Alterado para o novo serviço de API
 @inject NavigationManager NavigationManager
-@inject IUsuarioLogadoService UsuarioLogadoService
 @inject IJSRuntime JS
 @inject NotificationService NotificationService
 @inject DialogService DialogService
-@inject IUnitOfWork UnitOfWork
-@inject IAuditoriaService AuditoriaService
-@inject IMapper Mapper
+@inject ObraImagemApiService ObraImagemApiService // Injetado o novo serviço de API
+@inject ObraApiService ObraApiService // Mantido para carregar a obra completa se necessário
 
 <RadzenCard Variant="Variant.Outlined" Class="rz-pa-4">
     <RadzenHeading Size="H6" Text="Galeria de Fotos da Obra" />
 
     <RadzenUpload Accept=".jpg,.jpeg,.png,.bmp" Multiple="true" Change="@OnUpload" ChooseText="Selecionar Imagens"
                   InputAttributes="@(new Dictionary<string, object> { { "aria-label", "selecionar imagens" } })" />
-       
 
     <RadzenDivider Class="rz-my-3" />
 
@@ -49,18 +43,23 @@
 
 @code {
     [Parameter] public ObraDto Obra { get; set; } = new();
-    private string? usuarioLogadoNome;
-    private long usuarioLogadoId;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        var usuario = await UsuarioLogadoService.ObterUsuarioAtualAsync();
-        usuarioLogadoNome = usuario?.Nome ?? "Sistema";
-        usuarioLogadoId = usuario?.Id ?? 0;
+        // Garante que o Obra.Id seja válido antes de buscar os dados
+        if (Obra != null && Obra.Id > 0)
+        {
+            // Carrega as imagens associadas a esta obra
+            Obra.Imagens = await ObraImagemApiService.GetByObraIdAsync(Obra.Id);
+            StateHasChanged();
+        }
     }
 
     private async void OnUpload(UploadChangeEventArgs args)
     {
+        if (Obra.Imagens == null)
+            Obra.Imagens = new List<ObraImagemDto>();
+
         foreach (var file in args.Files)
         {
             try
@@ -73,30 +72,29 @@
                 Directory.CreateDirectory(pastaDestino);
 
                 var caminhoFinal = Path.Combine(pastaDestino, nomeUnico);
-                var stream = file.OpenReadStream(5_000_000);
+                var stream = file.OpenReadStream(5_000_000); // Limite de 5MB
                 await using var fs = File.Create(caminhoFinal);
                 await stream.CopyToAsync(fs);
                 await fs.FlushAsync();
                 stream.Close();
 
                 var caminhoRelativo = Path.Combine("Uploads", "Projetos", Obra.ProjetoId.ToString(), Obra.Id.ToString(), "Imagens", nomeUnico).Replace("\\", "/");
-                var tamanhoKb = (int)(file.Size / 1024);
+                var tamanhoKb = (long)(file.Size / 1024); // Use long para TamanhoEmKb
 
                 var imagemDto = new ObraImagemDto
-                    {
-                        ObraId = Obra.Id,
-                        NomeOriginal = nomeOriginal,
-                        CaminhoRelativo = caminhoRelativo,
-                        TamanhoEmKb = tamanhoKb,
-                        DataHoraCadastro = DateTime.Now,
-                        UsuarioCadastroNome = usuarioLogadoNome ?? "Sistema"
-                    };
+                {
+                    ObraId = Obra.Id,
+                    NomeOriginal = nomeOriginal,
+                    CaminhoRelativo = caminhoRelativo,
+                    TamanhoEmKb = tamanhoKb,
+                    DataHoraCadastro = DateTime.Now,
+                    // UsuarioCadastroId e UsuarioCadastroNome serão preenchidos no serviço.
+                };
 
-                var entidade = Mapper.Map<ObraImagem>(imagemDto);
-                UnitOfWork.ObraImagemRepository.Add(entidade);
-                await AuditoriaService.RegistrarCriacaoAsync(imagemDto, usuarioLogadoId);
+                // Chamar o serviço de API para criar o registro no banco de dados
+                await ObraImagemApiService.CreateAsync(imagemDto);
 
-                imagemDto.Id = entidade.Id;
+                // O imagemDto agora deve ter o Id e UsuarioCadastroNome preenchidos pelo serviço
                 Obra.Imagens.Add(imagemDto);
 
                 NotificationService.Notify(NotificationSeverity.Success, "Imagem salva", $"Imagem '{nomeOriginal}' salva com sucesso.");
@@ -135,23 +133,15 @@
         {
             try
             {
-                var caminhoFisico = Path.Combine("wwwroot", imagem.CaminhoRelativo.Replace("/", Path.DirectorySeparatorChar.ToString()));
-                if (File.Exists(caminhoFisico))
-                    File.Delete(caminhoFisico);
-
-                var entidade = await UnitOfWork.ObraImagemRepository.GetByIdAsync(imagem.Id);
-                if (entidade != null)
-                {
-                    UnitOfWork.ObraImagemRepository.Remove(entidade);
-                    await AuditoriaService.RegistrarExclusaoAsync(imagem, usuarioLogadoId);
-                }
+                // A remoção do arquivo físico e do registro no BD será feita pelo serviço
+                await ObraImagemApiService.DeleteAsync(imagem.Id);
 
                 Obra.Imagens.Remove(imagem);
                 NotificationService.Notify(NotificationSeverity.Info, "Removida", $"Imagem '{imagem.NomeOriginal}' removida.");
             }
             catch (Exception ex)
             {
-                NotificationService.Notify(NotificationSeverity.Warning, "Erro", $"Erro ao excluir imagem: {ex.Message}");
+                NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Erro ao excluir imagem: {ex.Message}");
             }
 
             StateHasChanged();

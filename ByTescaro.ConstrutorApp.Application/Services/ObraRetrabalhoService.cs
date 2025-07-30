@@ -86,7 +86,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
             // O método .Update() no repositório é geralmente redundante se a entidade já está
             // rastreada e suas propriedades foram alteradas diretamente. O EF Core detecta essas mudanças automaticamente.
-            // _unitOfWork.ObraRetrabalhoRepository.Update(obraRetrabalhoParaAtualizar);
+            _unitOfWork.ObraRetrabalhoRepository.Update(obraRetrabalhoParaAtualizar);
 
             // 4. Registre a auditoria, passando a cópia original e a entidade atualizada.
             // 'obraRetrabalhoAntigoParaAuditoria' tem os dados ANTES da mudança.

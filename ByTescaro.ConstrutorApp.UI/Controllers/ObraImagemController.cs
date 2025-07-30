@@ -8,11 +8,11 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
     [Authorize]
     [ApiController]
     [Route("api/[controller]")]
-    public class ObraPendenciaController : ControllerBase
+    public class ObraImagemController : ControllerBase
     {
-        private readonly IObraPendenciaService _service;
+        private readonly IObraImagemService _service;
 
-        public ObraPendenciaController(IObraPendenciaService service)
+        public ObraImagemController(IObraImagemService service)
         {
             _service = service;
         }
@@ -20,23 +20,15 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
         [HttpGet("{obraId}")]
         public async Task<IActionResult> GetByObraId(long obraId)
         {
-            var list = await _service.ObterPorObraIdAsync(obraId);
-            return Ok(list);
+            var lista = await _service.ObterPorObraIdAsync(obraId);
+            return Ok(lista);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] ObraPendenciaDto dto)
+        public async Task<IActionResult> Post([FromBody] ObraImagemDto dto)
         {
             await _service.CriarAsync(dto);
-            return Ok();
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Put(long id, [FromBody] ObraPendenciaDto dto)
-        {
-            await _service.AtualizarAsync(dto);
-
-            return Ok();
+            return Ok(dto); // Retorna o DTO com o ID e outros campos atualizados pelo serviço
         }
 
         [HttpDelete("{id}")]
@@ -46,5 +38,4 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
             return Ok();
         }
     }
-
 }
