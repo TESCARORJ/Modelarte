@@ -146,7 +146,7 @@
     {
         ServicosDisponiveis = await ServicoService.GetServicosDisponiveisAsync(Obra.Id);
 
-        
+
     }
 
     private async Task SalvarLista()
@@ -161,6 +161,7 @@
         {
             if (Lista.Id == 0)
             {
+                Lista.ObraId = Obra.Id;
                 var novaLista = await ListaService.CreateAsync(Lista);
                 if (novaLista is not null)
                 {

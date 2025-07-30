@@ -1,8 +1,10 @@
 ﻿using ByTescaro.ConstrutorApp.Application.DTOs;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
+using ByTescaro.ConstrutorApp.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
+using System.Net.Mime;
 
 namespace ByTescaro.ConstrutorApp.UI.Controllers
 {
@@ -13,11 +15,13 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
     {
         private readonly IObraService _service;
         private readonly ILogger<ObraController> _logger;
+        private readonly IRelatorioObraService _relatorioObraService;
 
-        public ObraController(IObraService service, ILogger<ObraController> logger)
+        public ObraController(IObraService service, ILogger<ObraController> logger, IRelatorioObraService relatorioObraService)
         {
             _service = service;
             _logger = logger;
+            _relatorioObraService = relatorioObraService;
         }
 
         [HttpGet]
@@ -106,6 +110,32 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
         {
             await _service.AtualizarConclusaoItemAsync(itemId, concluido);
             return Ok();
+        }
+
+        [HttpGet("{id}/relatorio-pdf")]
+        [Produces("application/pdf")]
+        public async Task<IActionResult> GetRelatorioPdf(long id)
+        {
+            try
+            {
+                var pdfBytes = await _relatorioObraService.GerarRelatorioObraPdfAsync(id);
+
+                if (pdfBytes == null || pdfBytes.Length == 0)
+                {
+                    return NotFound($"Relatório para Obra ID {id} não pôde ser gerado ou está vazio.");
+                }
+
+                return File(pdfBytes, MediaTypeNames.Application.Pdf, $"Relatorio_Obra_{id}.pdf");
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                // Logar o erro (será feito pelo ILogger injetado no serviço)
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Erro ao gerar relatório: {ex.Message}");
+            }
         }
     }
 

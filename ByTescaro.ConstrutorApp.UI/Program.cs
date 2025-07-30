@@ -418,6 +418,8 @@ builder.Services.AddScoped<DailyReminderService>();
 builder.Services.AddHostedService<DailyReminderBackgroundService>();
 builder.Services.AddScoped<IHolidaysService, BrazilHolidayService>();
 builder.Services.AddScoped<IHolidaysService, HolidayService>();
+builder.Services.AddScoped<IRelatorioObraService, RelatorioObraService>();
+
 
 
 // Configuração do Z-API para notificações via WhatsApp

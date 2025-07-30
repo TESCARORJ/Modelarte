@@ -15,10 +15,20 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 
         public override async Task<Usuario?> GetByIdAsync(long id)
         {
-            return await _dbSet
-                .Include(u => u.PerfilUsuario)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Id == id);
+            try
+            {
+                var model = await _dbSet
+                    .Include(u => u.PerfilUsuario)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.Id == id);
+                return model;
+            }
+            catch (Exception ex)
+            {
+                // Aqui você pode adicionar um log da exceção.
+                // Por exemplo: _logger.LogError(ex, "Ocorreu um erro ao buscar o usuário com id {id}", id);
+                throw; // Re-lança a exceção para ser tratada pela camada de serviço/aplicação.
+            }
         }
 
         public override async Task<List<Usuario>> GetAllAsync()

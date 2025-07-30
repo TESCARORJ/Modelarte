@@ -201,6 +201,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                        .HasForeignKey(p => p.ClienteId)
                        .OnDelete(DeleteBehavior.Cascade);
 
+                builder.Navigation(o => o.Cliente).AutoInclude();
+
 
                 builder.HasOne(p => p.Endereco)
                        .WithMany()
@@ -230,10 +232,14 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                        .IsRequired()
                        .OnDelete(DeleteBehavior.Cascade);
 
+                builder.Navigation(o => o.Projeto).AutoInclude();
+
+
                 builder.HasOne(o => o.ResponsavelObra)
                        .WithMany()
                        .HasForeignKey(o => o.ResponsavelObraId)
                        .OnDelete(DeleteBehavior.SetNull);
+
 
                 builder.HasMany(o => o.Etapas)
                        .WithOne(oe => oe.Obra)
@@ -472,6 +478,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                        .HasForeignKey(e => e.ObraId)
                        .OnDelete(DeleteBehavior.Cascade);
 
+                //builder.Navigation(o => o.Equipamento).AutoInclude();
+
 
 
 
@@ -521,6 +529,9 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                        .WithMany(o => o.Equipamentos)
                        .HasForeignKey(e => e.ObraId)
                        .OnDelete(DeleteBehavior.Restrict);
+
+                builder.Navigation(o => o.Equipamento).AutoInclude();
+
 
 
             }
@@ -659,6 +670,9 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                     .WithMany(o => o.Etapas)
                     .HasForeignKey(e => e.ObraId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                builder.Navigation(o => o.Itens).AutoInclude();
+
             }
         }
 
@@ -685,6 +699,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                     .WithMany(oe => oe.Itens)
                     .HasForeignKey(e => e.ObraEtapaId)
                     .OnDelete(DeleteBehavior.Cascade);
+
             }
         }
 
@@ -707,6 +722,9 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                     .WithOne(oiep => oiep.ObraEtapaPadrao)
                     .HasForeignKey(oiep => oiep.ObraEtapaPadraoId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+
+
             }
         }
 
@@ -730,6 +748,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                     .WithMany(eo => eo.Itens)
                     .HasForeignKey(e => e.ObraEtapaPadraoId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+
 
                 builder.HasMany(e => e.Insumos)
                     .WithOne(oiepi => oiepi.ObraItemEtapaPadrao)

@@ -1,6 +1,7 @@
 ﻿@using ByTescaro.ConstrutorApp.Application.DTOs
 @using ByTescaro.ConstrutorApp.UI.Services
 @inject ObraFuncionarioApiService ObraFuncionarioApiService
+@inject ObraApiService ObraApiService
 @inject NotificationService NotificationService
 @inject DialogService DialogService
 
@@ -47,8 +48,8 @@
                 <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="FuncaoNoObra" Title="Função" />
                 <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="DataInicio" Title="Início" FormatString="{0:dd/MM/yyyy}" />
                 <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="DataFim" Title="Fim" FormatString="{0:dd/MM/yyyy}" />
-                <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="DataHoraCadastro" Title="Data Cadastro" FormatString="{0:dd/MM/yyyy}" />
-                <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="UsuarioCadastro" Title="Cadastrador por" />
+@*                 <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="DataHoraCadastro" Title="Data Cadastro" FormatString="{0:dd/MM/yyyy}" />
+                <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="UsuarioCadastro" Title="Cadastrador por" /> *@
                 <RadzenDataGridColumn TItem="ObraFuncionarioDto">
                     <Template Context="funcionario">
                         <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => ConfirmarRemocao(funcionario))" />
@@ -119,6 +120,28 @@
 
     private async Task ConfirmarRemocao(ObraFuncionarioDto funcionario)
     {
+
+        var insumosFunc = Obra.ListasInsumo.Where(x => x.ResponsavelId == funcionario.FuncionarioId).ToList();
+        var servicosFunc = Obra.ListasServico.Where(x => x.ResponsavelId == funcionario.FuncionarioId).ToList();
+        if(Obra.ResponsavelObraId == funcionario.FuncionarioId)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Atenção", $"O funcionário '{funcionario.FuncionarioNome}' não pode ser removido pois é Responsável pela Obra.");
+            return;
+        }
+
+        if (insumosFunc.Any())
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Atenção", $"O funcionário '{funcionario.FuncionarioNome}' não pode ser removido pois possui insumos em sua responsabilidade.");
+            return;
+        }
+
+        if (servicosFunc.Any())
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Atenção", $"O funcionário '{funcionario.FuncionarioNome}' não pode ser removido pois possui servicos em sua responsabilidade.");
+            return;
+        }
+
+
         bool? confirm = await DialogService.Confirm($"Deseja realmente remover o funcionário '{funcionario.FuncionarioNome}'?", "Remover Funcionário");
 
         if (confirm == true)
@@ -145,7 +168,7 @@
             isLoading = true;
 
             // Chama o serviço para carregar o checklist associado a esta obra
-            Obra.Funcionarios = await ObraFuncionarioApiService.GetByObraIdAsync(Obra.Id);
+            Obra = await ObraApiService.GetByIdAsync(Obra.Id);
 
             isLoading = false;
         }

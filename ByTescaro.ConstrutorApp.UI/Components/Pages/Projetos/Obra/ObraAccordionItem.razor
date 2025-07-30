@@ -7,7 +7,11 @@
 @inject ObraApiService ObraApiService
 @inject NotificationService NotificationService
 @inject DialogService DialogService
+@inject NavigationManager NavigationManager
 @inject IJSRuntime JS
+@inject IJSRuntime JSRuntime 
+@inject TooltipService TooltipService
+
 
 <style>
     ul[role="tablist"] {
@@ -79,6 +83,12 @@
                             Style="width: 100%;" />
         </RadzenColumn>
 
+        <RadzenColumn Size="12" SizeMD="3" Style="padding-right: 1rem;">
+            <RadzenLabel Text="Responsável Obra *" />
+            <RadzenDatePicker @bind-Value="Obra.DataInicioExecucao" ShowTime="true" DateFormat="dd/MM/yyyy HH:mm"
+                              Style="width:100%;" Name="DataInicioExecucao" />
+        </RadzenColumn>
+
         <RadzenColumn Size="12" SizeMD="3">
             <RadzenLabel Text="Status da Obra *" />
             <RadzenDropDown @bind-Value="Obra.Status"
@@ -92,6 +102,14 @@
 
     <RadzenRow>
         <RadzenColumn Size="12" class="d-flex justify-content-end" Style="margin-top: 1.5rem;">
+
+            <RadzenButton Text="Gerar Relatório PDF" 
+                          Icon="picture_as_pdf"
+                          ButtonStyle="ButtonStyle.Primary" 
+                          Click="GerarRelatorioPdf" 
+                          Style="margin-right: 1rem;" />
+
+
             <RadzenButton Text="Salvar Alterações na Obra"
                           Icon="save"
                           ButtonStyle="ButtonStyle.Primary"
@@ -233,6 +251,24 @@
         {
             isSaving = false;
             StateHasChanged();
+        }
+    }
+
+    private async Task GerarRelatorioPdf()
+    {
+        try
+        {
+            // Construir a URL do endpoint da API
+            // Note: Use Obra.Id pois o ObraAccordionItem deve receber um objeto Obra
+            var apiUrl = NavigationManager.BaseUri + $"api/Obra/{Obra.Id}/relatorio-pdf";
+
+            // Usar JSInterop para abrir o PDF em uma nova aba ou iniciar o download
+            await JSRuntime.InvokeVoidAsync("open", apiUrl, "_blank");
+            await DialogService.Alert("Relatório PDF da Obra gerado com sucesso!", "Sucesso");
+        }
+        catch (Exception ex)
+        {
+            await DialogService.Alert($"Erro ao gerar relatório PDF: {ex.Message}", "Erro");
         }
     }
 }

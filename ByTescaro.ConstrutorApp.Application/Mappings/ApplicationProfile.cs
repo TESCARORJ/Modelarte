@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using ByTescaro.ConstrutorApp.Application.DTOs;
+using ByTescaro.ConstrutorApp.Application.DTOs.Relatorios;
 using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Entities.Admin;
 
@@ -379,5 +380,53 @@ public class ApplicationProfile : Profile
         CreateMap<ConfiguracaoLembreteDiario, ConfiguracaoLembreteDiarioDto>().ReverseMap(); // Adicionado ReverseMap para simetria
         CreateMap<CriarConfiguracaoLembreteDiarioRequest, ConfiguracaoLembreteDiario>();
         CreateMap<AtualizarConfiguracaoLembreteDiarioRequest, ConfiguracaoLembreteDiario>();
+
+
+        // ==== Relatórios ====
+        CreateMap<Obra, ObraRelatorioDto>()
+            .ForMember(dest => dest.NomeObra, opt => opt.MapFrom(src => src.Nome))
+            .ForMember(dest => dest.DataInicioObra, opt => opt.MapFrom(src => src.DataInicioExecucao))
+            .ForMember(dest => dest.DataInicioProjeto, opt => opt.MapFrom(src => src.Projeto.DataInicio))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.ClienteNome, opt => opt.MapFrom(src => src.Projeto.Cliente.Nome))
+            .ForMember(dest => dest.ProjetoNome, opt => opt.MapFrom(src => src.Projeto.Nome))
+            // Adicione mapeamentos para as coleções aninhadas
+            .ForMember(dest => dest.Etapas, opt => opt.MapFrom(src => src.Etapas))
+            .ForMember(dest => dest.Insumos, opt => opt.MapFrom(src => src.Insumos))
+            .ForMember(dest => dest.Funcionarios, opt => opt.MapFrom(src => src.Funcionarios))
+            .ForMember(dest => dest.Equipamentos, opt => opt.MapFrom(src => src.Equipamentos))
+            .ForMember(dest => dest.Documentos, opt => opt.MapFrom(src => src.Documentos))
+            .ForMember(dest => dest.Imagens, opt => opt.MapFrom(src => src.Imagens))
+            // Calcular ProgressoAtual pode ser feito no serviço ou no próprio DTO
+            .ForMember(dest => dest.ProgressoAtual, opt => opt.Ignore()) // Será calculado no serviço
+            .ForMember(dest => dest.OrcamentoTotal, opt => opt.Ignore()); // Será calculado no serviço
+
+        CreateMap<ObraEtapa, ObraEtapaRelatorioDto>()
+            .ForMember(dest => dest.Nome, opt => opt.MapFrom(src => src.Nome))
+            .ForMember(dest => dest.PercentualConclusao, opt => opt.Ignore()) // Calcular no serviço
+            .ForMember(dest => dest.Itens, opt => opt.MapFrom(src => src.Itens));
+
+        CreateMap<ObraItemEtapa, ObraItemEtapaRelatorioDto>().ReverseMap();
+
+        //CreateMap<ObraInsumoLista, ObraInsumoListaRelatorioDto>()
+        //        .ForMember(dest => dest.NomeResponsavel, opt => opt.MapFrom(src => src.Responsavel.Nome)) // Assumindo 'Responsavel' na entidade ObraInsumoLista
+        //        .ForMember(dest => dest.Itens, opt => opt.MapFrom(src => src.Itens)); // Mapeia os itens individuais da lista
+
+        CreateMap<ObraInsumo, ObraInsumoRelatorioDto>()
+            .ForMember(dest => dest.InsumoNome, opt => opt.MapFrom(src => src.Insumo.Nome))
+            .ForMember(dest => dest.ResponsavelRecbimentoId, opt => opt.MapFrom(src => src.Lista.Responsavel.Id))
+            .ForMember(dest => dest.ResponsavelRecbimentoNome, opt => opt.MapFrom(src => src.Lista.Responsavel.Nome))
+            .ForMember(dest => dest.UnidadeMedida, opt => opt.MapFrom(src => src.Insumo.UnidadeMedida));
+
+        CreateMap<ObraFuncionario, ObraFuncionarioRelatorioDto>()
+            .ForMember(dest => dest.NomeFuncionario, opt => opt.MapFrom(src => src.Funcionario.Nome))
+            .ForMember(dest => dest.Funcao, opt => opt.MapFrom(src => src.FuncaoNoObra));
+
+        CreateMap<ObraEquipamento, ObraEquipamentoRelatorioDto>()
+            .ForMember(dest => dest.NomeEquipamento, opt => opt.MapFrom(src => src.Equipamento.Nome))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Equipamento.Status.ToString()));
+
+        CreateMap<ObraDocumento, ObraDocumentoRelatorioDto>();
+        CreateMap<ObraImagem, ObraImagemRelatorioDto>();
     }
 }

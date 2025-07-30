@@ -50,6 +50,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             foreach (var item in entity.Itens)
             {
                 item.ObraServicoListaId = 0;
+                item.ObraId = dto.ObraId;
                 item.UsuarioCadastroId = usuarioLogadoId;
                 item.DataHoraCadastro = DateTime.Now;
             }

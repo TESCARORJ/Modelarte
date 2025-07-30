@@ -15,7 +15,7 @@
 		</PackageReference>
 		<PackageReference Include="Radzen.Blazor" Version="7.0.6" />
 	</ItemGroup>
-
+	
 
 	<ItemGroup>
 	  <Folder Include="wwwroot\Uploads\Projetos\17\16\Imagens\" />
