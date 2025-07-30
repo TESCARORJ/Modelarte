@@ -193,7 +193,7 @@
             // Carrega usuários disponíveis apenas se o usuário logado for o criador
             if (IsCriador)
             {
-                usuariosDisponiveis = (await UsuarioApiService.GetAllAsync())?.Where(u => u.Id != usuarioLogadoId).ToList() ?? new List<UsuarioDto>();
+                usuariosDisponiveis = (await UsuarioApiService.GetAllAtivosAsync())?.Where(u => u.Id != usuarioLogadoId).ToList() ?? new List<UsuarioDto>();
             }
             else
             {

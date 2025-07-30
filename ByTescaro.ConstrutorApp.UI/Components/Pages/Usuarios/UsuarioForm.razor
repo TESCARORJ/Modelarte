@@ -51,18 +51,26 @@
                                 Style="width: 100%;" />
                 </RadzenColumn>
                 <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Perfil de Usuário" Component="PerfilUsuarioId" />
+                    <RadzenDropDown @bind-Value="usuario.PerfilUsuarioId" Name="PerfilUsuarioId" Data="@PerfilUsuarioList" TextProperty="Nome" ValueProperty="Id" Style="width: 100%;" Placeholder="-- Selecione um perfil --" />
+                    <RadzenRequiredValidator Component="PerfilUsuarioId" Text="Perfil obrigatório" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
                     <RadzenLabel Text="Senha" Component="Senha" />
                     <RadzenTextBox @bind-Value="usuario.Senha" Name="Senha" Style="width: 100%;" Password="true" />
-                    <RadzenRequiredValidator Component="Senha" Text="Informe a senha" />
+                    @if (usuario.Id == 0) // Senha obrigatória apenas para novos usuários
+                    {
+                        <RadzenRequiredValidator Component="Senha" Text="Informe a senha" />
+                    }
                 </RadzenColumn>
                 <RadzenColumn Size="12" SizeMD="6">
                     <RadzenLabel Text="Confirmar Senha" Component="ConfirmarSenha" />
                     <RadzenTextBox @bind-Value="usuario.ConfirmarSenha" Name="ConfirmarSenha" Style="width: 100%;" Password="true" />
-                    <RadzenRequiredValidator Component="ConfirmarSenha" Text="Confirme a senha" />
-                </RadzenColumn>
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenDropDown @bind-Value="usuario.PerfilUsuarioId" Name="PerfilUsuarioId" Data="@PerfilUsuarioList" TextProperty="Nome" ValueProperty="Id" Style="width: 100%;" Placeholder="-- Selecione um perfil --" />
-                    <RadzenRequiredValidator Component="PerfilUsuarioId" Text="Perfil obrigatório" />
+                    @if (usuario.Id == 0) // Confirmação de senha obrigatória apenas para novos usuários
+                    {
+                        <RadzenRequiredValidator Component="ConfirmarSenha" Text="Confirme a senha" />
+                    }
+                    <RadzenCompareValidator Component="ConfirmarSenha" Value="@usuario.Senha" Text="As senhas não coincidem" Operator="CompareOperator.Equal" />
                 </RadzenColumn>
                 <RadzenColumn Size="12" SizeMD="6">
                     <RadzenCheckBox @bind-Value="usuario.Ativo" Name="Ativo" />
@@ -87,12 +95,16 @@
     protected override async Task OnInitializedAsync()
     {
         PerfilUsuarioList = await PerfilUsuarioApiService.GetAllAsync();
-
         if (Id != 0)
         {
             var existente = await UsuarioApiService.GetByIdAsync(Id);
             if (existente is not null)
+            {
                 usuario = existente;
+                // Limpa o campo de senha para que não seja enviado ao backend se não for alterado
+                usuario.Senha = null;
+                usuario.ConfirmarSenha = null;
+            }
         }
     }
 
@@ -102,6 +114,29 @@
         {
             if (model.Id == 0)
             {
+                // Validação adicional para senhas em criação
+                if (string.IsNullOrWhiteSpace(model.Senha) || string.IsNullOrWhiteSpace(model.ConfirmarSenha))
+                {
+                    NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Erro de Validação",
+                        Detail = "Os campos Senha e Confirmar Senha são obrigatórios para novos usuários.",
+                        Duration = 5000
+                    });
+                    return;
+                }
+                if (model.Senha != model.ConfirmarSenha)
+                {
+                    NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Erro de Validação",
+                        Detail = "As senhas não coincidem.",
+                        Duration = 5000
+                    });
+                    return;
+                }
                 await UsuarioApiService.CreateAsync(model);
                 NotificationService.Notify(new NotificationMessage
                 {
@@ -113,6 +148,20 @@
             }
             else
             {
+                // Se a senha e confirmação de senha não forem preenchidas, elas não serão enviadas para atualização.
+                // O serviço de backend já está configurado para ignorar a atualização da senha se ela for nula ou vazia.
+                if (!string.IsNullOrWhiteSpace(model.Senha) && model.Senha != model.ConfirmarSenha)
+                {
+                    NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Erro de Validação",
+                        Detail = "As senhas não coincidem.",
+                        Duration = 5000
+                    });
+                    return;
+                }
+
                 await UsuarioApiService.UpdateAsync(model);
                 NotificationService.Notify(new NotificationMessage
                 {

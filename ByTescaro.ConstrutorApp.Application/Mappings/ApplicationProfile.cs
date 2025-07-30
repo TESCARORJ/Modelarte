@@ -418,9 +418,9 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.ResponsavelRecbimentoNome, opt => opt.MapFrom(src => src.Lista.Responsavel.Nome))
             .ForMember(dest => dest.UnidadeMedida, opt => opt.MapFrom(src => src.Insumo.UnidadeMedida));
 
-        CreateMap<ObraFuncionario, ObraFuncionarioRelatorioDto>()
-            .ForMember(dest => dest.NomeFuncionario, opt => opt.MapFrom(src => src.Funcionario.Nome))
-            .ForMember(dest => dest.Funcao, opt => opt.MapFrom(src => src.FuncaoNoObra));
+        CreateMap<ObraFuncionario, ObraFuncionarioRelatorioDto>();
+            //.ForMember(dest => dest.NomeFuncionario, opt => opt.MapFrom(src => src.Funcionario.Nome))
+            //.ForMember(dest => dest.Funcao, opt => opt.MapFrom(src => src.FuncaoNoObra));
 
         CreateMap<ObraEquipamento, ObraEquipamentoRelatorioDto>()
             .ForMember(dest => dest.NomeEquipamento, opt => opt.MapFrom(src => src.Equipamento.Nome))

@@ -31,7 +31,7 @@
                 </Template>
             </RadzenDataGridColumn>
             <RadzenDataGridColumn TItem="LogAuditoriaDto" Property="UsuarioNome" Title="Usuário" />
-            <RadzenDataGridColumn TItem="LogAuditoriaDto" Property="IdEntidade" Title="ID Entidade" TextAlign="TextAlign.Center" />
+            <RadzenDataGridColumn TItem="LogAuditoriaDto" Property="Entidade" Title="Entidade" TextAlign="TextAlign.Center" />
             <RadzenDataGridColumn TItem="LogAuditoriaDto" Title="Ação">
                 <Template Context="e">
                     @EnumHelper.ObterDescricaoEnum(e.TipoLogAuditoria)

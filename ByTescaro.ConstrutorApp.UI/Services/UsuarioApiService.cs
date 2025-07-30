@@ -25,6 +25,19 @@ namespace ByTescaro.ConstrutorApp.UI.Services
             return await response.Content.ReadFromJsonAsync<List<UsuarioDto>>() ?? new();
         }
 
+        public async Task<List<UsuarioDto>> GetAllAtivosAsync()
+        {
+            var response = await _http.GetAsync("api/usuario/ativos");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Erro ao buscar usuários: {response.StatusCode} - {errorContent}");
+            }
+
+            return await response.Content.ReadFromJsonAsync<List<UsuarioDto>>() ?? new();
+        }
+
         public async Task<UsuarioDto?> GetByIdAsync(long id)
         {
             var response = await _http.GetAsync($"api/usuario/{id}");

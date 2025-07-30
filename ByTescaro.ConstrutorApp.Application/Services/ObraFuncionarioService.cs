@@ -129,7 +129,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         public async Task<List<FuncionarioDto>> ObterFuncionariosTotalDisponiveisAsync()
         {
             var todosFuncionarios = await _unitOfWork.FuncionarioRepository
-                .GetAllIncludingAsync(f => f.Funcao); 
+                .GetAllIncludingAsync(x => x.Ativo == true, f => f.Funcao); 
 
             var disponiveis = todosFuncionarios.ToList();
 

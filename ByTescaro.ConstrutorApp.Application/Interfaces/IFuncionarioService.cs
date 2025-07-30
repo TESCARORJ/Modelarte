@@ -5,6 +5,7 @@ namespace ByTescaro.ConstrutorApp.Application.Interfaces;
 public interface IFuncionarioService
 {
     Task<IEnumerable<FuncionarioDto>> ObterTodosAsync();
+    Task<IEnumerable<FuncionarioDto>> ObterTodosAtivosAsync();
     Task<FuncionarioDto?> ObterPorIdAsync(long id);
     Task CriarAsync(FuncionarioDto dto);
     Task AtualizarAsync(FuncionarioDto dto);

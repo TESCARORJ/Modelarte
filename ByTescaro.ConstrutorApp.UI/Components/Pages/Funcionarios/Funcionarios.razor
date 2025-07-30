@@ -67,6 +67,19 @@
                     }
                 </Template>
             </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="FuncionarioDto" Title="Status">
+                <Template Context="u">
+                    @if (u.Ativo)
+                    {
+                        <RadzenText Text="Ativo" Color="Color.Success" />
+                    }
+                    else
+                    {
+                        <RadzenText Text="Inativo" Color="Color.Danger" />
+                    }
+                </Template>
+            </RadzenDataGridColumn>
           
             <RadzenDataGridColumn TItem="FuncionarioDto" Title="Ações" Filterable="false" Sortable="false"  Width="150px">
                 <Template Context="f">

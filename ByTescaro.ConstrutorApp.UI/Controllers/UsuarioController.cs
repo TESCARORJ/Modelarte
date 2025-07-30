@@ -24,6 +24,13 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
             return Ok(usuarios);
         }
 
+        [HttpGet("ativos")]
+        public async Task<IActionResult> GetAtivos()
+        {
+            var usuarios = await _usuarioService.ObterTodosAtivosAsync();
+            return Ok(usuarios);
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(long id)
         {

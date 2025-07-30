@@ -142,6 +142,11 @@
             </RadzenRow>
         </RadzenFieldset>
 
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenCheckBox @bind-Value="funcionario.Ativo" Name="Ativo" />
+            <RadzenLabel Text="Funcionário Ativo" />
+        </RadzenColumn>
+
         <!-- Botões -->
         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-3">
             <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Click="@Cancelar" />

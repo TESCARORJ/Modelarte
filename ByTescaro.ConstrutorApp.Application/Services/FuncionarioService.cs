@@ -37,6 +37,11 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var funcionarios = await _unitOfWork.FuncionarioRepository.FindAllWithIncludesAsync(x => x.TipoEntidade == TipoEntidadePessoa.Funcionario, x => x.Endereco, x => x.Funcao);
             return _mapper.Map<IEnumerable<FuncionarioDto>>(funcionarios);
         }
+        public async Task<IEnumerable<FuncionarioDto>> ObterTodosAtivosAsync()
+        {
+            var funcionarios = await _unitOfWork.FuncionarioRepository.FindAllWithIncludesAsync(x => x.TipoEntidade == TipoEntidadePessoa.Funcionario && x.Ativo == true, x => x.Endereco, x => x.Funcao);
+            return _mapper.Map<IEnumerable<FuncionarioDto>>(funcionarios);
+        }
 
         public async Task<FuncionarioDto?> ObterPorIdAsync(long id)
         {

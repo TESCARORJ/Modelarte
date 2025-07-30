@@ -86,7 +86,7 @@
 
         <RadzenColumn Size="12" SizeMD="3" Style="padding-right: 1rem;">
             <RadzenLabel Text="Data Início Execução *" /> 
-            <RadzenDatePicker @bind-Value="Obra.DataInicioExecucao" ShowTime="true" DateFormat="dd/MM/yyyy HH:mm"
+            <RadzenDatePicker @bind-Value="Obra.DataInicioExecucao" ShowTime="false" DateFormat="dd/MM/yyyy"
                               Style="width:100%;" Name="DataInicioExecucao" />
         </RadzenColumn>
 
@@ -164,7 +164,7 @@
     protected override async Task OnInitializedAsync()
     {
         // Busca funcionários com WhatsApp
-        var funcionarios = (await FuncionarioApiService.GetAllAsync())
+        var funcionarios = (await FuncionarioApiService.GetAllAtivosAsync())
             .Where(f => !string.IsNullOrEmpty(f.TelefoneWhatsApp))
             .Select(f => new SelectableUserDto
             {
@@ -176,7 +176,7 @@
         // Busca usuários com WhatsApp
         // Assumindo que UsuarioApiService.GetAllAsync() retorna List<UsuarioDto>
         // e que UsuarioDto tem Id, Nome e TelefoneWhatsApp
-        var usuarios = (await UsuarioApiService.GetAllAsync())
+        var usuarios = (await UsuarioApiService.GetAllAtivosAsync())
             .Where(u => !string.IsNullOrEmpty(u.TelefoneWhatsApp))
             .Select(u => new SelectableUserDto
             {
@@ -314,7 +314,7 @@
         var result = await DialogService.OpenAsync<SelectUsersModal>(
             "Enviar Relatório por WhatsApp",
             new Dictionary<string, object> { { "AvailableUsers", allSelectableUsers } },
-            new DialogOptions() { Width = "450px", Height = "500px", CloseDialogOnOverlayClick = true }
+            new DialogOptions() { Width = "600px", Height = "500px", CloseDialogOnOverlayClick = true }
         );
 
         // Se o usuário selecionou e clicou em enviar

@@ -153,7 +153,7 @@
             usuarioLogadoId = usuario.Id;
             try
             {
-                var allUsers = await UsuarioApiService.GetAllAsync();
+                var allUsers = await UsuarioApiService.GetAllAtivosAsync();
                 usuariosDisponiveis = allUsers?.Where(u => u.Id != usuarioLogadoId).ToList() ?? new List<UsuarioDto>();
             }
             catch (Exception ex)

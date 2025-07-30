@@ -35,6 +35,14 @@ public class UsuarioService : IUsuarioService
 
     }
 
+    public async Task<IEnumerable<UsuarioDto>> ObterTodosAtivosAsync()
+    {
+        var usuarios = await _unitOfWork.UsuarioRepository.FindAllWithIncludesAsync(x => x.TipoEntidade == TipoEntidadePessoa.Usuario && x.Ativo == true, x => x.PerfilUsuario);
+
+        return _mapper.Map<IEnumerable<UsuarioDto>>(usuarios);
+
+    }
+
     public async Task<UsuarioDto?> ObterPorIdAsync(long id)
     {
         var usuario = await _unitOfWork.UsuarioRepository.GetByIdAsync(id);
@@ -80,8 +88,8 @@ public class UsuarioService : IUsuarioService
         entity.SenhaHash = hasher.HashPassword(entity, dto.Senha!);
 
         _unitOfWork.UsuarioRepository.Add(entity);
-        await _auditoriaService.RegistrarCriacaoAsync(_mapper.Map<UsuarioDto>(entity), usuarioLogadoId); // Mapeia para DTO de auditoria
         await _unitOfWork.CommitAsync();
+        await _auditoriaService.RegistrarCriacaoAsync(_mapper.Map<UsuarioDto>(entity), usuarioLogadoId); // Mapeia para DTO de auditoria
     }
 
 
@@ -143,7 +151,7 @@ public class UsuarioService : IUsuarioService
 
         // O método .Update() no repositório é geralmente redundante se a entidade já está
         // rastreada e suas propriedades foram alteradas diretamente. O EF Core detecta essas mudanças automaticamente.
-        // _unitOfWork.UsuarioRepository.Update(usuarioParaAtualizar);
+        _unitOfWork.UsuarioRepository.Update(usuarioParaAtualizar);
 
         // 4. Registre a auditoria, passando a cópia original e a entidade atualizada.
         // 'usuarioAntigoParaAuditoria' tem os dados ANTES da mudança.

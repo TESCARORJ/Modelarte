@@ -24,6 +24,19 @@ public class FuncionarioApiService
         return await response.Content.ReadFromJsonAsync<List<FuncionarioDto>>() ?? new();
     }
 
+    public async Task<List<FuncionarioDto>> GetAllAtivosAsync()
+    {
+        var response = await _http.GetAsync("api/funcionario/ativos");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            throw new Exception($"Erro ao buscar funcionarios: {response.StatusCode} - {errorContent}");
+        }
+
+        return await response.Content.ReadFromJsonAsync<List<FuncionarioDto>>() ?? new();
+    }
+
     public async Task<FuncionarioDto?> GetByIdAsync(long id)
     {
         var response = await _http.GetAsync($"api/funcionario/{id}");

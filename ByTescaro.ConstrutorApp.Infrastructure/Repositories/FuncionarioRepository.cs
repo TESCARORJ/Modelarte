@@ -39,9 +39,15 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         //    return (Alocados: alocados, NaoAlocados: naoAlocados);
         //}
 
-        public async Task<List<Funcionario>> GetAllIncludingAsync(params Expression<Func<Funcionario, object>>[] includes)
+        public async Task<List<Funcionario>> GetAllIncludingAsync(Expression<Func<Funcionario, bool>>? predicate = null, params Expression<Func<Funcionario, object>>[] includes)
         {
-            IQueryable<Funcionario> query = _context.Set<Funcionario>();
+            IQueryable<Funcionario> query = _dbSet;
+
+            if (predicate != null)
+            {
+                query = query.Where(predicate);
+            }
+
             foreach (var include in includes)
             {
                 query = query.Include(include);
@@ -49,7 +55,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
 
             query = query.Include(f => f.UsuarioCadastro);
 
-            return await query.ToListAsync();
+            return await query.AsNoTracking().ToListAsync();
         }
 
         public async Task<Funcionario?> GetByIdWithEnderecoAsync(long id)

@@ -54,7 +54,8 @@
         <Columns>
             <RadzenDataGridColumn TItem="UsuarioDto" Property="Nome" Title="Nome" />
             <RadzenDataGridColumn TItem="UsuarioDto" Property="Email" Title="E-mail" />
-            <RadzenDataGridColumn TItem="UsuarioDto" Property="Telefone" Title="Telefone" />
+            <RadzenDataGridColumn TItem="UsuarioDto" Property="TelefonePrincipal" Title="Telefone Principal" />
+            <RadzenDataGridColumn TItem="UsuarioDto" Property="TelefoneWhatsApp" Title="Telefone WhatsApp" />
             <RadzenDataGridColumn TItem="UsuarioDto" Title="Status">
                 <Template Context="u">
                     @if (u.Ativo)

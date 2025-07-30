@@ -1,4 +1,6 @@
 ﻿using ByTescaro.ConstrutorApp.Application.Interfaces;
+using ByTescaro.ConstrutorApp.Domain.Entities;
+using ByTescaro.ConstrutorApp.Domain.Enums;
 using ByTescaro.ConstrutorApp.Domain.Interfaces; // Certificar que está presente
 using ByTescaro.ConstrutorApp.Infrastructure.Services; // Certifique-se de que este namespace está correto para ZApiSettings
 using Microsoft.Extensions.Logging;
@@ -15,9 +17,13 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         private readonly ZApiSettings _zApiSettings;
         private readonly ILogger<ZApiNotificationService> _logger;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogAuditoriaRepository _logRepo;
+        private readonly IUsuarioLogadoService _usuarioLogadoService;
+
+
 
         // <--- MUDANÇA: Construtor agora recebe RestClient em vez de IHttpClientFactory
-        public ZApiNotificationService(IOptions<ZApiSettings> zApiSettings, ILogger<ZApiNotificationService> logger, IUnitOfWork unitOfWork)
+        public ZApiNotificationService(IOptions<ZApiSettings> zApiSettings, ILogger<ZApiNotificationService> logger, IUnitOfWork unitOfWork, ILogAuditoriaRepository logRepo, IUsuarioLogadoService usuarioLogadoService)
         {
             _zApiSettings = zApiSettings.Value;
             _logger = logger;
@@ -27,6 +33,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             // Os InstanceId e InstanceToken serão adicionados ao path da requisição.
             _restClient = new RestClient(_zApiSettings.BaseUrl);
             _unitOfWork = unitOfWork;
+            _logRepo = logRepo;
+            _usuarioLogadoService = usuarioLogadoService;
         }
 
         private string CleanAndFormatPhoneNumber(string phoneNumber)
@@ -243,6 +251,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 return;
             }
 
+            var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
+
+
             var numeroLimpo = CleanAndFormatPhoneNumber(phoneNumber);
             // Assumimos que a extensão é PDF, pode ser dinâmica se necessário
             var extension = "pdf";
@@ -270,6 +281,16 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             try
             {
                 var response = await _restClient.ExecuteAsync(request);
+
+                await _logRepo.RegistrarAsync(new LogAuditoria
+                {
+                    UsuarioId = usuarioLogado?.Id ?? 0,
+                    UsuarioNome = usuarioLogado?.Nome ?? "Sistema/Desconhecido",
+                    Entidade = "Relatório",
+                    TipoLogAuditoria = TipoLogAuditoria.Atualizacao,
+                    Descricao = $"Relatório enviado para o número {phoneNumber} por '{usuarioLogado?.Nome ?? "Sistema"}' em {DateTime.Now}.",
+                    DadosAtuais = JsonSerializer.Serialize(request)
+                });
 
                 _logger.LogInformation("Z-API - Resposta documento (RestSharp). Status: {StatusCode}, Resposta Conteúdo: {ResponseContent}", response.StatusCode, response.Content);
 

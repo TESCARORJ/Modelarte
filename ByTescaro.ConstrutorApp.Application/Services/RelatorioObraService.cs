@@ -195,7 +195,6 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                         columns.RelativeColumn();
                                         columns.RelativeColumn();
                                         columns.RelativeColumn();
-                                        columns.RelativeColumn();
                                     });
 
                                     table.Header(header =>
@@ -204,16 +203,14 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                         header.Cell().BorderBottom(1).Padding(5).Text("Função").SemiBold();
                                         header.Cell().BorderBottom(1).Padding(5).Text("Início").SemiBold();
                                         header.Cell().BorderBottom(1).Padding(5).Text("Fim").SemiBold();
-                                        header.Cell().BorderBottom(1).Padding(5).Text("Custo Diário").SemiBold();
                                     });
 
                                     foreach (var func in obraRelatorioDto.Funcionarios)
                                     {
-                                        table.Cell().Padding(2).Text(func.NomeFuncionario);
-                                        table.Cell().Padding(2).Text(func.Funcao);
-                                        table.Cell().Padding(2).Text(func.DataInicioAlocacao.ToShortDateString());
-                                        table.Cell().Padding(2).Text(func.DataFimAlocacao?.ToShortDateString() ?? "N/A");
-                                        table.Cell().Padding(2).AlignRight().Text(func.CustoDiario.ToString("C"));
+                                        table.Cell().Padding(2).Text(func.FuncionarioNome);
+                                        table.Cell().Padding(2).Text(func.FuncaoNoObra);
+                                        table.Cell().Padding(2).Text(func.DataInicio.ToShortDateString());
+                                        table.Cell().Padding(2).Text(func.DataFim?.ToShortDateString() ?? "N/A");
                                     }
                                 });
                             }

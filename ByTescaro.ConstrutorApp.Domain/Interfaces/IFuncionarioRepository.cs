@@ -9,7 +9,7 @@ public interface IFuncionarioRepository : IRepository<Funcionario>
     Task<Dictionary<long, string>> ObterNomesPorIdsAsync(IEnumerable<long> ids);
 
     //Task<(int Alocados, int NaoAlocados)> ObterResumoAlocacaoAsync();
-    Task<List<Funcionario>> GetAllIncludingAsync(params Expression<Func<Funcionario, object>>[] includes);
+    Task<List<Funcionario>> GetAllIncludingAsync(Expression<Func<Funcionario, bool>>? predicate = null, params Expression<Func<Funcionario, object>>[] includes);
     Task<Funcionario?> GetByIdWithEnderecoAsync(long id);
 
 }

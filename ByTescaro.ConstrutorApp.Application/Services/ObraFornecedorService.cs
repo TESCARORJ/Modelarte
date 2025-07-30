@@ -145,7 +145,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task<List<FornecedorDto>> ObterFornecedoresTotalDisponiveisAsync()
         {
-            var todosFornecedores = await _unitOfWork.FornecedorRepository.GetAllAsync();
+            var todosFornecedores = await _unitOfWork.FornecedorRepository.GetAllIncludingAsync(x => x.Ativo == true,x => x.UsuarioCadastro);
 
 
             return _mapper.Map<List<FornecedorDto>>(todosFornecedores);
