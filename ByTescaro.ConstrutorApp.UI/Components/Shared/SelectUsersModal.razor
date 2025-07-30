@@ -1,0 +1,65 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using Radzen.Blazor
+@inject DialogService DialogService
+
+<RadzenStack Orientation="Orientation.Vertical" Gap="1rem" Style="width: 400px; padding: 20px;">
+    <RadzenText Text="Selecione os destinatários" TextStyle="TextStyle.H6" />
+
+    @* Refatorado para usar RadzenDropDown com seleção múltipla *@
+    <RadzenDropDown TValue="IEnumerable<long>" 
+                    Data="@FilteredUsers"
+                    TextProperty="DisplayName" 
+                    ValueProperty="Id"
+                    Placeholder="Selecionar Funcionários/Usuários"
+                    Multiple="true"
+                    SelectAllText="Selecionar Todos"
+                    Style="width: 100%;"
+                    Class="rz-mb-2"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                    FilterOperator="StringFilterOperator.Contains"
+                    AllowFiltering="true"
+                    @bind-Value="SelectedUserIds" />
+
+
+    @* O campo de texto para filtro manual não é mais necessário com RadzenDropDown.AllowFiltering *@
+    @* O div de altura fixa com overflow também não é mais necessário, pois o DropDown lida com isso. *@
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem">
+        <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Secondary" Click="Cancel" />
+        <RadzenButton Text="Enviar" ButtonStyle="ButtonStyle.Primary" Click="Submit" Disabled="@(!SelectedUserIds.Any())" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter] public List<SelectableUserDto> AvailableUsers { get; set; } = new();
+    public IEnumerable<long> SelectedUserIds { get; set; } = new List<long>(); // Alterado para IEnumerable<long>
+
+    // Não precisamos mais de filterText e FilteredUsers como propriedades separadas para RadzenDropDown,
+    // pois o componente lida com o filtro diretamente com base em 'Data'.
+    // Manteremos FilteredUsers como AvailableUsers, pois o DropDown fará a filtragem interna.
+    private List<SelectableUserDto> FilteredUsers { get; set; } = new();
+
+
+    protected override void OnInitialized()
+    {
+        // O RadzenDropDown já faz a filtragem automaticamente com AllowFiltering="true".
+        // A lista de dados fornecida ao DropDown deve ser a lista completa de AvailableUsers.
+        FilteredUsers = AvailableUsers;
+    }
+
+    // O método FilterUsers não é mais necessário, pois o RadzenDropDown.AllowFiltering="true"
+    // e FilterOperator="StringFilterOperator.Contains" cuidam da filtragem internamente.
+    // Removendo o método FilterUsers()
+
+    void Submit()
+    {
+        // Retorna a lista de usuários selecionados
+        var selected = AvailableUsers.Where(u => SelectedUserIds.Contains(u.Id)).ToList();
+        DialogService.Close(selected);
+    }
+
+    void Cancel()
+    {
+        DialogService.Close(null); // Retorna null se o usuário cancelar
+    }
+}

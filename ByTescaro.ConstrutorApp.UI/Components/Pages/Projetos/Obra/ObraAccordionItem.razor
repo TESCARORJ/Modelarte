@@ -2,16 +2,18 @@
 @using ByTescaro.ConstrutorApp.Domain.Enums
 @using ByTescaro.ConstrutorApp.UI.Components.Utils
 @using ByTescaro.ConstrutorApp.UI.Services
+@using ByTescaro.ConstrutorApp.Application.Interfaces 
 @inject ObraFuncionarioApiService ObraFuncionarioApiService
 @inject FuncionarioApiService FuncionarioApiService
+@inject UsuarioApiService UsuarioApiService 
 @inject ObraApiService ObraApiService
 @inject NotificationService NotificationService
 @inject DialogService DialogService
 @inject NavigationManager NavigationManager
-@inject IJSRuntime JS
-@inject IJSRuntime JSRuntime 
+@inject IJSRuntime JSRuntime
 @inject TooltipService TooltipService
-
+@inject IRelatorioObraService RelatorioObraService
+@inject INotificationService ZApiNotificationService
 
 <style>
     ul[role="tablist"] {
@@ -56,13 +58,12 @@
     <RadzenRow class="obra-form-row">
         <RadzenColumn Size="12" SizeMD="3" Style="padding-right: 1rem;">
             <RadzenLabel Text="Nome da Obra *" />
-            @* CORREÇÃO: Usando um método para gerar o nome do componente de forma compatível com o Razor *@
             <RadzenTextBox @bind-Value="Obra.Nome" Name="@GetUniqueName("NomeObra")" Style="width: 100%;" />
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="3" Style="padding-right: 1rem;">
             <RadzenLabel Text="Responsável Obra *" />
-            <RadzenDropDown Data="@todosFuncionariosComWhatsApp"
+            <RadzenDropDown Data="@allSelectableUsers"
                             TextProperty="Nome"
                             ValueProperty="Id"
                             @bind-Value="Obra.ResponsavelObraId"
@@ -84,7 +85,7 @@
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="3" Style="padding-right: 1rem;">
-            <RadzenLabel Text="Responsável Obra *" />
+            <RadzenLabel Text="Data Início Execução *" /> 
             <RadzenDatePicker @bind-Value="Obra.DataInicioExecucao" ShowTime="true" DateFormat="dd/MM/yyyy HH:mm"
                               Style="width:100%;" Name="DataInicioExecucao" />
         </RadzenColumn>
@@ -103,12 +104,17 @@
     <RadzenRow>
         <RadzenColumn Size="12" class="d-flex justify-content-end" Style="margin-top: 1.5rem;">
 
-            <RadzenButton Text="Gerar Relatório PDF" 
+            <RadzenButton Text="Gerar Relatório PDF"
                           Icon="picture_as_pdf"
-                          ButtonStyle="ButtonStyle.Primary" 
-                          Click="GerarRelatorioPdf" 
+                          ButtonStyle="ButtonStyle.Primary"
+                          Click="GerarRelatorioPdf"
                           Style="margin-right: 1rem;" />
 
+            <RadzenButton Text="Enviar Relatório WhatsApp"
+                          ButtonStyle="ButtonStyle.Success"
+                          Click="OpenSendReportModal"
+                          Disabled="@(Obra.Id == 0 || !allSelectableUsers.Any())" 
+                          Style="margin-right: 1rem;" />
 
             <RadzenButton Text="Salvar Alterações na Obra"
                           Icon="save"
@@ -138,8 +144,6 @@
             <RadzenTabsItem Text="Pendências"><PendenciaObraTab Obra="@Obra" /></RadzenTabsItem>
         </Tabs>
     </RadzenTabs>
-
-    
 </RadzenAccordionItem>
 
 @code {
@@ -149,8 +153,8 @@
     [Parameter] public List<object> StatusOptions { get; set; } = new();
     [Parameter] public EventCallback<ObraDto> OnRemover { get; set; }
 
-
-    private List<FuncionarioDto> todosFuncionariosComWhatsApp = new();
+    // Lista combinada de funcionários e usuários para seleção
+    private List<SelectableUserDto> allSelectableUsers = new();
 
     private bool isSaving = false;
     private readonly string _componentId = Guid.NewGuid().ToString("N");
@@ -159,11 +163,37 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var todosFuncionarios = await FuncionarioApiService.GetAllAsync();
-
-        todosFuncionariosComWhatsApp = todosFuncionarios
+        // Busca funcionários com WhatsApp
+        var funcionarios = (await FuncionarioApiService.GetAllAsync())
             .Where(f => !string.IsNullOrEmpty(f.TelefoneWhatsApp))
-            .ToList();
+            .Select(f => new SelectableUserDto
+            {
+                Id = f.Id,
+                Nome = f.Nome,
+                TelefoneWhatsApp = f.TelefoneWhatsApp
+            }).ToList();
+
+        // Busca usuários com WhatsApp
+        // Assumindo que UsuarioApiService.GetAllAsync() retorna List<UsuarioDto>
+        // e que UsuarioDto tem Id, Nome e TelefoneWhatsApp
+        var usuarios = (await UsuarioApiService.GetAllAsync())
+            .Where(u => !string.IsNullOrEmpty(u.TelefoneWhatsApp))
+            .Select(u => new SelectableUserDto
+            {
+                Id = u.Id,
+                Nome = u.Nome,
+                TelefoneWhatsApp = u.TelefoneWhatsApp
+            }).ToList();
+
+        // Combina as listas
+        allSelectableUsers.AddRange(funcionarios);
+        allSelectableUsers.AddRange(usuarios);
+
+        // Opcional: Remover duplicatas se um usuário também for funcionário e tiver o mesmo ID
+        allSelectableUsers = allSelectableUsers.GroupBy(u => u.Id).Select(g => g.First()).ToList();
+
+        // Ordena por nome
+        allSelectableUsers = allSelectableUsers.OrderBy(u => u.Nome).ToList();
     }
 
     private bool ValidarObra()
@@ -201,7 +231,6 @@
         }
     }
 
-
     private async Task ExcluirConfirmado(long id)
     {
         try
@@ -227,12 +256,10 @@
         {
             if (Obra.Id == 0)
             {
-                // CORRIGIDO: Adicionado 'await' e tratamento do objeto retornado.
                 var obraCriada = await ObraApiService.CreateAsync(Obra);
 
                 if (obraCriada != null)
                 {
-                    // Atualiza o ID do objeto na UI para que futuras edições funcionem como 'update'.
                     Obra.Id = obraCriada.Id;
                 }
                 NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Nova obra adicionada com sucesso!");
@@ -258,17 +285,108 @@
     {
         try
         {
-            // Construir a URL do endpoint da API
-            // Note: Use Obra.Id pois o ObraAccordionItem deve receber um objeto Obra
             var apiUrl = NavigationManager.BaseUri + $"api/Obra/{Obra.Id}/relatorio-pdf";
-
-            // Usar JSInterop para abrir o PDF em uma nova aba ou iniciar o download
             await JSRuntime.InvokeVoidAsync("open", apiUrl, "_blank");
-            await DialogService.Alert("Relatório PDF da Obra gerado com sucesso!", "Sucesso");
+            NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Relatório PDF da Obra gerado com sucesso!");
         }
         catch (Exception ex)
         {
-            await DialogService.Alert($"Erro ao gerar relatório PDF: {ex.Message}", "Erro");
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Erro ao gerar relatório PDF: {ex.Message}");
+        }
+    }
+
+    private async Task OpenSendReportModal()
+    {
+        if (Obra.Id == 0)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "Por favor, salve a obra antes de enviar o relatório.");
+            return;
+        }
+
+        // Se não houver usuários ou funcionários com WhatsApp, notifique e saia
+        if (!allSelectableUsers.Any())
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "Nenhum funcionário ou usuário com número de WhatsApp válido encontrado para envio.");
+            return;
+        }
+
+        // Abre a modal, passando a lista combinada de usuários/funcionários
+        var result = await DialogService.OpenAsync<SelectUsersModal>(
+            "Enviar Relatório por WhatsApp",
+            new Dictionary<string, object> { { "AvailableUsers", allSelectableUsers } },
+            new DialogOptions() { Width = "450px", Height = "500px", CloseDialogOnOverlayClick = true }
+        );
+
+        // Se o usuário selecionou e clicou em enviar
+        if (result is List<SelectableUserDto> selectedUsers && selectedUsers.Any())
+        {
+            await SendReportToSelectedUsers(selectedUsers);
+        }
+        else if (result == null)
+        {
+            NotificationService.Notify(NotificationSeverity.Info, "Cancelado", "Envio do relatório cancelado.");
+        }
+    }
+
+    private async Task SendReportToSelectedUsers(List<SelectableUserDto> selectedUsers)
+    {
+        try
+        {
+            NotificationService.Notify(NotificationSeverity.Info, "Processando", "Gerando e enviando relatório(s) por WhatsApp. Isso pode levar alguns segundos...");
+
+            // Gerar o PDF
+            byte[] pdfBytes = await RelatorioObraService.GerarRelatorioObraPdfAsync(Obra.Id);
+
+            if (pdfBytes == null || pdfBytes.Length == 0)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Erro", "Não foi possível gerar o relatório PDF.");
+                return;
+            }
+
+            var fileName = $"Relatorio_Obra_{Obra.Nome.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+            var caption = $"Relatório da Obra: {Obra.Nome}\nPeríodo: {(Obra.DataInicioExecucao != null ? Obra.DataInicioExecucao.Value.ToShortDateString() : string.Empty)}";
+
+            int sentCount = 0;
+            foreach (var user in selectedUsers)
+            {
+                try
+                {
+                    if (!string.IsNullOrEmpty(user.TelefoneWhatsApp))
+                    {
+                        await ZApiNotificationService.SendWhatsAppDocumentAsync(
+                            user.TelefoneWhatsApp,
+                            pdfBytes,
+                            fileName,
+                            caption
+                        );
+                        sentCount++;
+                    }
+                    else
+                    {
+                        // Este log será mais útil para depuração no console do servidor
+                        Console.WriteLine($"AVISO: Usuário {user.Nome} (ID: {user.Id}) não possui número de WhatsApp válido para envio.");
+                    }
+                }
+                catch (Exception userEx)
+                {
+                    // _logger.LogError(userEx, $"Falha ao enviar relatório para {user.Nome} (ID: {user.Id}, Telefone: {user.TelefoneWhatsApp}).");
+                    NotificationService.Notify(NotificationSeverity.Error, "Erro de Envio", $"Falha ao enviar para {user.Nome}. Verifique o número de WhatsApp.");
+                }
+            }
+
+            if (sentCount > 0)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Sucesso", $"{sentCount} relatório(s) enviado(s) com sucesso por WhatsApp!");
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Atenção", "Nenhum relatório foi enviado. Verifique se os usuários selecionados têm números de WhatsApp válidos.");
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Falha geral ao enviar o relatório: {ex.Message}");
+            // _logger.LogError(ex, "Erro geral no SendReportToSelectedUsers.");
         }
     }
 }

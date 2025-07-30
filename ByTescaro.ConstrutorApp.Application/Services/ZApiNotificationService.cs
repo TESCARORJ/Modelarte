@@ -234,5 +234,56 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 throw; // Re-lança a exceção para que a camada superior possa lidar com ela
             }
         }
+
+        public async Task SendWhatsAppDocumentAsync(string phoneNumber, byte[] documentBytes, string fileName, string caption = null)
+        {
+            if (string.IsNullOrWhiteSpace(phoneNumber) || documentBytes == null || documentBytes.Length == 0)
+            {
+                _logger.LogWarning("Tentativa de envio de documento com telefone ou documento vazio.");
+                return;
+            }
+
+            var numeroLimpo = CleanAndFormatPhoneNumber(phoneNumber);
+            // Assumimos que a extensão é PDF, pode ser dinâmica se necessário
+            var extension = "pdf";
+            var resource = $"instances/{_zApiSettings.InstanceId}/token/{_zApiSettings.InstanceToken}/send-document/{extension}";
+
+            var base64Document = Convert.ToBase64String(documentBytes);
+            var documentPayload = $"data:application/{extension};base64,{base64Document}"; // Formato "data:MIME_TYPE;base64,BASE64_STRING"
+
+            var payload = new
+            {
+                phone = numeroLimpo,
+                document = documentPayload,
+                fileName = fileName,
+                caption = caption
+            };
+
+            var request = new RestRequest(resource, Method.Post);
+            request.AddHeader("Content-Type", "application/json");
+            request.AddHeader("Client-Token", _zApiSettings.ClientToken);
+            request.AddJsonBody(payload);
+
+            _logger.LogInformation("Z-API - Enviando requisição de documento (RestSharp) para URL: {Url}", _restClient.BuildUri(request));
+            _logger.LogInformation("Z-API - Telefone: {Phone}, Arquivo: {FileName}, Caption: {Caption}", numeroLimpo, fileName, caption);
+
+            try
+            {
+                var response = await _restClient.ExecuteAsync(request);
+
+                _logger.LogInformation("Z-API - Resposta documento (RestSharp). Status: {StatusCode}, Resposta Conteúdo: {ResponseContent}", response.StatusCode, response.Content);
+
+                if (!response.IsSuccessful)
+                {
+                    _logger.LogError("Z-API retornou um erro ao enviar documento (RestSharp). Status: {StatusCode}, Resposta: {ErrorContent}", response.StatusCode, response.Content);
+                    throw new ApplicationException($"Erro Z-API ao enviar documento: Status {response.StatusCode}, Conteúdo: {response.Content}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao enviar documento para Z-API (RestSharp).");
+                throw;
+            }
+        }
     }
 }
