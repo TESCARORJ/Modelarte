@@ -48,9 +48,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
             _unitOfWork.OrcamentoRepository.Add(entidade);
 
+            await _unitOfWork.CommitAsync();
             await _auditoriaService.RegistrarCriacaoAsync(entidade, usuarioLogadoId);
 
-            await _unitOfWork.CommitAsync();
 
             return _mapper.Map<OrcamentoDto>(entidade);
         }
@@ -81,22 +81,19 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task AtualizarAsync(OrcamentoDto dto)
         {
-            // Obtém o ID do usuário logado (usando 'await' para obter o resultado da Task de forma assíncrona e segura)
             var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
             var usuarioLogadoId = usuarioLogado?.Id ?? 0;
 
-            // 1. Busque a entidade antiga com os itens, SOMENTE PARA FINS DE AUDITORIA, SEM RASTREAMENTO.
-            // Essa instância 'orcamentoAntigoParaAuditoria' NÃO será modificada e representa o estado original.
+
             var orcamentoAntigoParaAuditoria = await _unitOfWork.OrcamentoRepository
-                .GetByIdComItensNoTrackingAsync(dto.Id); // NOVO MÉTODO NECESSÁRIO
+                .GetByIdComItensNoTrackingAsync(dto.Id); 
 
             if (orcamentoAntigoParaAuditoria == null)
             {
                 throw new KeyNotFoundException($"Orçamento com ID {dto.Id} não encontrado para auditoria.");
             }
 
-            // 2. Busque a entidade que REALMENTE SERÁ ATUALIZADA, COM RASTREAMENTO e com os itens.
-            // Essa instância 'orcamentoParaAtualizar' é a que o EF Core está monitorando e será modificada.
+
             var orcamentoParaAtualizar = await _unitOfWork.OrcamentoRepository
                 .GetByIdComItensAsync(dto.Id);
 
@@ -105,26 +102,19 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 throw new KeyNotFoundException($"Orçamento com ID {dto.Id} não encontrado para atualização.");
             }
 
-            // Validação de itens
             if (dto.Itens == null || !dto.Itens.Any())
                 throw new ArgumentException("O orçamento deve conter pelo menos um item.");
 
-            // Atualiza o total com base nos itens do DTO
             dto.Total = dto.Itens.Sum(i => i.Quantidade * i.PrecoUnitario);
 
-            // 3. Mapeie as propriedades do DTO para a entidade 'orcamentoParaAtualizar' (a rastreada).
-            // O AutoMapper irá aplicar as mudanças DIRETAMENTE nesta instância.
+          
             _mapper.Map(dto, orcamentoParaAtualizar);
 
-            // Reatribua os campos de auditoria de criação que não devem ser alterados pelo DTO.
-            // Eles vêm da entidade original não modificada.
+            
             orcamentoParaAtualizar.UsuarioCadastroId = orcamentoAntigoParaAuditoria.UsuarioCadastroId;
             orcamentoParaAtualizar.DataHoraCadastro = orcamentoAntigoParaAuditoria.DataHoraCadastro;
 
-            // 4. Lógica para ATUALIZAR/ADICIONAR/REMOVER itens da coleção 'Itens'.
-            // Em vez de criar uma nova coleção, vamos comparar e modificar apenas o necessário.
-
-            // Itens a serem removidos (existem na lista antiga, mas não no DTO)
+          
             var itensParaRemover = orcamentoParaAtualizar.Itens
                 .Where(existingItem => !dto.Itens.Any(dtoItem => dtoItem.Id == existingItem.Id && dtoItem.Id != 0))
                 .ToList();
@@ -132,53 +122,40 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             foreach (var item in itensParaRemover)
             {
                 orcamentoParaAtualizar.Itens.Remove(item);
-                // Se você tiver um repositório específico para OrcamentoItem, pode ser bom marcar para remoção explícita:
-                // _unitOfWork.OrcamentoItemRepository.Remove(item);
+                
             }
 
-            // Itens a serem adicionados ou atualizados
             foreach (var itemDto in dto.Itens)
             {
                 var existingItem = orcamentoParaAtualizar.Itens.FirstOrDefault(i => i.Id == itemDto.Id && i.Id != 0);
 
-                if (existingItem == null) // Item novo (não tem ID ou não foi encontrado na lista existente)
+                if (existingItem == null) 
                 {
                     orcamentoParaAtualizar.Itens.Add(new OrcamentoItem
                     {
-                        ServicoId = itemDto.ServicoId, // Ou InsumoId, dependendo do seu DTO
+                        ServicoId = itemDto.ServicoId, 
                         Quantidade = itemDto.Quantidade,
                         PrecoUnitario = itemDto.PrecoUnitario,
                         DataHoraCadastro = DateTime.Now,
                         UsuarioCadastroId = usuarioLogadoId,
-                        // Certifique-se de que a FK para Orcamento seja preenchida se não for feita por convenção do EF
                         OrcamentoObraId = orcamentoParaAtualizar.Id
                     });
                 }
-                else // Item existente, atualizar
+                else 
                 {
-                    // Atualize as propriedades que podem mudar
-                    existingItem.ServicoId = itemDto.ServicoId; // Ou InsumoId
+                    existingItem.ServicoId = itemDto.ServicoId; 
                     existingItem.Quantidade = itemDto.Quantidade;
                     existingItem.PrecoUnitario = itemDto.PrecoUnitario;
     
 
-                    // Não é necessário chamar _unitOfWork.OrcamentoItemRepository.Update(existingItem);
-                    // O EF Core já está rastreando existingItem e detectará as mudanças.
+                    
                 }
             }
 
-            // O _unitOfWork.OrcamentoRepository.Update(entityNovo); é geralmente redundante aqui,
-            // pois a entidade principal já está rastreada e suas propriedades e a coleção Itens foram modificadas.
-            // O EF Core detectará as mudanças automaticamente.
-            // _unitOfWork.OrcamentoRepository.Update(orcamentoParaAtualizar);
-
-            // 5. Registre a auditoria. Use RegistrarAtualizacaoAsync.
-            // Certifique-se de que o seu AuditoriaService saiba como lidar com coleções aninhadas
-            // ao comparar 'antigo' e 'novo'.
+            await _unitOfWork.CommitAsync();
+           
             await _auditoriaService.RegistrarAtualizacaoAsync(orcamentoAntigoParaAuditoria, orcamentoParaAtualizar, usuarioLogadoId);
 
-            // 6. Salva TODAS as alterações no banco de dados em uma única transação.
-            await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
@@ -191,8 +168,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
             _unitOfWork.OrcamentoRepository.Remove(entidade);
 
-            await _auditoriaService.RegistrarExclusaoAsync(entidade, usuarioLogadoId);
             await _unitOfWork.CommitAsync();
+            await _auditoriaService.RegistrarExclusaoAsync(entidade, usuarioLogadoId);
         }
     }
 }

@@ -139,6 +139,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     }
                 }
 
+
+
+                await _unitOfWork.CommitAsync();
+
                 await _logRepo.RegistrarAsync(new LogAuditoria
                 {
                     UsuarioId = usuarioLogado == null ? 0 : usuarioLogado.Id,
@@ -148,8 +152,6 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     Descricao = $"Compromisso criado por '{usuarioLogado}' em {DateTime.Now}. Título: {evento.Titulo} --- Início: {evento.DataHoraInicio} - Fim: {evento.DataHoraFim} ---  Descrição: {evento.Descricao} --- Paticipantes: {participantesString} ",
                     DadosAtuais = JsonSerializer.Serialize(request) // Serializa o DTO para o log
                 });
-
-                await _unitOfWork.CommitAsync();
 
                 return _mapper.Map<EventoDto>(evento);
             }
@@ -430,6 +432,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     }
                 }
 
+                await _unitOfWork.CommitAsync();
+
                 await _logRepo.RegistrarAsync(new LogAuditoria
                 {
                     UsuarioId = usuarioLogado?.Id ?? 0,
@@ -439,8 +443,6 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     Descricao = $"Compromisso atualizado por '{usuarioLogado?.Nome ?? "Sistema"}' em {DateTime.Now}. Título: {eventoExistente.Titulo} --- Início: {eventoExistente.DataHoraInicio} - Fim: {eventoExistente.DataHoraFim} --- Descrição: {eventoExistente.Descricao} --- Participantes: {participantesString} ",
                     DadosAtuais = JsonSerializer.Serialize(request)
                 });
-
-                 await _unitOfWork.CommitAsync();
 
                 return _mapper.Map<EventoDto>(eventoExistente);
             }
@@ -502,15 +504,15 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     _unitOfWork.ParticipanteEventoRepository.RemoveRange(participantes);
                 }
 
-                await _logRepo.RegistrarAsync(new LogAuditoria
-                {
-                    UsuarioId = usuarioLogado == null ? 0 : usuarioLogado.Id,
-                    UsuarioNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome,
-                    Entidade = nameof(Evento),
-                    TipoLogAuditoria = TipoLogAuditoria.Criacao,
-                    Descricao = $"Compromisso excluído por '{usuarioLogado}' em {DateTime.Now}. Título: {evento.Titulo} --- Início: {evento.DataHoraInicio} - Fim: {evento.DataHoraFim} ---  Descrição: {evento.Descricao} --- Paticipantes: {participantesString} ",
-                    DadosAtuais = JsonSerializer.Serialize(evento) // Serializa o DTO para o log
-                });
+            await _logRepo.RegistrarAsync(new LogAuditoria
+            {
+                UsuarioId = usuarioLogado == null ? 0 : usuarioLogado.Id,
+                UsuarioNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome,
+                Entidade = nameof(Evento),
+                TipoLogAuditoria = TipoLogAuditoria.Criacao,
+                Descricao = $"Compromisso excluído por '{usuarioLogado}' em {DateTime.Now}. Título: {evento.Titulo} --- Início: {evento.DataHoraInicio} - Fim: {evento.DataHoraFim} ---  Descrição: {evento.Descricao} --- Paticipantes: {participantesString} ",
+                DadosAtuais = JsonSerializer.Serialize(evento) // Serializa o DTO para o log
+            });
 
             }
             _unitOfWork.EventoRepository.Remove(evento);

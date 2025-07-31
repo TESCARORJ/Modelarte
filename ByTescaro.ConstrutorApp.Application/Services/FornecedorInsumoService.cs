@@ -62,9 +62,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entidade.UsuarioCadastroId = usuarioLogado == null ? 0 : usuarioLogado.Id ;
             _unitOfWork.FornecedorInsumoRepository.Add(entidade);
 
+            await _unitOfWork.CommitAsync();
             await _auditoriaService.RegistrarCriacaoAsync(entidade, usuarioLogadoId);
 
-            await _unitOfWork.CommitAsync();
             return entidade.Id;
         }
 
@@ -97,9 +97,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             _unitOfWork.FornecedorInsumoRepository.Update(fornecedorParaAtualizar);
 
 
+            await _unitOfWork.CommitAsync();
             await _auditoriaService.RegistrarAtualizacaoAsync(fornecedorAntigoParaAuditoria, fornecedorParaAtualizar, usuarioLogadoId);
 
-            await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
@@ -111,9 +111,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             if (entidade != null)
                 _unitOfWork.FornecedorInsumoRepository.Remove(entidade);
 
+            await _unitOfWork.CommitAsync();
             await _auditoriaService.RegistrarExclusaoAsync(entidade, usuarioLogadoId);
 
-            await _unitOfWork.CommitAsync();
 
         }
     }

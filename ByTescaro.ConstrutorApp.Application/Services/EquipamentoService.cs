@@ -56,9 +56,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entity.Status = Domain.Enums.StatusEquipamento.Disponivel;
 
             _unitOfWork.EquipamentoRepository.Add(entity);
-            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
-
             await _unitOfWork.CommitAsync();
+            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
         }
 
         public async Task AtualizarAsync(EquipamentoDto dto)
@@ -89,9 +88,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             equipamentoParaAtualizar.DataHoraCadastro = equipamentoAntigoParaAuditoria.DataHoraCadastro;           
 
             _unitOfWork.EquipamentoRepository.Update(equipamentoParaAtualizar);
-
             await _auditoriaService.RegistrarAtualizacaoAsync(equipamentoAntigoParaAuditoria, equipamentoParaAtualizar, usuarioLogadoId);
-
             await _unitOfWork.CommitAsync();
         }
 
@@ -107,10 +104,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
             _unitOfWork.EquipamentoRepository.Remove(entity);
 
+            await _unitOfWork.CommitAsync();
             await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
 
-
-            await _unitOfWork.CommitAsync();
         }
 
         //public async Task<(int Alocados, int NaoAlocados)> ObterResumoAlocacaoAsync()

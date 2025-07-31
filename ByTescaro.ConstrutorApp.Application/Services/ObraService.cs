@@ -79,10 +79,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             _mapper.Map(dto, obraParaAtualizar);
 
 
-            await _auditoriaService.RegistrarAtualizacaoAsync(obraAntigaParaAuditoria, obraParaAtualizar, usuarioLogadoId);
 
             _unitOfWork.ObraRepository.Update(obraParaAtualizar);
             await _unitOfWork.CommitAsync();
+            await _auditoriaService.RegistrarAtualizacaoAsync(obraAntigaParaAuditoria, obraParaAtualizar, usuarioLogadoId);
         }
 
         public async Task RemoverAsync(long id)
@@ -94,9 +94,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             if (entity != null)
                 _unitOfWork.ObraRepository.Remove(entity);
 
-            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
 
             await _unitOfWork.CommitAsync();
+            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
 
         }
 

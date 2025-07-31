@@ -42,8 +42,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entity.UsuarioCadastroId = usuarioLogadoId;
 
             _unitOfWork.ObraImagemRepository.Add(entity);
-            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
             await _unitOfWork.CommitAsync();
+            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
 
             // Atualiza o DTO com o Id gerado pelo banco de dados
             dto.Id = entity.Id;
@@ -74,8 +74,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 }
 
                 _unitOfWork.ObraImagemRepository.Remove(entity);
-                await _auditoriaService.RegistrarExclusaoAsync(_mapper.Map<ObraImagemDto>(entity), usuarioLogadoId);
                 await _unitOfWork.CommitAsync();
+                await _auditoriaService.RegistrarExclusaoAsync(_mapper.Map<ObraImagemDto>(entity), usuarioLogadoId);
             }
             else
             {

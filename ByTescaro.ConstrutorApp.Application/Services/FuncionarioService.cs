@@ -88,10 +88,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
             _unitOfWork.FuncionarioRepository.Add(funcionarioEntity);
 
-            await _auditoriaService.RegistrarCriacaoAsync(funcionarioEntity, usuarioLogadoId);
-
-
             await _unitOfWork.CommitAsync();
+            await _auditoriaService.RegistrarCriacaoAsync(funcionarioEntity, usuarioLogadoId);
         }
 
         public async Task AtualizarAsync(FuncionarioDto dto)
@@ -99,8 +97,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
             var usuarioLogadoId = usuarioLogado?.Id ?? 0;
 
-            // 1. Busque a entidade Funcionário original COM INCLUDES e SEM RASTREAMENTO.
-            // Esta é a CÓPIA para auditoria, que não deve ser modificada pelo AutoMapper.
+            
             var funcionarioAntigoParaAuditoria = await _unitOfWork.FuncionarioRepository
                 .FindOneWithIncludesNoTrackingAsync(f => f.Id == dto.Id, f => f.Endereco, f => f.Funcao);
 
@@ -109,12 +106,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 throw new KeyNotFoundException($"Funcionário com ID {dto.Id} não encontrado para auditoria.");
             }
 
-            // Armazena uma cópia do estado antigo para o log de auditoria ANTES de modificar.
-            // Mapeia para um DTO (ou um objeto JSON) para garantir que a serialização não contenha referências de rastreamento do EF Core.
+         
             var dadosAnteriores = JsonSerializer.Serialize(_mapper.Map<FuncionarioDto>(funcionarioAntigoParaAuditoria));
 
-            // 2. Busque a entidade Funcionário que será ATUALIZADA COM INCLUDES e COM RASTREAMENTO.
-            // Esta é a entidade que o AutoMapper e o EF Core irão realmente modificar e rastrear.
+           
             var funcionarioParaAtualizar = await _unitOfWork.FuncionarioRepository
                 .FindOneWithIncludesAsync(f => f.Id == dto.Id, f => f.Endereco, f => f.Funcao);
 
@@ -123,61 +118,41 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 throw new KeyNotFoundException($"Funcionário com ID {dto.Id} não encontrado para atualização.");
             }
 
-            // 3. Mapeie as propriedades do DTO de entrada para a entidade Funcionário existente e rastreada.
-            // O AutoMapper irá aplicar as mudanças diretamente em 'funcionarioParaAtualizar'.
+          
             _mapper.Map(dto, funcionarioParaAtualizar);
 
-            // Garante que campos de auditoria de criação não sejam sobrescritos pelo DTO de entrada.
-            // Estes valores devem vir da entidade original (antes da atualização).
+           
             funcionarioParaAtualizar.UsuarioCadastroId = funcionarioAntigoParaAuditoria.UsuarioCadastroId;
             funcionarioParaAtualizar.DataHoraCadastro = funcionarioAntigoParaAuditoria.DataHoraCadastro;
-            funcionarioParaAtualizar.TipoEntidade = TipoEntidadePessoa.Funcionario; // Garante o discriminador, se aplicável.
+            funcionarioParaAtualizar.TipoEntidade = TipoEntidadePessoa.Funcionario; 
 
-            // 4. Lógica para ATUALIZAR/CRIAR/REMOVER a entidade Endereco
-            if (!string.IsNullOrWhiteSpace(dto.CEP)) // Se o DTO tem dados de endereço
+            if (!string.IsNullOrWhiteSpace(dto.CEP)) 
             {
-                if (funcionarioParaAtualizar.Endereco == null) // Se o funcionário NÃO tinha endereço ANTES
+                if (funcionarioParaAtualizar.Endereco == null)
                 {
                     var novoEndereco = _mapper.Map<Endereco>(dto);
-                    _unitOfWork.EnderecoRepository.Add(novoEndereco); // Adiciona o novo endereço ao contexto
-                    funcionarioParaAtualizar.Endereco = novoEndereco; // Associa o novo endereço ao funcionário
+                    _unitOfWork.EnderecoRepository.Add(novoEndereco); 
+                    funcionarioParaAtualizar.Endereco = novoEndereco; 
                 }
-                else // Se o funcionário JÁ tinha endereço
+                else
                 {
-                    // Mapeia DTO para o endereço existente (rastreado).
-                    // Use 'dto' como origem e 'funcionarioParaAtualizar.Endereco' como destino.
+                    
                     _mapper.Map(dto, funcionarioParaAtualizar.Endereco);
                 }
             }
-            else // Se o DTO NÃO tem CEP, e o funcionário TINHA endereço, REMOVER/DESVINCULAR o Endereço existente
+            else 
             {
                 if (funcionarioParaAtualizar.Endereco != null)
                 {
-                    _unitOfWork.EnderecoRepository.Remove(funcionarioParaAtualizar.Endereco); // Marca o endereço para remoção
-                    funcionarioParaAtualizar.Endereco = null; // Desvincula o endereço do funcionário
-                    funcionarioParaAtualizar.EnderecoId = null; // Garante que a FK também seja nullificada
+                    _unitOfWork.EnderecoRepository.Remove(funcionarioParaAtualizar.Endereco); 
+                    funcionarioParaAtualizar.Endereco = null; 
+                    funcionarioParaAtualizar.EnderecoId = null; 
                 }
             }
 
-            // A linha abaixo é redundante e pode causar um novo endereço se o EnderecoId for null por outro motivo.
-            // A lógica acima já trata a criação ou atualização. Remova-a.
-            // if (funcionarioNovo.EnderecoId == null)
-            // {
-            //     var novoEndereco = _mapper.Map<Endereco>(dto);
-            //     _unitOfWork.EnderecoRepository.Add(novoEndereco);
-            //     funcionarioNovo.Endereco = novoEndereco;
-            // }
-
-            // O método .Update() no repositório muitas vezes não é estritamente necessário se
-            // a entidade (funcionarioParaAtualizar) já está rastreada e suas propriedades foram alteradas.
-            // O EF Core já detecta as mudanças automaticamente.
-            // _unitOfWork.FuncionarioRepository.Update(funcionarioParaAtualizar);
-
-            // 5. Adiciona o log de auditoria.
-            // Passe 'funcionarioAntigoParaAuditoria' (o estado antes) e 'funcionarioParaAtualizar' (o estado depois).
+           
             await _auditoriaService.RegistrarAtualizacaoAsync(funcionarioAntigoParaAuditoria, funcionarioParaAtualizar, usuarioLogadoId);
 
-            // 6. Salva TODAS as alterações em uma única transação.
             await _unitOfWork.CommitAsync();
         }
         public async Task RemoverAsync(long id)
@@ -194,10 +169,11 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             }
             _unitOfWork.FuncionarioRepository.Remove(funcionarioToRemove);
 
+            await _unitOfWork.CommitAsync();
+
             await _auditoriaService.RegistrarExclusaoAsync(funcionarioToRemove, usuarioLogadoId);
 
 
-            await _unitOfWork.CommitAsync();
         }
 
         public async Task<bool> CpfCnpjExistsAsync(string cpfCnpj, long? ignoreId = null)

@@ -52,8 +52,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entity.UsuarioCadastroId = usuarioLogadoId;
 
             _unitOfWork.ServicoRepository.Add(entity);
-            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
             await _unitOfWork.CommitAsync();
+            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
         }
 
         public async Task AtualizarAsync(ServicoDto dto)
@@ -75,9 +75,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
 
             _unitOfWork.ServicoRepository.Update(servicoParaAtualizar);
-            await _auditoriaService.RegistrarAtualizacaoAsync(servicoAntigoParaAuditoria, servicoParaAtualizar, usuarioLogadoId);
 
             await _unitOfWork.CommitAsync();
+            await _auditoriaService.RegistrarAtualizacaoAsync(servicoAntigoParaAuditoria, servicoParaAtualizar, usuarioLogadoId);
         }
 
         public async Task RemoverAsync(long id)
@@ -89,8 +89,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             if (entity == null) return;
 
             _unitOfWork.ServicoRepository.Remove(entity);
-            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
             await _unitOfWork.CommitAsync();
+            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
         }
 
         public async Task<bool> NomeExistsAsync(string nome, long? ignoreId = null)

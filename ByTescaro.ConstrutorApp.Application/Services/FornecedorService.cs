@@ -56,10 +56,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entity.TipoEntidade = TipoEntidadePessoa.Fornecedor;
             _unitOfWork.FornecedorRepository.Add(entity);
 
+            await _unitOfWork.CommitAsync();
             await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
 
 
-            await _unitOfWork.CommitAsync();
 
         }
 
@@ -83,9 +83,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             fornecedorParaAtualizar.TipoEntidade = TipoEntidadePessoa.Fornecedor;
 
             _unitOfWork.FornecedorRepository.Update(fornecedorParaAtualizar);
+            await _unitOfWork.CommitAsync();
             await _auditoriaService.RegistrarAtualizacaoAsync(fornecedorAntigoParaAuditoria, fornecedorParaAtualizar, usuarioLogadoId);
 
-            await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
@@ -98,11 +98,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
             _unitOfWork.FornecedorRepository.Remove(entity);
 
-            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
-
-
             await _unitOfWork.CommitAsync();
-
+            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
         }
 
         public async Task<bool> CpfCnpjExistsAsync(string cpfCnpj, long? ignoreId = null)

@@ -43,8 +43,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entity.DataHoraCadastro = DateTime.Now;
             entity.UsuarioCadastroId = usuarioLogadoId;
             _unitOfWork.ObraInsumoListaRepository.Add(entity);
-            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
             await _unitOfWork.CommitAsync();
+            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
             
             var atualizado = await _unitOfWork.ObraInsumoListaRepository.GetByIdWithItensAsync(entity.Id);
 
@@ -56,18 +56,14 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
             var usuarioLogadoId = usuarioLogado?.Id ?? 0;
 
-            // 1. Busque a entidade antiga com os itens, SOMENTE PARA FINS DE AUDITORIA, SEM RASTREAMENTO.
-            // Essa instância 'listaAntigaParaAuditoria' NÃO será modificada e representa o estado original.
             var listaAntigaParaAuditoria = await _unitOfWork.ObraInsumoListaRepository
-                .GetByIdWithItensNoTrackingAsync(dto.Id); // Novo método
+                .GetByIdWithItensNoTrackingAsync(dto.Id); 
 
             if (listaAntigaParaAuditoria == null)
             {
                 throw new KeyNotFoundException($"Lista de Insumos da Obra com ID {dto.Id} não encontrada para auditoria.");
             }
 
-            // 2. Busque a entidade que REALMENTE SERÁ ATUALIZADA, COM RASTREAMENTO e com os itens.
-            // Essa instância 'listaParaAtualizar' é a que o EF Core está monitorando e será modificada.
             var listaParaAtualizar = await _unitOfWork.ObraInsumoListaRepository
                 .GetByIdWithItensAsync(dto.Id);
 
@@ -76,31 +72,24 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 throw new KeyNotFoundException($"Lista de Insumos da Obra com ID {dto.Id} não encontrada para atualização.");
             }
 
-            // 3. Atualiza os dados principais da lista
             listaParaAtualizar.Data = dto.Data.ToDateTime(TimeOnly.MinValue);
             listaParaAtualizar.ResponsavelId = dto.ResponsavelId;
 
-            // 4. Lógica para ATUALIZAR/ADICIONAR/REMOVER itens da coleção 'Itens'.
-            // Em vez de Clear() e Add() de todos, que pode ser ineficiente e perde o rastreamento do EF,
-            // vamos comparar e modificar apenas o necessário.
 
-            // Itens a serem removidos (existem na lista antiga, mas não no DTO)
             var itensParaRemover = listaParaAtualizar.Itens
                 .Where(existingItem => !dto.Itens.Any(dtoItem => dtoItem.Id == existingItem.Id && dtoItem.Id != 0))
-                .ToList(); // Note: Id == 0 para novos itens não rastreados.
-
+                .ToList(); 
             foreach (var item in itensParaRemover)
             {
                 listaParaAtualizar.Itens.Remove(item);
-                _unitOfWork.ObraInsumoRepository.Remove(item); // Marcar para remoção explícita se ObraInsumoRepository for usado
+                _unitOfWork.ObraInsumoRepository.Remove(item);
             }
 
-            // Itens a serem adicionados ou atualizados
             foreach (var itemDto in dto.Itens)
             {
                 var existingItem = listaParaAtualizar.Itens.FirstOrDefault(i => i.Id == itemDto.Id && i.Id != 0);
 
-                if (existingItem == null) // Item novo
+                if (existingItem == null) 
                 {
                     listaParaAtualizar.Itens.Add(new ObraInsumo
                     {
@@ -108,13 +97,11 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                         Quantidade = itemDto.Quantidade,
                         DataHoraCadastro = DateTime.Now,
                         UsuarioCadastroId = usuarioLogadoId,
-                        // Certifique-se de que a FK para ObraInsumoLista seja preenchida se não for feita por convenção do EF
                         ObraInsumoListaId = listaParaAtualizar.Id
                     });
                 }
-                else // Item existente, atualizar
+                else 
                 {
-                    // Atualize as propriedades que podem mudar
                     existingItem.InsumoId = itemDto.InsumoId;
                     existingItem.Quantidade = itemDto.Quantidade;
                     existingItem.IsRecebido = itemDto.IsRecebido; 
@@ -126,19 +113,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     // O EF Core já está rastreando existingItem e detectará as mudanças.
                 }
             }
-
-            // O _unitOfWork.ObraInsumoListaRepository.Update(entity); é geralmente redundante aqui,
-            // pois a entidade principal já está rastreada e suas propriedades e a coleção Itens foram modificadas.
-            // O EF Core detectará as mudanças automaticamente.
-            // _unitOfWork.ObraInsumoListaRepository.Update(listaParaAtualizar);
-
-            // 5. Registre a auditoria. Use RegistrarAtualizacaoAsync.
-            // Certifique-se de que o seu AuditoriaService saiba como lidar com coleções aninhadas
-            // ao comparar 'antigo' e 'novo'.
+                       
+            await _unitOfWork.CommitAsync();
             await _auditoriaService.RegistrarAtualizacaoAsync(listaAntigaParaAuditoria, listaParaAtualizar, usuarioLogadoId);
 
-            // 6. Salva TODAS as alterações em uma única transação
-            await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
@@ -150,9 +128,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             if (entity != null)
                 _unitOfWork.ObraInsumoListaRepository.Remove(entity);
 
+            await _unitOfWork.CommitAsync();
+
             await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
 
-            await _unitOfWork.CommitAsync();
         }
     }
 }

@@ -167,10 +167,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
             await _unitOfWork.CommitAsync();
         }
-        /// <summary>
-        /// Método auxiliar otimizado que monta e envia a notificação via WhatsApp.
-        /// Ele recebe os objetos já carregados para evitar novas consultas ao banco.
-        /// </summary>
+       
         private async Task EnviarNotificacaoDeConclusaoAsync(ObraItemEtapa itemConcluido, string nomeEtapa, Obra obra)
         {
             var cliente = obra.Projeto.Cliente;

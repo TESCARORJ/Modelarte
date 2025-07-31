@@ -38,14 +38,13 @@ public class ObraEtapaPadraoService : IObraEtapaPadraoService
 
         var entity = _mapper.Map<ObraEtapaPadrao>(dto);
 
-        entity.DataHoraCadastro = DateTime.Now; // Use UtcNow para consistência
+        entity.DataHoraCadastro = DateTime.Now; 
         entity.UsuarioCadastroId = usuarioLogado == null ? 0 : usuarioLogado.Id;
         entity.Ativo = true;
 
         _unitOfWork.ObraEtapaPadraoRepository.Add(entity);
-        await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
-
         await _unitOfWork.CommitAsync();
+        await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
     }
 
     public async Task AtualizarAsync(ObraEtapaPadraoDto dto)
@@ -73,8 +72,8 @@ public class ObraEtapaPadraoService : IObraEtapaPadraoService
 
         await _auditoriaService.RegistrarAtualizacaoAsync(obraEtapaPadraoAntigaParaAuditoria, obraEtapaPadraoParaAtualizar, usuarioLogadoId);
 
-        _unitOfWork.ObraEtapaPadraoRepository.Update(obraEtapaPadraoParaAtualizar);
         await _unitOfWork.CommitAsync();
+        _unitOfWork.ObraEtapaPadraoRepository.Update(obraEtapaPadraoParaAtualizar);
     }
     public async Task RemoverAsync(long id)
     {
@@ -83,9 +82,9 @@ public class ObraEtapaPadraoService : IObraEtapaPadraoService
 
         var entity = await _unitOfWork.ObraEtapaPadraoRepository.GetByIdAsync(id);
         if (entity != null) _unitOfWork.ObraEtapaPadraoRepository.Remove(entity);
+        await _unitOfWork.CommitAsync();
         await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
 
-        await _unitOfWork.CommitAsync();
     }
 
     public async Task<List<ObraEtapaPadraoDto>> ObterPorObraIdAsync(long obraId)

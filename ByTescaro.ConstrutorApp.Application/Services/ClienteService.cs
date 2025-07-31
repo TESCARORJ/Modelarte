@@ -64,11 +64,11 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
             _unitOfWork.ClienteRepository.Add(clienteEntity); // Adiciona o cliente ao contexto
 
-            await _auditoriaService.RegistrarCriacaoAsync(clienteEntity, usuarioLogadoId);
 
 
             // Salva TODAS as alterações (Cliente, Endereco (se houver) e Log) em uma única transação
             await _unitOfWork.CommitAsync();
+            await _auditoriaService.RegistrarCriacaoAsync(clienteEntity, usuarioLogadoId);
         }
 
         public async Task AtualizarAsync(ClienteDto dto)
@@ -125,12 +125,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             }
 
             _unitOfWork.ClienteRepository.Update(entityParaAtualizar);
-            
-            await _auditoriaService.RegistrarAtualizacaoAsync(entityOriginalParaAuditoria, entityParaAtualizar, usuarioLogadoId);
-
-
 
             await _unitOfWork.CommitAsync();
+
+            await _auditoriaService.RegistrarAtualizacaoAsync(entityOriginalParaAuditoria, entityParaAtualizar, usuarioLogadoId);
         }
 
         public async Task RemoverAsync(long id)
@@ -147,11 +145,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 _unitOfWork.EnderecoRepository.Remove(clienteToRemove.Endereco);
             }
             _unitOfWork.ClienteRepository.Remove(clienteToRemove);
-
-
-            await _auditoriaService.RegistrarExclusaoAsync(clienteToRemove, usuarioLogadoId);
-
             await _unitOfWork.CommitAsync();
+            await _auditoriaService.RegistrarExclusaoAsync(clienteToRemove, usuarioLogadoId);
         }
 
 

@@ -36,61 +36,39 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entity.DataHoraCadastro = DateTime.Now;
             entity.UsuarioCadastroId = usuarioLogadoId;
             _unitOfWork.ObraFuncionarioRepository.Add(entity);
-            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
             await _unitOfWork.CommitAsync();
+            await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
         }
 
         public async Task AtualizarAsync(ObraFuncionarioDto dto)
         {
-            // Obtém o ID do usuário logado (usando await para obter Task<T>.Result de forma segura)
             var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
             var usuarioLogadoId = usuarioLogado?.Id ?? 0;
 
-            // 1. Busque a entidade antiga SOMENTE PARA FINS DE AUDITORIA, SEM RASTREAMENTO.
-            // Essa instância 'obraFuncionarioAntigoParaAuditoria' NÃO será modificada pelo AutoMapper,
-            // preservando o estado original para o log de auditoria.
             var obraFuncionarioAntigoParaAuditoria = await _unitOfWork.ObraFuncionarioRepository.GetByIdNoTrackingAsync(dto.Id);
 
             if (obraFuncionarioAntigoParaAuditoria == null)
             {
-                // Se a entidade não foi encontrada, não há o que atualizar ou auditar.
                 throw new KeyNotFoundException($"Obra Funcionário com ID {dto.Id} não encontrado para auditoria.");
             }
 
-            // 2. Busque a entidade que REALMENTE SERÁ ATUALIZADA, COM RASTREAMENTO.
-            // Essa instância 'obraFuncionarioParaAtualizar' é a que o EF Core está monitorando
-            // e que terá suas propriedades alteradas e salvas no banco de dados.
+        
             var obraFuncionarioParaAtualizar = await _unitOfWork.ObraFuncionarioRepository.GetByIdAsync(dto.Id);
 
             if (obraFuncionarioParaAtualizar == null)
             {
-                // Isso deve ser raro se 'obraFuncionarioAntigoParaAuditoria' foi encontrado,
-                // mas é uma boa verificação de segurança para o fluxo de atualização.
+
                 throw new KeyNotFoundException($"Obra Funcionário com ID {dto.Id} não encontrado para atualização.");
             }
 
-            // 3. Mapeie as propriedades do DTO para a entidade 'obraFuncionarioParaAtualizar' (a rastreada).
-            // O AutoMapper irá aplicar as mudanças DIRETAMENTE nesta instância.
+
             _mapper.Map(dto, obraFuncionarioParaAtualizar);
 
-            // Se houver campos de auditoria de criação (UsuarioCadastroId, DataHoraCadastro)
-            // que não devem ser alterados pelo DTO, você pode reatribuí-los aqui,
-            // usando os valores de 'obraFuncionarioAntigoParaAuditoria'.
-            // Exemplo:
-            // obraFuncionarioParaAtualizar.UsuarioCadastroId = obraFuncionarioAntigoParaAuditoria.UsuarioCadastroId;
-            // obraFuncionarioParaAtualizar.DataHoraCadastro = obraFuncionarioAntigoParaAuditoria.DataHoraCadastro;
 
-            // A chamada a .Update() no repositório é geralmente redundante se a entidade já está
-            // rastreada e suas propriedades foram alteradas diretamente. O EF Core detecta essas mudanças automaticamente.
-            // _unitOfWork.ObraFuncionarioRepository.Update(obraFuncionarioParaAtualizar);
+            await _unitOfWork.CommitAsync();
 
-            // 4. Registre a auditoria, passando a cópia original e a entidade atualizada.
-            // 'obraFuncionarioAntigoParaAuditoria' tem os dados ANTES da mudança.
-            // 'obraFuncionarioParaAtualizar' tem os dados DEPOIS da mudança.
             await _auditoriaService.RegistrarAtualizacaoAsync(obraFuncionarioAntigoParaAuditoria, obraFuncionarioParaAtualizar, usuarioLogadoId);
 
-            // 5. Salve TODAS as alterações no banco de dados em uma única transação.
-            await _unitOfWork.CommitAsync();
         }
         public async Task RemoverAsync(long id)
         {
@@ -101,10 +79,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             if (entity != null)
                 _unitOfWork.ObraFuncionarioRepository.Remove(entity);
 
+            await _unitOfWork.CommitAsync();
             await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
 
 
-            await _unitOfWork.CommitAsync();
         }
 
         public async Task<List<FuncionarioDto>> ObterFuncionariosDisponiveisAsync(long obraId)

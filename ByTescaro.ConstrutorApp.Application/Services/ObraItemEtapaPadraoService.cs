@@ -69,9 +69,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entity.UsuarioCadastroId = usuarioLogadoId;
 
             _unitOfWork.ObraItemEtapaPadraoRepository.Add(entity); // O 'entity' agora terá o ID gerado após o SaveChanges interno do AddAsync
+            await _unitOfWork.CommitAsync();
             await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
 
-            await _unitOfWork.CommitAsync();
 
             // Mapeia a entidade atualizada de volta para um DTO e o retorna
             var createdDto = _mapper.Map<ObraItemEtapaPadraoDto>(entity);
@@ -108,21 +108,26 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
       
             _mapper.Map(dto, obraItemEtapaPadraoParaAtualizar);
-
             
-            await _auditoriaService.RegistrarAtualizacaoAsync(obraItemEtapaPadraoAntigoParaAuditoria, obraItemEtapaPadraoParaAtualizar, usuarioLogadoId);
 
             _unitOfWork.ObraItemEtapaPadraoRepository.Update(obraItemEtapaPadraoParaAtualizar);
 
             await _unitOfWork.CommitAsync();
+
+            await _auditoriaService.RegistrarAtualizacaoAsync(obraItemEtapaPadraoAntigoParaAuditoria, obraItemEtapaPadraoParaAtualizar, usuarioLogadoId);
         }
 
         public async Task RemoverAsync(long id)
         {
+            var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
+            var usuarioLogadoId = usuarioLogado?.Id ?? 0;
+
             var entity = await _unitOfWork.ObraItemEtapaPadraoRepository.GetByIdAsync(id);
             if (entity != null)
                 _unitOfWork.ObraItemEtapaPadraoRepository.Remove(entity);
             await _unitOfWork.CommitAsync();
+
+            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
         }
 
     }

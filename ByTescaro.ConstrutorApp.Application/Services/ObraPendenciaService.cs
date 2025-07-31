@@ -78,10 +78,11 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
             _unitOfWork.ObraPendenciaRepository.Update(obraPendenciaParaAtualizar);
 
+            await _unitOfWork.CommitAsync();
+
             await _auditoriaService.RegistrarAtualizacaoAsync(obraPendenciaAntigaParaAuditoria, obraPendenciaParaAtualizar, usuarioLogadoId);
 
 
-            await _unitOfWork.CommitAsync();
         }
         public async Task RemoverAsync(long id)
         {
@@ -92,9 +93,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             if (entity != null)
                 _unitOfWork.ObraPendenciaRepository.Remove(entity);
 
+            await _unitOfWork.CommitAsync();
+
             await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
 
-            await _unitOfWork.CommitAsync();
 
         }
     }

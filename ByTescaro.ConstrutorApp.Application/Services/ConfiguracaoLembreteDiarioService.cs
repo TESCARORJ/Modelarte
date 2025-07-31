@@ -50,10 +50,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
                 _unitOfWork.ConfiguracaoLembreteDiarioRepository.Add(configuracao);
 
-                await _auditoriaService.RegistrarCriacaoAsync(configuracao, usuarioLogadoId);
-
-
                 await _unitOfWork.CommitAsync();
+                await _auditoriaService.RegistrarCriacaoAsync(configuracao, usuarioLogadoId);
 
                 return _mapper.Map<ConfiguracaoLembreteDiarioDto>(configuracao);
             }
@@ -91,11 +89,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
            
             _unitOfWork.ConfiguracaoLembreteDiarioRepository.Update(configuracaoParaAtualizar);
-
-           
-            await _auditoriaService.RegistrarAtualizacaoAsync(configuracaoParaAuditoria, configuracaoParaAtualizar, usuarioLogadoId);
-
+            
             await _unitOfWork.CommitAsync();
+            await _auditoriaService.RegistrarAtualizacaoAsync(configuracaoParaAuditoria, configuracaoParaAtualizar, usuarioLogadoId);
         }
 
         public async Task DeleteAsync(long id)
@@ -110,9 +106,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             }
 
             _unitOfWork.ConfiguracaoLembreteDiarioRepository.Remove(configuracao);
-            await _auditoriaService.RegistrarExclusaoAsync(configuracao, usuarioLogadoId);
-
             await _unitOfWork.CommitAsync();
+            await _auditoriaService.RegistrarExclusaoAsync(configuracao, usuarioLogadoId);
         }
 
         public async Task<IEnumerable<ConfiguracaoLembreteDiarioDto>> GetActiveDailyRemindersAsync()

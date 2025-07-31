@@ -95,71 +95,52 @@ public class UsuarioService : IUsuarioService
 
     public async Task AtualizarAsync(UsuarioDto dto)
     {
-        // Obtém o ID do usuário logado (usando 'await' para obter o resultado da Task de forma assíncrona e segura)
         var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
         var usuarioLogadoId = usuarioLogado?.Id ?? 0;
 
-        // 1. Busque a entidade antiga SOMENTE PARA FINS DE AUDITORIA, SEM RASTREAMENTO.
-        // Essa instância 'usuarioAntigoParaAuditoria' NÃO será modificada e representa o estado original.
+        
         var usuarioAntigoParaAuditoria = await _unitOfWork.UsuarioRepository.GetByIdNoTrackingAsync(dto.Id);
 
         if (usuarioAntigoParaAuditoria == null)
         {
-            // Se a entidade não foi encontrada, não há o que atualizar ou auditar.
+            
             throw new KeyNotFoundException($"Usuário com ID {dto.Id} não encontrado para auditoria.");
         }
 
-        // 2. Busque a entidade que REALMENTE SERÁ ATUALIZADA, COM RASTREAMENTO.
-        // Essa instância 'usuarioParaAtualizar' é a que o EF Core está monitorando
-        // e que terá suas propriedades alteradas e salvas no banco de dados.
+       
         var usuarioParaAtualizar = await _unitOfWork.UsuarioRepository.GetByIdAsync(dto.Id);
 
         if (usuarioParaAtualizar == null)
         {
-            // Isso deve ser raro se 'usuarioAntigoParaAuditoria' foi encontrado,
-            // mas é uma boa verificação de segurança para o fluxo de atualização.
+          
             throw new KeyNotFoundException($"Usuário com ID {dto.Id} não encontrado para atualização.");
         }
 
-        // Garante que o campo discriminador (se usado) não seja alterado.
         usuarioParaAtualizar.TipoEntidade = TipoEntidadePessoa.Usuario;
-
-        // 3. Mapear os demais dados do DTO para a entidade rastreada ('usuarioParaAtualizar').
-        // Isso evita sobrescrever SenhaHash acidentalmente se o AutoMapper não for configurado para ignorá-lo.
         _mapper.Map(dto, usuarioParaAtualizar);
 
-        // Só atualiza a senha se o campo foi preenchido com valor diferente
         if (!string.IsNullOrWhiteSpace(dto.Senha))
         {
             var hasher = new PasswordHasher<Usuario>();
-            // Verifica se a nova senha é diferente da atual (hashing a nova e comparando com a hash salva)
-            // Se SenhaHash for null ou vazio, o VerifyHashedPassword retorna Failed.
-            // Para garantir que a senha seja realmente diferente, você pode comparar as hashes.
+           
             var novaSenhaHash = hasher.HashPassword(usuarioParaAtualizar, dto.Senha);
 
-            if (usuarioParaAtualizar.SenhaHash != novaSenhaHash) // Comparação de hashes
+            if (usuarioParaAtualizar.SenhaHash != novaSenhaHash)
             {
                 usuarioParaAtualizar.SenhaHash = novaSenhaHash;
             }
         }
 
-        // Reatribua os campos de auditoria de criação que não devem ser alterados pelo DTO.
-        // Eles vêm da entidade original não modificada.
+        
         usuarioParaAtualizar.UsuarioCadastroId = usuarioAntigoParaAuditoria.UsuarioCadastroId;
         usuarioParaAtualizar.DataHoraCadastro = usuarioAntigoParaAuditoria.DataHoraCadastro;
 
 
-        // O método .Update() no repositório é geralmente redundante se a entidade já está
-        // rastreada e suas propriedades foram alteradas diretamente. O EF Core detecta essas mudanças automaticamente.
         _unitOfWork.UsuarioRepository.Update(usuarioParaAtualizar);
 
-        // 4. Registre a auditoria, passando a cópia original e a entidade atualizada.
-        // 'usuarioAntigoParaAuditoria' tem os dados ANTES da mudança.
-        // 'usuarioParaAtualizar' tem os dados DEPOIS da mudança.
+        await _unitOfWork.CommitAsync();
         await _auditoriaService.RegistrarAtualizacaoAsync(usuarioAntigoParaAuditoria, usuarioParaAtualizar, usuarioLogadoId);
 
-        // 5. Salva TODAS as alterações no banco de dados em uma única transação.
-        await _unitOfWork.CommitAsync();
     }
 
 
@@ -182,9 +163,9 @@ public class UsuarioService : IUsuarioService
 
         _unitOfWork.UsuarioRepository.Remove(entity);
 
+        await _unitOfWork.CommitAsync();
         await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
 
-        await _unitOfWork.CommitAsync();
     }
 
   

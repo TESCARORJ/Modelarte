@@ -52,9 +52,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entity.UsuarioCadastroId = usuarioLogadoId;
 
             _unitOfWork.InsumoRepository.Add(entity);
+            await _unitOfWork.CommitAsync();
             await _auditoriaService.RegistrarCriacaoAsync(entity, usuarioLogadoId);
 
-            await _unitOfWork.CommitAsync();
         }
 
         public async Task AtualizarAsync(InsumoDto dto)
@@ -74,9 +74,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             _mapper.Map(dto, insumoParaAtualizar);
 
             _unitOfWork.InsumoRepository.Update(insumoParaAtualizar);
+            await _unitOfWork.CommitAsync();
             await _auditoriaService.RegistrarAtualizacaoAsync(insumoAntigoParaAuditoria, insumoParaAtualizar, usuarioLogadoId);
 
-            await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
@@ -88,8 +88,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             if (entity == null) return;
 
             _unitOfWork.InsumoRepository.Remove(entity);
-            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
             await _unitOfWork.CommitAsync();
+            await _auditoriaService.RegistrarExclusaoAsync(entity, usuarioLogadoId);
         }
 
 

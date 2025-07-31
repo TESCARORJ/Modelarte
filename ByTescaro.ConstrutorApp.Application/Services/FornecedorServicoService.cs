@@ -57,8 +57,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             entidade.DataHoraCadastro = DateTime.Now;
             entidade.UsuarioCadastroId = usuarioLogadoId;
             _unitOfWork.FornecedorServicoRepository.Add(entidade);
-            await _auditoriaService.RegistrarCriacaoAsync(entidade, usuarioLogadoId);
             await _unitOfWork.CommitAsync();
+            await _auditoriaService.RegistrarCriacaoAsync(entidade, usuarioLogadoId);
             return entidade.Id;
         }
 
@@ -89,10 +89,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
           
             _unitOfWork.FornecedorServicoRepository.Update(fornecedorServicoParaAtualizar);
 
+            await _unitOfWork.CommitAsync();
      
             await _auditoriaService.RegistrarAtualizacaoAsync(fornecedorServicoAntigoParaAuditoria, fornecedorServicoParaAtualizar, usuarioLogadoId);
 
-            await _unitOfWork.CommitAsync();
         }
 
         public async Task RemoverAsync(long id)
@@ -104,9 +104,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             if (entidade != null)
                 _unitOfWork.FornecedorServicoRepository.Add(entidade);
 
+            await _unitOfWork.CommitAsync();
+
             await _auditoriaService.RegistrarExclusaoAsync(entidade, usuarioLogadoId);
 
-            await _unitOfWork.CommitAsync();
         }
     }
 
