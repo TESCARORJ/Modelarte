@@ -72,6 +72,10 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
         public DbSet<LembreteEvento> LembretesEvento { get; set; }
         public DbSet<ConfiguracaoLembreteDiario> ConfiguracoesLembreteDiario { get; set; }
 
+        // --- Personalização ---
+        public DbSet<Personalizacao> Personalizacao => Set<Personalizacao>();
+
+
         #endregion
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -1100,6 +1104,28 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                 builder.HasIndex(l => l.UsuarioId);
                 builder.HasIndex(l => l.Entidade);
                 builder.HasIndex(l => l.TipoLogAuditoria);
+            }
+        }
+
+        public class PersonalizacaoConfiguration : IEntityTypeConfiguration<Personalizacao>
+        {
+            public void Configure(EntityTypeBuilder<Personalizacao> builder)
+            {
+                builder.ToTable("Personalizacao");
+                builder.HasKey(p => p.Id);
+                builder.Property(p => p.Id).ValueGeneratedNever(); // Define que o ID não é gerado pelo banco.
+                builder.Property(p => p.NomeEmpresa).HasMaxLength(255);
+                builder.Property(p => p.LogotipoUrl).HasMaxLength(500);
+                builder.Property(p => p.FaviconUrl).HasMaxLength(500);
+                builder.Property(p => p.EnderecoEmpresa).HasMaxLength(500);
+                builder.Property(p => p.TelefoneEmpresa).HasMaxLength(50);
+                builder.Property(p => p.EmailEmpresa).HasMaxLength(255);
+                builder.Property(p => p.TextoBoasVindas).HasMaxLength(1000);
+                builder.Property(p => p.TextoFooter).HasMaxLength(1000);
+                builder.Property(p => p.ImagemFundoLoginUrl).HasMaxLength(500);
+                builder.Property(p => p.CorHeader).HasMaxLength(20);
+                builder.Property(p => p.CorTextHeader).HasMaxLength(20);
+                builder.Property(p => p.CorDestaque).HasMaxLength(20);
             }
         }
     }

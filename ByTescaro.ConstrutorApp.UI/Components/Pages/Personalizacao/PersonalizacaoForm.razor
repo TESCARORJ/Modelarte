@@ -1,0 +1,224 @@
+﻿@page "/personalizacao"
+
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@inject PersonalizacaoApiService PersonalizacaoApiService
+@inject NotificationService NotificationService
+@inject NavigationManager Navigation
+@inject IWebHostEnvironment Env
+@attribute [Authorize(Roles = "Administrador,SA")]
+
+<PageTitle>Personalização do Sistema</PageTitle>
+
+<RadzenCard Class="rz-mt-5 rz-p-4 rz-shadow-md rz-rounded-md rz-mx-auto" Style="max-width: 1300px; width: 100%;">
+    <RadzenTemplateForm TItem="PersonalizacaoDto" Data="@personalizacao" Submit="SalvarPersonalizacao">
+        <RadzenHeading Size="H4" Text="Personalização do Sistema" Class="rz-mb-3" />
+
+        @if (personalizacao == null)
+        {
+            <RadzenText Text="Carregando configurações..." Style="color: gray; padding: 1rem;" />
+            <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" Style="margin-top: 10px;" />
+        }
+        else
+        {
+            <RadzenFieldset Text="Informações Gerais" Style="margin-bottom: 1.5rem">
+                <RadzenRow>
+                    <RadzenColumn Size="12" SizeMD="6" Class="rz-mb-4">
+                        <RadzenLabel Text="Nome da Empresa" />
+                        <RadzenTextBox @bind-Value="personalizacao.NomeEmpresa" Name="NomeEmpresa" Style="width: 100%;" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6" Class="rz-mb-4">
+                        <RadzenLabel Text="Texto do Footer" />
+                        <RadzenTextBox @bind-Value="personalizacao.TextoFooter" Name="TextoFooter" Style="width: 100%;" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6" Class="rz-mb-4">
+                        <RadzenLabel Text="Mensagem de Boas-Vindas" />
+                        <RadzenTextArea @bind-Value="personalizacao.TextoBoasVindas" Name="TextoBoasVindas" Style="width: 100%;" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6" Class="rz-mb-4">
+                        <RadzenLabel Text="Endereço da Empresa" />
+                        <RadzenTextArea @bind-Value="personalizacao.EnderecoEmpresa" Name="EnderecoEmpresa" Style="width: 100%;" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6" Class="rz-mb-4">
+                        <RadzenLabel Text="Telefone de Contato" />
+                        <RadzenTextBox @bind-Value="personalizacao.TelefoneEmpresa" Name="TelefoneEmpresa" Style="width: 100%;" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6" Class="rz-mb-4">
+                        <RadzenLabel Text="Email de Contato" />
+                        <RadzenTextBox @bind-Value="personalizacao.EmailEmpresa" Name="EmailEmpresa" Style="width: 100%;" />
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenFieldset>
+
+            <RadzenFieldset Text="Arquivos e Cores" Style="margin-bottom: 1.5rem">
+                <RadzenRow>
+                    <RadzenColumn Size="12" SizeMD="4" Class="rz-mb-4">
+                        <RadzenLabel Text="Favicon (ícone da aba)" />
+                        <InputFile OnChange="@(e => OnUpload(e, "favicon"))" />
+                        @if (!string.IsNullOrEmpty(personalizacao.FaviconUrl))
+                        {
+                            <RadzenText TextStyle="TextStyle.Caption" Class="rz-mt-2">Atual: @Path.GetFileName(personalizacao.FaviconUrl)</RadzenText>
+                            <RadzenImage Path="@personalizacao.FaviconUrl" Style="width: 32px; height: 32px; margin-top: 5px;" />
+                        }
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="4" Class="rz-mb-4">
+                        <RadzenLabel Text="Logotipo" />
+                        <InputFile OnChange="@(e => OnUpload(e, "logotipo"))" />
+                        @if (!string.IsNullOrEmpty(personalizacao.LogotipoUrl))
+                        {
+                            <RadzenText TextStyle="TextStyle.Caption" Class="rz-mt-2">Atual: @Path.GetFileName(personalizacao.LogotipoUrl)</RadzenText>
+                            <RadzenImage Path="@personalizacao.LogotipoUrl" Style="max-width: 150px; margin-top: 5px;" />
+                        }
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="4" Class="rz-mb-4">
+                        <RadzenLabel Text="Imagem de Fundo do Login" />
+                        <InputFile OnChange="@(e => OnUpload(e, "background"))" />
+                        @if (!string.IsNullOrEmpty(personalizacao.ImagemFundoLoginUrl))
+                        {
+                            <RadzenText TextStyle="TextStyle.Caption" Class="rz-mt-2">Atual: @Path.GetFileName(personalizacao.ImagemFundoLoginUrl)</RadzenText>
+                        }
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <RadzenRow Class="rz-mt-4">
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenLabel Text="Cor Cabeçalho" />
+                        <RadzenColorPicker @bind-Value="personalizacao.CorHeader" Style="width: 100%;" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenLabel Text="Cor Texto Cabeçalho" />
+                        <RadzenColorPicker @bind-Value="personalizacao.CorTextHeader" Style="width: 100%;" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenLabel Text="Cor de Destaque" />
+                        <RadzenColorPicker @bind-Value="personalizacao.CorDestaque" Style="width: 100%;" />
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenFieldset>
+
+
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-3">
+                <RadzenButton Text="Salvar" ButtonType="ButtonType.Submit" Icon="save" Style="min-width: 120px;" ButtonStyle="ButtonStyle.Primary" />
+            </RadzenStack>
+        }
+    </RadzenTemplateForm>
+</RadzenCard>
+
+@code {
+    private PersonalizacaoDto? personalizacao;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            personalizacao = await PersonalizacaoApiService.ObterAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao carregar personalização: {ex.Message}", Duration = 5000 });
+            personalizacao = new PersonalizacaoDto();
+        }
+    }
+
+    private async Task SalvarPersonalizacao()
+    {
+        if (personalizacao is null) return;
+
+        try
+        {
+            await PersonalizacaoApiService.AtualizarAsync(personalizacao);
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = "Configurações salvas com sucesso!", Duration = 4000 });
+
+            // Força a atualização do layout para aplicar as novas configurações
+            Navigation.Refresh(true);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro", Detail = $"Erro ao salvar: {ex.Message}", Duration = 5000 });
+        }
+    }
+
+    private async Task OnUpload(InputFileChangeEventArgs e, string fileType)
+    {
+        try
+        {
+            var file = e.File;
+            if (file == null) return;
+
+            var nomeOriginal = Path.GetFileName(file.Name);
+            var extensao = Path.GetExtension(file.Name).ToLower();
+            var nomeUnico = $"{fileType}-{Guid.NewGuid()}{extensao}";
+
+            var pastaDestino = Path.Combine("wwwroot", "personalizacao");
+            Directory.CreateDirectory(pastaDestino);
+
+            var caminhoFinal = Path.Combine(pastaDestino, nomeUnico);
+
+            // Limpa arquivos antigos do mesmo tipo
+            if (fileType == "favicon" && !string.IsNullOrEmpty(personalizacao.FaviconUrl))
+            {
+                DeletarArquivoAntigo(personalizacao.FaviconUrl);
+            }
+            else if (fileType == "logotipo" && !string.IsNullOrEmpty(personalizacao.LogotipoUrl))
+            {
+                DeletarArquivoAntigo(personalizacao.LogotipoUrl);
+            }
+            else if (fileType == "background" && !string.IsNullOrEmpty(personalizacao.ImagemFundoLoginUrl))
+            {
+                DeletarArquivoAntigo(personalizacao.ImagemFundoLoginUrl);
+            }
+
+            var stream = file.OpenReadStream(5_000_000); // Limite de 5MB
+            await using var fs = File.Create(caminhoFinal);
+            await stream.CopyToAsync(fs);
+            await fs.FlushAsync();
+            stream.Close();
+
+            var caminhoRelativo = Path.Combine("personalizacao", nomeUnico).Replace("\\", "/");
+
+            switch (fileType)
+            {
+                case "favicon":
+                    personalizacao.FaviconUrl = caminhoRelativo;
+                    break;
+                case "logotipo":
+                    personalizacao.LogotipoUrl = caminhoRelativo;
+                    break;
+                case "background":
+                    personalizacao.ImagemFundoLoginUrl = caminhoRelativo;
+                    break;
+            }
+
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Upload", Detail = $"Arquivo '{nomeOriginal}' enviado com sucesso!", Duration = 3000 });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro no Upload", Detail = ex.Message, Duration = 5000 });
+        }
+
+        StateHasChanged();
+    }
+
+    private void DeletarArquivoAntigo(string? caminhoRelativo)
+    {
+        if (string.IsNullOrEmpty(caminhoRelativo)) return;
+
+        var caminhoCompleto = Path.Combine(Env.WebRootPath, caminhoRelativo);
+        if (File.Exists(caminhoCompleto))
+        {
+            try
+            {
+                File.Delete(caminhoCompleto);
+            }
+            catch (Exception ex)
+            {
+                // Logar o erro, mas não impedir a operação principal
+                Console.WriteLine($"Erro ao deletar arquivo antigo: {ex.Message}");
+            }
+        }
+    }
+}

@@ -60,6 +60,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         private IParticipanteEventoRepository? _participanteEventoRepository;
         private ILembreteEventoRepository? _lembreteEventoRepository;
         private IConfiguracaoLembreteDiarioRepository? _configuracaoLembreteDiarioRepository;
+        private IPersonalizacaoRepository? _personalizacaoRepository;
+
         private readonly ILogger<UnitOfWork> _logger;
 
         #endregion
@@ -105,6 +107,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         public IParticipanteEventoRepository ParticipanteEventoRepository => _participanteEventoRepository ??= new ParticipanteEventoRepository(_context);
         public ILembreteEventoRepository LembreteEventoRepository => _lembreteEventoRepository ??= new LembreteEventoRepository(_context);
         public IConfiguracaoLembreteDiarioRepository ConfiguracaoLembreteDiarioRepository => _configuracaoLembreteDiarioRepository ??= new ConfiguracaoLembreteDiarioRepository(_context);
+        public IPersonalizacaoRepository PersonalizacaoRepository => _personalizacaoRepository ??= new PersonalizacaoRepository(_context);
 
         #endregion
 

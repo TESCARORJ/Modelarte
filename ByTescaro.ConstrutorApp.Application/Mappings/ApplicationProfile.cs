@@ -434,5 +434,9 @@ public class ApplicationProfile : Profile
         CreateMap<ObraPendencia, ObraPendenciaRelatorioDto>()
             .ForMember(dest => dest.NomeResponsavel, opt => opt.MapFrom(src => src.Responsavel != null ? src.Responsavel.Nome : string.Empty));
 
+        // ==== Personalização ====
+        CreateMap<Personalizacao, PersonalizacaoDto>().ReverseMap();
+
+
     }
 }

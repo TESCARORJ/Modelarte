@@ -340,6 +340,11 @@ builder.Services.AddScoped<ZApiGroupApiService>(sp =>
     return new ZApiGroupApiService(sp.CreateHttpClientWithCookies(apiBaseUrl), builder.Configuration);
 });
 
+builder.Services.AddScoped<PersonalizacaoApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new PersonalizacaoApiService(sp.CreateHttpClientWithCookies(apiBaseUrl));
+});
 
 
 #endregion
@@ -386,6 +391,7 @@ builder.Services.AddScoped<IEventoRepository, EventoRepository>();
 builder.Services.AddScoped<IParticipanteEventoRepository, ParticipanteEventoRepository>();
 builder.Services.AddScoped<ILembreteEventoRepository, LembreteEventoRepository>();
 builder.Services.AddScoped<IConfiguracaoLembreteDiarioRepository, ConfiguracaoLembreteDiarioRepository>();
+builder.Services.AddScoped<IPersonalizacaoRepository, PersonalizacaoRepository>();
 
 #endregion
 
@@ -441,6 +447,7 @@ builder.Services.AddScoped<IHolidaysService, HolidayService>();
 builder.Services.AddScoped<IRelatorioObraService, RelatorioObraService>();
 builder.Services.AddScoped<IObraDocumentoService, ObraDocumentoService>();
 builder.Services.AddScoped<IObraImagemService, ObraImagemService>();
+builder.Services.AddScoped<IPersonalizacaoService, PersonalizacaoService>();
 
 
 

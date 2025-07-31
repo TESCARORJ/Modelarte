@@ -4,8 +4,10 @@
 
 @using System.ComponentModel.DataAnnotations
 @using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
+@inject PersonalizacaoApiService PersonalizacaoApiService
 
 <HeadContent>
     <link href="css/app.css" rel="stylesheet" />
@@ -53,12 +55,19 @@
 </HeadContent>
 
 
-<PageTitle>Entrar no ConstrutorApp</PageTitle>
+<PageTitle>Entrar no @personalizacao?.NomeEmpresa</PageTitle>
 
 <div class="login-page-container">
-    <RadzenImage Path="./css/background/modelarte.jpeg"
-                 class="login-background"
-                 AlternateText="Background" />
+    @if (!string.IsNullOrEmpty(personalizacao?.ImagemFundoLoginUrl))
+    {
+        <RadzenImage Path="@personalizacao.ImagemFundoLoginUrl"
+                     class="login-background"
+                     AlternateText="Background" />
+    }
+    else
+    {
+        <div class="login-background" style="background-color: #f0f0f0;"></div>
+    }
 
     <div class="login-card">
         <form method="post" action="/auth/login">
@@ -94,15 +103,21 @@
 </div>
 
 @code {
+    private PersonalizacaoDto? personalizacao;
     private string? errorMessage;
+    private string? _pendingToken;
+    private bool _shouldRedirect;
 
     private InputModel Input { get; set; } = new();
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
-    private string? _pendingToken;
-    private bool _shouldRedirect;
+
+    protected override async Task OnInitializedAsync()
+    {
+        personalizacao = await PersonalizacaoApiService.ObterAsync();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

@@ -1,5 +1,7 @@
-﻿@using ByTescaro.ConstrutorApp.Application.Interfaces
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Interfaces
 @using ByTescaro.ConstrutorApp.UI.Authentication
+@using ByTescaro.ConstrutorApp.UI.Services
 @using Microsoft.AspNetCore.Components.Authorization
 @implements IDisposable
 @inject NavigationManager NavigationManager
@@ -7,6 +9,7 @@
 @inject AuthenticationStateProvider AuthProvider
 @inject IJSRuntime JSRuntime
 @inject AuthCookieService AuthService
+@inject PersonalizacaoApiService PersonalizacaoApiService
 
 <AuthorizeView>
     <Authorized>
@@ -14,7 +17,6 @@
             <RadzenPanelMenuItem Text=@($"Olá {nomeUsuario}") Disabled="true" />
             <RadzenPanelMenuItem Text="Dashboard" Icon="home" Path="" />
 
-            <!-- Gestão de Projetos -->
             <AuthorizeView Roles="Administrador,SA" Context="adminContextGP">
                 <Authorized>
                     <RadzenPanelMenuItem Text="Projetos" Icon="construction">
@@ -25,7 +27,6 @@
                 </Authorized>
             </AuthorizeView>
 
-            <!-- Cadastros Gerais -->
             <AuthorizeView Roles="Administrador,SA" Context="adminContextCG">
                 <Authorized>
                     <RadzenPanelMenuItem Text="Cadastros" Icon="folder_shared">
@@ -42,7 +43,6 @@
                 </Authorized>
             </AuthorizeView>
 
-            <!-- Importações -->
             <AuthorizeView Roles="Administrador,SA" Context="adminContextImport">
                 <Authorized>
                     <RadzenPanelMenuItem Text="Importações" Icon="upload">
@@ -59,12 +59,11 @@
                 <Authorized>
                     <RadzenPanelMenuItem Text="Configurações" Icon="settings">
                         <RadzenPanelMenuItem Text="Lembretes Diários" Icon="alarm" Path="configuracoes/lembretesdiarios" />
-                        @* Você pode adicionar outros itens de configuração aqui *@
+                        <RadzenPanelMenuItem Text="Personalização" Icon="palette" Path="personalizacao" />
                     </RadzenPanelMenuItem>
                 </Authorized>
             </AuthorizeView>
 
-            <!-- Administração -->
             <AuthorizeView Roles="Administrador,SA" Context="adminContextAdmin">
                 <Authorized>
                     <RadzenPanelMenuItem Text="Administração" Icon="admin_panel_settings">
@@ -76,14 +75,12 @@
                 </Authorized>
             </AuthorizeView>
 
-            <!-- Auditoria -->
             <AuthorizeView Roles="Administrador,SA" Context="adminContextAud">
                 <Authorized>
                     <RadzenPanelMenuItem Text="Auditoria Geral" Icon="history" Path="/auditoria" />
                 </Authorized>
             </AuthorizeView>
 
-            <!-- Logout -->
             <RadzenPanelMenuItem Text="Logout" Icon="logout">
                 <Template>
                     <form method="post" action="/auth/logout" style="margin: 0;">
@@ -98,11 +95,14 @@
 @code {
     private string? currentUrl;
     private string? nomeUsuario;
+    private PersonalizacaoDto? personalizacao;
 
     protected override async Task OnInitializedAsync()
     {
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;
+
+        personalizacao = await PersonalizacaoApiService.ObterAsync();
 
         var usuario = await UsuarioLogadoService.ObterUsuarioAtualAsync();
         nomeUsuario = usuario?.Nome ?? "Usuário";

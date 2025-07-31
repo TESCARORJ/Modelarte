@@ -1,16 +1,27 @@
-﻿@inherits LayoutComponentBase
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@inherits LayoutComponentBase
 @inject IJSRuntime JSRuntime
+@inject PersonalizacaoApiService PersonalizacaoApiService
+
+<HeadContent>
+@*     @if (!string.IsNullOrEmpty(personalizacao?.FaviconUrl))
+    {
+        <link rel="icon" href="@personalizacao.FaviconUrl" />
+    } *@
+</HeadContent>
+
 
 <RadzenLayout>
 
-    <RadzenHeader Style="padding: 0.5rem 1rem; background: #0d6efd; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <RadzenHeader Style="@($"padding: 0.5rem 1rem; background: {personalizacao?.CorHeader}; box-shadow: 0 2px 4px rgba(0,0,0,0.1);")">
         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10px">
             <RadzenSidebarToggle Icon="menu" Click="@ToggleSidebar" />
-            <RadzenLabel Text="Modelarte" Style="font-size: 1.25rem; font-weight: bold;" />
+            <RadzenLabel Text="@personalizacao?.NomeEmpresa" Style="@($"font-size: 1.25rem; font-weight: bold; color: {personalizacao?.CorTextHeader};")" />
         </RadzenStack>
     </RadzenHeader>
 
-    <RadzenSidebar @bind-Expanded="@sidebarExpanded"  Responsive="true" Style="background-color: #f8f9fa;">
+    <RadzenSidebar @bind-Expanded="@sidebarExpanded" Responsive="true" Style="background-color: #f8f9fa;">
         <NavMenu />
     </RadzenSidebar>
 
@@ -21,24 +32,28 @@
     </RadzenBody>
 
     <RadzenFooter Style="text-align: center; padding: 1rem;">
-        <small>&copy; 2025 Modelarte</small>
+        <small>@((MarkupString)personalizacao?.TextoFooter)</small>
     </RadzenFooter>
 
     <RadzenDialog />
     <RadzenNotification />
-
-    <RadzenNotification/>
-
+    <RadzenNotification />
 
 </RadzenLayout>
 
 @code {
     private bool sidebarExpanded = true;
     private DotNetObjectReference<MainLayout>? dotNetHelper;
+    private PersonalizacaoDto? personalizacao;
 
     private void ToggleSidebar()
     {
         sidebarExpanded = !sidebarExpanded;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        personalizacao = await PersonalizacaoApiService.ObterAsync();
     }
 
     [JSInvokable]
@@ -62,4 +77,3 @@
         dotNetHelper?.Dispose();
     }
 }
-
