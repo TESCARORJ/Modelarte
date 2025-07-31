@@ -243,18 +243,19 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             }
         }
 
-        public async Task SendWhatsAppDocumentAsync(string phoneNumber, byte[] documentBytes, string fileName, string caption = null)
+        public async Task SendWhatsAppDocumentAsync(string recipient, byte[] documentBytes, string fileName, string caption = null, bool isGroup = false)
         {
-            if (string.IsNullOrWhiteSpace(phoneNumber) || documentBytes == null || documentBytes.Length == 0)
+            if (string.IsNullOrWhiteSpace(recipient) || documentBytes == null || documentBytes.Length == 0)
             {
-                _logger.LogWarning("Tentativa de envio de documento com telefone ou documento vazio.");
+                _logger.LogWarning("Tentativa de envio de documento com destinatário ou documento vazio.");
                 return;
             }
 
             var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
 
+            var tipoDestino = isGroup ? "grupo" : "número";
+            var idDestino = isGroup ? recipient : CleanAndFormatPhoneNumber(recipient);
 
-            var numeroLimpo = CleanAndFormatPhoneNumber(phoneNumber);
             // Assumimos que a extensão é PDF, pode ser dinâmica se necessário
             var extension = "pdf";
             var resource = $"instances/{_zApiSettings.InstanceId}/token/{_zApiSettings.InstanceToken}/send-document/{extension}";
@@ -262,13 +263,29 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var base64Document = Convert.ToBase64String(documentBytes);
             var documentPayload = $"data:application/{extension};base64,{base64Document}"; // Formato "data:MIME_TYPE;base64,BASE64_STRING"
 
-            var payload = new
+            // Modificamos o payload para usar 'chatId' se for um grupo
+            object payload;
+            if (isGroup)
             {
-                phone = numeroLimpo,
-                document = documentPayload,
-                fileName = fileName,
-                caption = caption
-            };
+                payload = new
+                {
+                    chatId = idDestino,
+                    phone = idDestino,
+                    document = documentPayload,
+                    fileName = fileName,
+                    caption = caption
+                };
+            }
+            else
+            {
+                payload = new
+                {
+                    phone = idDestino,
+                    document = documentPayload,
+                    fileName = fileName,
+                    caption = caption
+                };
+            }
 
             var request = new RestRequest(resource, Method.Post);
             request.AddHeader("Content-Type", "application/json");
@@ -276,7 +293,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             request.AddJsonBody(payload);
 
             _logger.LogInformation("Z-API - Enviando requisição de documento (RestSharp) para URL: {Url}", _restClient.BuildUri(request));
-            _logger.LogInformation("Z-API - Telefone: {Phone}, Arquivo: {FileName}, Caption: {Caption}", numeroLimpo, fileName, caption);
+            _logger.LogInformation("Z-API - Destino: {TipoDestino} {IdDestino}, Arquivo: {FileName}, Caption: {Caption}", tipoDestino, idDestino, fileName, caption);
 
             try
             {
@@ -288,8 +305,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     UsuarioNome = usuarioLogado?.Nome ?? "Sistema/Desconhecido",
                     Entidade = "Relatório",
                     TipoLogAuditoria = TipoLogAuditoria.Atualizacao,
-                    Descricao = $"Relatório enviado para o número {phoneNumber} por '{usuarioLogado?.Nome ?? "Sistema"}' em {DateTime.Now}.",
-                    DadosAtuais = JsonSerializer.Serialize(request)
+                    Descricao = $"Relatório enviado para o {tipoDestino} '{recipient}' por '{usuarioLogado?.Nome ?? "Sistema"}' em {DateTime.Now}.",
+                    DadosAtuais = JsonSerializer.Serialize(payload) // Loga o payload, não o request completo
                 });
 
                 _logger.LogInformation("Z-API - Resposta documento (RestSharp). Status: {StatusCode}, Resposta Conteúdo: {ResponseContent}", response.StatusCode, response.Content);

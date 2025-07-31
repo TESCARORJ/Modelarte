@@ -334,6 +334,13 @@ builder.Services.AddScoped<ObraImagemApiService>(sp =>
 });
 
 
+builder.Services.AddScoped<ZApiGroupApiService>(sp =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"]!;
+    return new ZApiGroupApiService(sp.CreateHttpClientWithCookies(apiBaseUrl), builder.Configuration);
+});
+
+
 
 #endregion
 
