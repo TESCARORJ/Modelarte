@@ -22,7 +22,7 @@ O projeto segue uma arquitetura modular, com uma separação clara de responsabi
     * **Blazor WebAssembly**: Framework .NET para construção da interface de usuário interativa no navegador.
     * **Radzen Blazor Components**: Conjunto de componentes de UI modernos e responsivos.
 * **Backend**:
-    * **.NET 7/8 (C#)**: Plataforma principal de desenvolvimento.
+    * **.NET 9**: Plataforma principal de desenvolvimento.
     * **ASP.NET Core**: Para os serviços de API que se comunicam com o frontend.
     * **Entity Framework Core**: ORM para acesso e manipulação de dados no banco de dados.
 * **Serviços e APIs**:
