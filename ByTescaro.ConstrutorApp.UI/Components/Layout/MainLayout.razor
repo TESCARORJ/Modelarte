@@ -16,12 +16,12 @@
 
     <RadzenHeader Style="@($"padding: 0.5rem 1rem; background: {personalizacao?.CorHeader}; box-shadow: 0 2px 4px rgba(0,0,0,0.1);")">
         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10px">
-            <RadzenSidebarToggle Icon="menu" Click="@ToggleSidebar" />
+            <RadzenSidebarToggle Icon="menu" Click="@ToggleSidebar" Style="@($"color: {personalizacao?.CorMenu}")" />
             <RadzenLabel Text="@personalizacao?.NomeEmpresa" Style="@($"font-size: 1.25rem; font-weight: bold; color: {personalizacao?.CorTextHeader};")" />
         </RadzenStack>
     </RadzenHeader>
 
-    <RadzenSidebar @bind-Expanded="@sidebarExpanded" Responsive="true" Style="background-color: #f8f9fa;">
+    <RadzenSidebar @bind-Expanded="@sidebarExpanded" Responsive="true" Style="background-color: #f8f5fa;">
         <NavMenu />
     </RadzenSidebar>
 

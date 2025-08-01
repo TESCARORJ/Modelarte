@@ -55,17 +55,17 @@
             <RadzenFieldset Text="Arquivos e Cores" Style="margin-bottom: 1.5rem">
                 <RadzenRow>
                     <RadzenColumn Size="12" SizeMD="4" Class="rz-mb-4">
-                        <RadzenLabel Text="Favicon (ícone da aba)" />
+                        <RadzenLabel Text="Favicon (ícone da aba) - 32px x 32px" />
                         <InputFile OnChange="@(e => OnUpload(e, "favicon"))" />
                         @if (!string.IsNullOrEmpty(personalizacao.FaviconUrl))
                         {
                             <RadzenText TextStyle="TextStyle.Caption" Class="rz-mt-2">Atual: @Path.GetFileName(personalizacao.FaviconUrl)</RadzenText>
-                            <RadzenImage Path="@personalizacao.FaviconUrl" Style="width: 32px; height: 32px; margin-top: 5px;" />
+                            <RadzenImage Path="@personalizacao.FaviconUrl" Style="width: 150px; height: 150px; margin-top: 5px;" />
                         }
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="4" Class="rz-mb-4">
-                        <RadzenLabel Text="Logotipo" />
+                        <RadzenLabel Text="Logotipo - 150px de largura" />
                         <InputFile OnChange="@(e => OnUpload(e, "logotipo"))" />
                         @if (!string.IsNullOrEmpty(personalizacao.LogotipoUrl))
                         {
@@ -75,11 +75,13 @@
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="4" Class="rz-mb-4">
-                        <RadzenLabel Text="Imagem de Fundo do Login" />
+                        <RadzenLabel Text="Imagem de Fundo do Login - 1600px x 1200px" />
                         <InputFile OnChange="@(e => OnUpload(e, "background"))" />
                         @if (!string.IsNullOrEmpty(personalizacao.ImagemFundoLoginUrl))
                         {
                             <RadzenText TextStyle="TextStyle.Caption" Class="rz-mt-2">Atual: @Path.GetFileName(personalizacao.ImagemFundoLoginUrl)</RadzenText>
+                            <RadzenImage Path="@personalizacao.ImagemFundoLoginUrl" Style="max-width: 150px; margin-top: 5px;" />
+
                         }
                     </RadzenColumn>
                 </RadzenRow>
@@ -94,8 +96,8 @@
                         <RadzenColorPicker @bind-Value="personalizacao.CorTextHeader" Style="width: 100%;" />
                     </RadzenColumn>
                     <RadzenColumn Size="12" SizeMD="4">
-                        <RadzenLabel Text="Cor de Destaque" />
-                        <RadzenColorPicker @bind-Value="personalizacao.CorDestaque" Style="width: 100%;" />
+                        <RadzenLabel Text="Cor de Menu (Hamburguer)" />
+                        <RadzenColorPicker @bind-Value="personalizacao.CorMenu" Style="width: 100%;" />
                     </RadzenColumn>
                 </RadzenRow>
             </RadzenFieldset>

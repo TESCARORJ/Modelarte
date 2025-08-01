@@ -1125,7 +1125,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                 builder.Property(p => p.ImagemFundoLoginUrl).HasMaxLength(500);
                 builder.Property(p => p.CorHeader).HasMaxLength(20);
                 builder.Property(p => p.CorTextHeader).HasMaxLength(20);
-                builder.Property(p => p.CorDestaque).HasMaxLength(20);
+                builder.Property(p => p.CorMenu).HasMaxLength(20);
             }
         }
     }

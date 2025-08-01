@@ -19,6 +19,6 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
         public string? ImagemFundoLoginUrl { get; set; }
         public string? CorHeader { get; set; }
         public string? CorTextHeader { get; set; }
-        public string? CorDestaque { get; set; }
+        public string? CorMenu { get; set; }
     }
 }

@@ -23,7 +23,7 @@ namespace ByTescaro.ConstrutorApp.Domain.Entities
         public string? ImagemFundoLoginUrl { get; set; }
         public string? CorHeader { get; set; } = "#0d6efd";
         public string? CorTextHeader { get; set; }
-        public string? CorDestaque { get; set; }
+        public string? CorMenu { get; set; }
 
         public long? UsuarioCadastroId { get; set; }
         public Usuario UsuarioCadastro { get; set; }

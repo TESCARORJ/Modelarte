@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using ByTescaro.ConstrutorApp.Application.DTOs.Relatorios;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
-using ByTescaro.ConstrutorApp.Application.Utils; // Para EnumHelper
+using ByTescaro.ConstrutorApp.Application.Utils; 
 using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -16,14 +16,16 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILogger<RelatorioObraService> _logger;
+        private readonly IPersonalizacaoService _personalizacaoService;
 
-        public RelatorioObraService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<RelatorioObraService> logger)
+        public RelatorioObraService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<RelatorioObraService> logger, IPersonalizacaoService personalizacaoService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
 
             QuestPDF.Settings.License = LicenseType.Community;
+            _personalizacaoService = personalizacaoService;
         }
 
         public async Task<byte[]> GerarRelatorioObraPdfAsync(long obraId)
@@ -37,6 +39,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 _logger.LogWarning($"Obra com ID {obraId} não encontrada para geração de relatório.");
                 throw new KeyNotFoundException($"Obra com ID {obraId} não encontrada.");
             }
+
+            var personalizacao = await _personalizacaoService.ObterAsync();
 
             var obraRelatorioDto = _mapper.Map<ObraRelatorioDto>(obra);
 
@@ -62,8 +66,49 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
                     page.Header()
                         .PaddingBottom(10)
-                        .Text($"Relatório da Obra: {obraRelatorioDto.NomeObra}")
-                        .SemiBold().FontSize(18).AlignCenter();
+                        .Row(row =>
+                        {
+                            // Coluna para o logotipo
+                            row.RelativeItem(1)
+                                .AlignLeft()
+                                .Column(col =>
+                                {
+                                    if (!string.IsNullOrEmpty(personalizacao.LogotipoUrl))
+                                    {
+                                        var logoPath = Path.Combine("wwwroot", personalizacao.LogotipoUrl);
+                                        if (System.IO.File.Exists(logoPath))
+                                        {
+                                            col.Item().Height(50).Image(logoPath).FitArea();
+                                        }
+                                        else
+                                        {
+                                            col.Item().Text("Logotipo não encontrado").FontSize(8).FontColor(Colors.Red.Medium);
+                                        }
+                                    }
+                                });
+
+                            // Coluna para o título do relatório
+                            row.RelativeItem(3)
+                                .AlignCenter()
+                                .Text(text =>
+                                {
+                                    text.AlignCenter();
+                                    text.Span($"Relatório da Obra: {obraRelatorioDto.NomeObra}")
+                                        .SemiBold().FontSize(18);
+
+                                    text.EmptyLine();
+
+                                    if (!string.IsNullOrEmpty(personalizacao.NomeEmpresa))
+                                    {
+                                        text.AlignCenter();
+                                        text.Span(personalizacao.NomeEmpresa)
+                                            .SemiBold().FontSize(12);
+                                    }
+                                });
+
+                            // Coluna vazia para alinhamento
+                            row.RelativeItem(1);
+                        });
 
                     page.Content()
                         .Column(column =>
@@ -93,8 +138,8 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                 table.Cell().Text(obraRelatorioDto.DataConclusaoPrevista?.ToShortDateString() ?? "N/A");
                                 table.Cell().Text("Progresso Atual:").SemiBold();
                                 table.Cell().Text($"{obraRelatorioDto.ProgressoAtual}%");
-                                table.Cell().Text("Orçamento Total:").SemiBold();
-                                table.Cell().Text(obraRelatorioDto.OrcamentoTotal.ToString("C"));
+                                //table.Cell().Text("Orçamento Total:").SemiBold();
+                                //table.Cell().Text(obraRelatorioDto.OrcamentoTotal.ToString("C"));
                                 table.Cell().Text("Descrição:").SemiBold();
                                 table.Cell().Text(obraRelatorioDto.Descricao);
                             });
@@ -112,7 +157,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                         {
                                             etapaColumn.Spacing(5);
                                             etapaColumn.Item().Text($"{etapa.Nome} ({etapa.PercentualConclusao}%)").SemiBold();
-                                            etapaColumn.Item().Text($"Período: {etapa.DataInicioPrevista.ToShortDateString()} - {etapa.DataConclusaoPrevista?.ToShortDateString() ?? "N/A"}");
+                                            //etapaColumn.Item().Text($"Período: {etapa.DataInicioPrevista.ToShortDateString()} - {etapa.DataConclusaoPrevista?.ToShortDateString() ?? "N/A"}");
                                             etapaColumn.Item().Text(etapa.Descricao);
 
                                             if (etapa.Itens.Any())
@@ -163,20 +208,20 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
                                                 table.Header(header =>
                                                 {
-                                                    header.Cell().BorderBottom(1).Padding(5).Text("Insumo").SemiBold();
-                                                    header.Cell().BorderBottom(1).Padding(5).Text("Unidade").SemiBold();
-                                                    header.Cell().BorderBottom(1).Padding(5).Text("Qtd").SemiBold();
-                                                    header.Cell().BorderBottom(1).Padding(5).Text("Recebido?").SemiBold();
-                                                    header.Cell().BorderBottom(1).Padding(5).Text("Recebido em:").SemiBold();
+                                                    header.Cell().BorderBottom(1).Padding(3).Text("Insumo").SemiBold();
+                                                    header.Cell().BorderBottom(1).Padding(0).Text("Unidade").SemiBold();
+                                                    header.Cell().BorderBottom(1).Padding(0).Text("Qtd").SemiBold();
+                                                    header.Cell().BorderBottom(1).Padding(0).Text("Recebido?").SemiBold();
+                                                    header.Cell().BorderBottom(1).Padding(0).Text("Recebido em:").SemiBold();
                                                 });
 
                                                 foreach (var insumo in grupoResponsavel.OrderBy(i => i.InsumoNome))
                                                 {
-                                                    table.Cell().Padding(2).Text(insumo.InsumoNome);
-                                                    table.Cell().Padding(2).Text(EnumHelper.ObterDescricaoEnum(insumo.UnidadeMedida));
-                                                    table.Cell().Padding(2).AlignRight().Text(insumo.Quantidade.ToString("N2"));
-                                                    table.Cell().Padding(2).AlignRight().Text(insumo.IsRecebido ? "Sim" : "Não");
-                                                    table.Cell().Padding(2).AlignRight().Text(insumo.DataRecebimento?.ToShortDateString() ?? string.Empty);
+                                                    table.Cell().Padding(3).Text(insumo.InsumoNome);
+                                                    table.Cell().Padding(0).Text(EnumHelper.ObterDescricaoEnum(insumo.UnidadeMedida));
+                                                    table.Cell().Padding(0).Text(insumo.Quantidade.ToString("N2"));
+                                                    table.Cell().Padding(0).Text(insumo.IsRecebido ? "Sim" : "Não");
+                                                    table.Cell().Padding(0).Text(insumo.DataRecebimento?.ToShortDateString() ?? string.Empty);
                                                 }
                                             });
                                         });
@@ -226,26 +271,20 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                         columns.RelativeColumn(2);
                                         columns.RelativeColumn();
                                         columns.RelativeColumn();
-                                        columns.RelativeColumn();
-                                        columns.RelativeColumn();
                                     });
 
                                     table.Header(header =>
                                     {
                                         header.Cell().BorderBottom(1).Padding(5).Text("Equipamento").SemiBold();
-                                        header.Cell().BorderBottom(1).Padding(5).Text("Status").SemiBold();
                                         header.Cell().BorderBottom(1).Padding(5).Text("Início").SemiBold();
                                         header.Cell().BorderBottom(1).Padding(5).Text("Fim").SemiBold();
-                                        header.Cell().BorderBottom(1).Padding(5).Text("Custo Diário").SemiBold();
                                     });
 
                                     foreach (var equip in obraRelatorioDto.Equipamentos)
                                     {
-                                        table.Cell().Padding(2).Text(equip.NomeEquipamento);
-                                        table.Cell().Padding(2).Text(equip.Status);
-                                        table.Cell().Padding(2).Text(equip.DataInicioAlocacao.ToShortDateString());
-                                        table.Cell().Padding(2).Text(equip.DataFimAlocacao?.ToShortDateString() ?? "N/A");
-                                        table.Cell().Padding(2).AlignRight().Text(equip.CustoDiario.ToString("C"));
+                                        table.Cell().Padding(2).Text(equip.EquipamentoNome);
+                                        table.Cell().Padding(2).Text(equip.DataInicioUso.ToShortDateString());
+                                        table.Cell().Padding(2).Text(equip.DataFimUso?.ToShortDateString() ?? "N/A");
                                     }
                                 });
                             }

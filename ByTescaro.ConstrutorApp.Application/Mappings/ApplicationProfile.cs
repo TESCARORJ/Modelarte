@@ -419,12 +419,11 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.UnidadeMedida, opt => opt.MapFrom(src => src.Insumo.UnidadeMedida));
 
         CreateMap<ObraFuncionario, ObraFuncionarioRelatorioDto>();
-            //.ForMember(dest => dest.NomeFuncionario, opt => opt.MapFrom(src => src.Funcionario.Nome))
-            //.ForMember(dest => dest.Funcao, opt => opt.MapFrom(src => src.FuncaoNoObra));
+        //.ForMember(dest => dest.NomeFuncionario, opt => opt.MapFrom(src => src.Funcionario.Nome))
+        //.ForMember(dest => dest.Funcao, opt => opt.MapFrom(src => src.FuncaoNoObra));
 
         CreateMap<ObraEquipamento, ObraEquipamentoRelatorioDto>()
-            .ForMember(dest => dest.NomeEquipamento, opt => opt.MapFrom(src => src.Equipamento.Nome))
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Equipamento.Status.ToString()));
+            .ForMember(dest => dest.EquipamentoNome, opt => opt.MapFrom(src => src.Equipamento.Nome));
 
         CreateMap<ObraDocumento, ObraDocumentoRelatorioDto>();
         CreateMap<ObraImagem, ObraImagemRelatorioDto>();

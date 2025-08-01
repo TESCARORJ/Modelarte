@@ -211,10 +211,13 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 DataInicioUso = equipamentoNaOrigem.DataInicioUso,
                 DataFimUso = equipamentoNaOrigem.DataFimUso,
                 UsuarioCadastroId = equipamentoNaOrigem.UsuarioCadastroId,
-                DataHoraCadastro = equipamentoNaOrigem.DataHoraCadastro
+                DataHoraCadastro = equipamentoNaOrigem.DataHoraCadastro,
+                
+                
             };
 
             equipamentoNaOrigem.DataFimUso = dto.DataMovimentacao;
+            equipamentoNaOrigem.Equipamento.Status = StatusEquipamento.Indisponivel;
    
             await _logRepo.RegistrarAsync(new LogAuditoria
 
