@@ -12,14 +12,13 @@
 
 <PageTitle>Dashboard</PageTitle>
 
-<RadzenCard Class="rz-pa-4 rz-mb-6" Variant="Variant.Filled">
-    <RadzenStack Gap="0.5rem">
-        <RadzenText Text="Dashboard" TextStyle="TextStyle.H4" />
+<RadzenCard Class="rz-pa-1 rz-mb-6" Variant="Variant.Filled">
+ @*    <RadzenStack Gap="0.5rem"> *@
+        @* <RadzenText Text="Dashboard" TextStyle="TextStyle.H4" /> *@
 
-        <AgendaComponent />
-        
+        <AgendaComponent />       
 
-
+@* 
         <RadzenText Text="Resumo executivo das operações e indicadores-chave do sistema"
                     Style="margin-bottom: 1rem; color: gray;" />
 
@@ -48,14 +47,14 @@
             @Card("Disponíveis", EquipamentosDisponiveis, "person_outline", "/equipamentos/disponiveis")
             @Card("Alocados", EquipamentosAlocados, "groups", "/equipamentos/alocados")
         </RadzenStack>
-
+ *@
       @* <RadzenStack Orientation="Orientation.Horizontal" Wrap="FlexWrap.Wrap">
             @Card("Total de Insumos", Insumos, "inventory", "/insumos")
         </RadzenStack> *@
 
 
 
-    </RadzenStack>
+    @* </RadzenStack> *@
 </RadzenCard>
 
 @code {

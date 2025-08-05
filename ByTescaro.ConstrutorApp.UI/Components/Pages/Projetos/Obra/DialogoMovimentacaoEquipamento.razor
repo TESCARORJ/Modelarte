@@ -19,7 +19,7 @@
         <Template Context="obra">
             @if (obra is ObraDto obraDto)
             {
-                @($"Cliente: {obraDto.ClienteNome} - Projeto: {obraDto.ProjetoNome} - Obra: {obraDto.Nome}")
+                @($"Cliente: {obraDto.ClienteNome} - Projeto: {obraDto.ProjetoNome} ({obraDto.ProjetoId})  - Obra: {obraDto.Nome}")
             }
         </Template>
     </RadzenDropDown>

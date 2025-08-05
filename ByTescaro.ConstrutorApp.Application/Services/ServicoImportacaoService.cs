@@ -114,7 +114,7 @@ public class ServicoImportacaoService : IServicoImportacaoService
                 UsuarioNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome,
                 Entidade = nameof(Servico),
                 TipoLogAuditoria = TipoLogAuditoria.Criacao,
-                Descricao = $"Serviço {entidade.Nome} importado por '{usuarioLogado}' em {DateTime.Now}. ",
+                Descricao = $"Serviço {entidade.Nome}  por '{usuarioLogadoNome}' em {DateTime.Now}. ",
                 DadosAtuais = JsonSerializer.Serialize(entidade) // Serializa o DTO para o log
             });
         }

@@ -12,10 +12,10 @@
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
-<RadzenCard Class="rz-pa-4 rz-mb-6" Variant="Variant.Filled">
-    <RadzenStack Gap="0.5rem">
-        <RadzenText Text="Minha Agenda" TextStyle="TextStyle.H5" />
-        <RadzenText Text="Crie e gerencie seus eventos e convites." Style="margin-bottom: 1rem; color: gray;" />
+<RadzenCard Class="rz-w-100 rz-pa-4 rz-mb-6" Variant="Variant.Filled">
+    <RadzenStack Gap="0.1rem">
+      @*   <RadzenText Text="Minha Agenda" TextStyle="TextStyle.H5" />
+        <RadzenText Text="Crie e gerencie seus eventos e convites." Style="margin-bottom: 1rem; color: gray;" /> *@
 
         <RadzenScheduler @ref="scheduler"
                          Data="@eventos"
@@ -30,12 +30,14 @@
                          AppointmentSelect="@OnAppointmentSelect"
                          SlotRender="@OnSlotRender"             
                          DaySelect="@OnDaySelect"              
-                         AppointmentMove="@OnAppointmentMove">
+                         AppointmentMove="@OnAppointmentMove"
+                         TodayText="Hoje">
             <RadzenDayView Text="Dia" />
             <RadzenWeekView Text="Semana" />
             <RadzenMonthView Text="Mês" />
             <RadzenYearPlannerView Text="Ano (Planejador)" />
             <RadzenYearTimelineView Text="Ano (Linha do Tempo)" />
+            
         </RadzenScheduler>
     </RadzenStack>
 </RadzenCard>

@@ -21,6 +21,7 @@ public class EquipamentoDto
 
     public long? ObraIdAtual { get; set; } // ID da obra atual se estiver em uso
     public string? ObraNomeAtual { get; set; } = string.Empty; // Nome da obra atual
+    public long? ProjetoIdAtual { get; set; }// ID do projeto da obra atual
     public string? ProjetoNomeAtual { get; set; } = string.Empty; // Nome do projeto da obra atual
     public string? ClienteNomeAtual { get; set; } = string.Empty; // Nome do cliente do projeto da obra atual
     public DateTime? DataInicioUsoAtual { get; set; } // Data de início de uso na obra atual

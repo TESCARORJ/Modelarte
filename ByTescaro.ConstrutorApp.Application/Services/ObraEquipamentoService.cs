@@ -6,6 +6,7 @@ using ByTescaro.ConstrutorApp.Domain.Enums;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ByTescaro.ConstrutorApp.Application.Services
 {
@@ -126,35 +127,28 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task<List<EquipamentoDto>> ObterEquipamentosTotalAlocadosAsync()
         {
-            // Busca todos os registros de alocação de equipamentos
-            // Incluindo as entidades Obra, Equipamento, Projeto e Cliente para obter os nomes
-            var equipamentosAlocadosQuery = await _unitOfWork.ObraEquipamentoRepository.GetAllAsync(); // ObraEquipamento
+            
+            var equipamentosAlocadosQuery = await _unitOfWork.ObraEquipamentoRepository.GetAllAsync(); 
 
             var equipamentosAlocados = equipamentosAlocadosQuery
-                .OrderByDescending(oe => oe.DataInicioUso) // Ordena para pegar o registro mais recente primeiro
+                .OrderByDescending(oe => oe.DataInicioUso) 
                 .ToList();
 
             var obras = (await _unitOfWork.ObraRepository.GetAllAsync()).ToList();
-            var projetos = (await _unitOfWork.ProjetoRepository.GetAllAsync()).ToList();
-            var clientes = (await _unitOfWork.ClienteRepository.GetAllAsync()).ToList();
+    
             var equipamentos = (await _unitOfWork.EquipamentoRepository.GetAllAsync()).ToList();
 
-            // Criar um dicionário para fácil acesso aos equipamentos pelo ID
             var equipamentosDict = equipamentos.ToDictionary(e => e.Id);
             var obrasDict = obras.ToDictionary(o => o.Id);
-            var projetosDict = projetos.ToDictionary(p => p.Id);
-            var clientesDict = clientes.ToDictionary(c => c.Id);
+         
 
-            // Lista para armazenar os EquipamentoDto com informações de alocação
             var resultadoEquipamentosDto = new List<EquipamentoDto>();
 
-            // Para cada equipamento base, encontra o registro de alocação MAIS RECENTE
-            // para preencher os campos de "atual"
+       
             foreach (var equipBase in equipamentos)
             {
                 var equipDto = _mapper.Map<EquipamentoDto>(equipBase);
 
-                // Encontrar o registro de alocação mais recente para este equipamento (se houver)
                 var ultimaAlocacao = equipamentosAlocados
                     .Where(oe => oe.EquipamentoId == equipBase.Id)
                     .OrderByDescending(oe => oe.DataInicioUso)
@@ -171,14 +165,12 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     if (obrasDict.TryGetValue(ultimaAlocacao.ObraId, out var obra))
                     {
                         equipDto.ObraNomeAtual = obra.Nome;
-                        if (projetosDict.TryGetValue(obra.ProjetoId, out var projeto))
-                        {
-                            equipDto.ProjetoNomeAtual = projeto.Nome;
+                        
+                            equipDto.ProjetoNomeAtual = obra.Projeto.Nome;
+                      
                                 equipDto.ClienteNomeAtual = obra.Projeto.Cliente.Nome;
-                            {
-                                equipDto.ClienteNomeAtual = cliente.Nome;
-                            }
-                        }
+                            
+                       
                     }
                 }
                 resultadoEquipamentosDto.Add(equipDto);
@@ -218,7 +210,12 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
             equipamentoNaOrigem.DataFimUso = dto.DataMovimentacao;
             equipamentoNaOrigem.Equipamento.Status = StatusEquipamento.Indisponivel;
-   
+
+            var serializerOptions = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.Preserve
+            };
+
             await _logRepo.RegistrarAsync(new LogAuditoria
 
             {
@@ -233,7 +230,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
                 Descricao = $"Equipamento {equipamentoOrigemAntigoParaAuditoria.EquipamentoNome}. Movimentação: Equipamento finalizado na obra de origem. Motivo: {dto.Motivo} por '{usuarioLogadoNome}' em {DateTime.Now}. ",
 
-                DadosAtuais = JsonSerializer.Serialize(equipamentoOrigemAntigoParaAuditoria)
+                DadosAtuais = JsonSerializer.Serialize(equipamentoOrigemAntigoParaAuditoria, serializerOptions)
 
             });
 
@@ -281,7 +278,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
                 Descricao = $"Equipamento {novoEquipamentoAlocado.EquipamentoNome}. Movimentação: Equipamento alocado na obra de destino. Motivo: {dto.Motivo} por '{usuarioLogadoNome}' em {DateTime.Now}. ",
 
-                DadosAtuais = JsonSerializer.Serialize(novoEquipamentoAlocado) // Serializa o DTO para o log
+                DadosAtuais = JsonSerializer.Serialize(novoEquipamentoAlocado, serializerOptions) // Serializa o DTO para o log
 
             });
 

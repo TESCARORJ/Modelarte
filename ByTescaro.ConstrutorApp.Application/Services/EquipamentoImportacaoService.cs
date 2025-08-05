@@ -100,7 +100,7 @@ public class EquipamentoImportacaoService : IEquipamentoImportacaoService
                 UsuarioNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome,
                 Entidade = nameof(Equipamento),
                 TipoLogAuditoria = TipoLogAuditoria.Criacao,
-                Descricao = $"Equipamento {entidade.Nome} importado por '{usuarioLogado}' em {DateTime.Now}. ",
+                Descricao = $"Equipamento {entidade.Nome} importado por '{usuarioLogadoNome}' em {DateTime.Now}. ",
                 DadosAtuais = JsonSerializer.Serialize(entidade) // Serializa o DTO para o log
             });
 

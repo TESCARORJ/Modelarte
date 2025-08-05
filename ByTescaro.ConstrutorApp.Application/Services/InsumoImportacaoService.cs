@@ -110,7 +110,7 @@ public class InsumoImportacaoService : IInsumoImportacaoService
                 UsuarioNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome,
                 Entidade = nameof(Insumo),
                 TipoLogAuditoria = TipoLogAuditoria.Criacao,
-                Descricao = $"Insumo {entidade.Nome} importado por '{usuarioLogado}' em {DateTime.Now}. ",
+                Descricao = $"Insumo {entidade.Nome} importado por '{usuarioLogadoNome}' em {DateTime.Now}. ",
                 DadosAtuais = JsonSerializer.Serialize(entidade) // Serializa o DTO para o log
             });
 

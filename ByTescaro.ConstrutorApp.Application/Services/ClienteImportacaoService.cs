@@ -148,7 +148,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     UsuarioNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome,
                     Entidade = nameof(Cliente),
                     TipoLogAuditoria = TipoLogAuditoria.Criacao,
-                    Descricao = $"Cliente '{cliente.Nome}' importado por {usuarioLogado.Nome} em {DateTime.Now}",
+                    Descricao = $"Cliente '{cliente.Nome}' importado por {usuarioLogadoNome} em {DateTime.Now}",
                     DadosAtuais = JsonSerializer.Serialize(dto) // Serializa o DTO para o log
                 });
             }
