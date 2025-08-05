@@ -174,7 +174,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                         if (projetosDict.TryGetValue(obra.ProjetoId, out var projeto))
                         {
                             equipDto.ProjetoNomeAtual = projeto.Nome;
-                            if (clientesDict.TryGetValue((long)projeto.ClienteId, out var cliente))
+                                equipDto.ClienteNomeAtual = obra.Projeto.Cliente.Nome;
                             {
                                 equipDto.ClienteNomeAtual = cliente.Nome;
                             }
