@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Radzen;
 
@@ -78,6 +79,14 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
         sqlOptions.EnableRetryOnFailure(3, TimeSpan.FromSeconds(10), null)));
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
+//Health Check
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ApplicationDbContext>(
+        name: "database-check", // Nome da verificação
+        failureStatus: HealthStatus.Unhealthy, // Status em caso de falha
+        tags: new[] { "database" }); // Tags para filtrar verificações
+
 
 #endregion
 
@@ -526,6 +535,9 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 //await DbSeeder.SeedAdminAsync(app.Services);
+
+
+app.MapHealthChecks("/health");
 
 app.Run();
 

@@ -1,11 +1,13 @@
 ﻿// Application/BackgroundServices/DailyReminderBackgroundService.cs
-using ByTescaro.ConstrutorApp.Application.Interfaces; // Adicione este using
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Linq; // Para usar LINQ
 
 namespace ByTescaro.ConstrutorApp.Application.BackgroundServices
 {
@@ -13,10 +15,6 @@ namespace ByTescaro.ConstrutorApp.Application.BackgroundServices
     {
         private readonly ILogger<DailyReminderBackgroundService> _logger;
         private readonly IServiceProvider _serviceProvider;
-        // Não precisamos injetar IConfiguracaoLembreteDiarioService diretamente aqui,
-        // pois já estamos usando um scope para obter o DailyReminderService,
-        // que por sua vez obtém IConfiguracaoLembreteDiarioService.
-        // A lógica de agendamento precisa apenas do tempo.
 
         public DailyReminderBackgroundService(ILogger<DailyReminderBackgroundService> logger, IServiceProvider serviceProvider)
         {
@@ -31,86 +29,73 @@ namespace ByTescaro.ConstrutorApp.Application.BackgroundServices
             while (!stoppingToken.IsCancellationRequested)
             {
                 TimeSpan delayTime;
+
                 using (var scope = _serviceProvider.CreateScope())
                 {
                     var configuracaoService = scope.ServiceProvider.GetRequiredService<IConfiguracaoLembreteDiarioService>();
-                    var dailyReminderService = scope.ServiceProvider.GetRequiredService<DailyReminderService>();
-
+                    
                     try
                     {
-                        // 1. Obter todas as configurações de lembretes diários ativas
                         var activeReminders = await configuracaoService.GetActiveDailyRemindersAsync();
-
-                        // 2. Calcular o próximo horário de execução
                         var now = DateTime.Now;
-                        var today = now.Date;
 
-                        // Encontrar o próximo horário configurado para hoje que ainda não passou
-                        var nextReminderTimeToday = activeReminders
-                            .Where(r => r.HoraDoDia > now.TimeOfDay) // Horários no futuro
-                            .OrderBy(r => r.HoraDoDia)
+                        var nextExecutionTime = activeReminders
+                            .Select(r => now.Date.Add(r.HoraDoDia))
+                            .Where(t => t > now)
+                            .OrderBy(t => t)
                             .FirstOrDefault();
 
-                        if (nextReminderTimeToday != null)
+                        if (nextExecutionTime == default)
                         {
-                            // Há um lembrete para hoje no futuro
-                            var nextExecutionDateTime = today.Add(nextReminderTimeToday.HoraDoDia);
-                            delayTime = nextExecutionDateTime - now;
-                            _logger.LogInformation("Próximo lembrete agendado para hoje às {NextTime:hh\\:mm\\:ss}.", nextExecutionDateTime.TimeOfDay);
-                        }
-                        else
-                        {
-                            // Todos os lembretes para hoje já passaram ou não há lembretes configurados para hoje.
-                            // Agendar para o primeiro lembrete do dia seguinte.
-                            var firstReminderTimeTomorrow = activeReminders
+                            var firstReminderTomorrow = activeReminders
                                 .OrderBy(r => r.HoraDoDia)
                                 .FirstOrDefault();
 
-                            if (firstReminderTimeTomorrow != null)
+                            if (firstReminderTomorrow != null)
                             {
-                                var nextDay = today.AddDays(1);
-                                var nextExecutionDateTime = nextDay.Add(firstReminderTimeTomorrow.HoraDoDia);
-                                delayTime = nextExecutionDateTime - now;
-                                _logger.LogInformation("Todos os lembretes para hoje já passaram ou não há mais lembretes para hoje. Agendando para o primeiro lembrete de amanhã às {NextTime:hh\\:mm\\:ss}.", nextExecutionDateTime.TimeOfDay);
+                                nextExecutionTime = now.Date.AddDays(1).Add(firstReminderTomorrow.HoraDoDia);
+                                _logger.LogInformation("Nenhum lembrete futuro para hoje. Próximo agendado para amanhã às {NextTime:hh\\:mm\\:ss}.", nextExecutionTime.TimeOfDay);
                             }
                             else
                             {
-                                // Não há configurações de lembrete ativas. Espera um tempo razoável (ex: 1 hora) e verifica novamente.
                                 _logger.LogWarning("Nenhuma configuração de lembrete diário ativa encontrada. Verificando novamente em 1 hora.");
                                 delayTime = TimeSpan.FromHours(1);
+                                await Task.Delay(delayTime, stoppingToken);
+                                continue; // Pula para a próxima iteração
                             }
                         }
+                        
+                        delayTime = nextExecutionTime - now;
 
-                        // Garante que o atraso seja positivo para evitar exceções
                         if (delayTime < TimeSpan.Zero)
                         {
-                            _logger.LogWarning("Tempo de atraso calculado foi negativo ({DelayTime}). Ajustando para 1 segundo para evitar erro e reavaliar.", delayTime);
-                            delayTime = TimeSpan.FromSeconds(1); // Atraso mínimo para reavaliar
+                             delayTime = TimeSpan.FromSeconds(5); // Atraso de segurança
+                            _logger.LogWarning("O tempo de atraso calculado foi negativo. Ajustando para {DelayTime} para reavaliação.", delayTime);
                         }
 
-                        // Se o atraso for muito pequeno (ex: milissegundos), defina um mínimo para evitar loop intenso.
-                        if (delayTime < TimeSpan.FromSeconds(1))
-                        {
-                            _logger.LogInformation("Tempo de atraso muito pequeno ({DelayTime}). Ajustando para 1 segundo.", delayTime);
-                            delayTime = TimeSpan.FromSeconds(1);
-                        }
+                        _logger.LogInformation("Aguardando por {DelayTime} para a próxima execução às {ExecutionTime}.", delayTime, nextExecutionTime);
+                        await Task.Delay(delayTime, stoppingToken);
 
-                        // Executa o serviço DailyReminderService imediatamente se o tempo já passou ou é agora
-                        // (o que significa que nextReminderTimeToday seria null ou muito próximo de now)
-                        // ou se estamos apenas aguardando o próximo dia.
-                        // A lógica de SendDailyRemindersAsync já filtra o que deve ser enviado "agora".
+                        // Verifica se o cancelamento foi solicitado durante o delay
+                        if (stoppingToken.IsCancellationRequested) break;
+
+                        _logger.LogInformation("Iniciando o envio de lembretes diários.");
+                        var dailyReminderService = scope.ServiceProvider.GetRequiredService<DailyReminderService>();
                         await dailyReminderService.SendDailyRemindersAsync();
+                        _logger.LogInformation("Envio de lembretes diários concluído.");
 
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Exceção esperada quando o serviço está parando.
+                        break;
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Erro inesperado ao calcular o próximo agendamento ou executar SendDailyRemindersAsync.");
-                        delayTime = TimeSpan.FromMinutes(5); // Em caso de erro, tenta novamente após 5 minutos.
+                        _logger.LogError(ex, "Erro inesperado no serviço de lembretes diários. Tentando novamente em 5 minutos.");
+                        await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
                     }
                 }
-
-                _logger.LogInformation("Aguardando por {DelayTime} antes da próxima verificação.", delayTime);
-                await Task.Delay(delayTime, stoppingToken);
             }
 
             _logger.LogInformation("Serviço de Lembretes Diários parado em {StopTime}.", DateTimeOffset.Now);

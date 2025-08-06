@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using ByTescaro.ConstrutorApp.Application.BackgroundServices;
 using ByTescaro.ConstrutorApp.Application.DTOs.Auth;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Domain.Entities;
@@ -10,6 +11,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Text;
+using System.Text.Encodings.Web;
 
 namespace ByTescaro.ConstrutorApp.UI.Controllers
 {
@@ -18,24 +21,37 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
     {
         private readonly IUsuarioService _usuarioService;
         private readonly ILogAuditoriaRepository _logRepo;
+        private readonly ILogger<LoginRequest> _logger;
+
         private IMapper _mapper;
 
-        public AuthController(IUsuarioService usuarioService, ILogAuditoriaRepository logRepo, IMapper mapper)
+        public AuthController(IUsuarioService usuarioService, ILogAuditoriaRepository logRepo, IMapper mapper, ILogger<LoginRequest> logger)
         {
             _usuarioService = usuarioService;
             _logRepo = logRepo;
             _mapper = mapper;
+            _logger = logger;
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromForm] LoginRequest model)
         {
+            var returnUrl = model.ReturnUrl ?? "/Account/Login";
+
             // Busca o usuário ativo pelo e-mail
             var usuario = (await _usuarioService.ObterTodosAsync())
                 .FirstOrDefault(u => u.Email == model.Email && u.Ativo);
 
+            var usuarios = await _usuarioService.ObterTodosAtivosAsync();
+
+            _logger.LogInformation($"existem {usuarios.Count()} usuarios");
+
+
             if (usuario == null)
-                return Redirect("/Account/Login");
+            {
+                var encodedMessage = UrlEncoder.Default.Encode("Usuário não encontrado ou inativo.");
+                return Redirect($"{returnUrl}?errorMessage={encodedMessage}");
+            }
 
             // Mapeia para entidade para que PasswordHasher funcione corretamente
             var usuarioEntity = _mapper.Map<Usuario>(usuario);
@@ -44,9 +60,11 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
             var hasher = new PasswordHasher<Usuario>();
             var result = hasher.VerifyHashedPassword(usuarioEntity, usuarioEntity.SenhaHash, model.Senha);
 
-
             if (result == PasswordVerificationResult.Failed)
-                return Redirect("/Account/Login");
+            {
+                var encodedMessage = UrlEncoder.Default.Encode("Credenciais de login inválidas.");
+                return Redirect($"{returnUrl}?errorMessage={encodedMessage}");
+            }
 
             // Se a senha está válida, autentica o usuário
             var claims = new List<Claim>
@@ -77,10 +95,8 @@ namespace ByTescaro.ConstrutorApp.UI.Controllers
                 Descricao = $"Usuário {usuario.Nome} (ID: {usuario.Id}) entrou no sistema"
             });
 
-            return Redirect("/");
+            return Redirect(model.ReturnUrl ?? "/");
         }
-
-
 
 
         [HttpPost("logout")]

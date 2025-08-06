@@ -51,6 +51,15 @@
         .RadzenHeading {
             font-size: 1.5rem !important;
         }
+
+        .error-message {
+            color: red;
+            margin-top: 1rem;
+            padding: 0.5rem;
+            background-color: #ffe5e5;
+            border: 1px solid red;
+            border-radius: 5px;
+        }
     </style>
 </HeadContent>
 
@@ -74,6 +83,11 @@
             <RadzenHeading Size="H4" Text="Use sua conta para acessar o sistema." Style="margin-bottom: 1rem;" />
 
             <RadzenFieldset Style="border: none;">
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="error-message">@errorMessage</div>
+                }
+
                 <RadzenTextBox Name="Email"
                                Placeholder="exemplo@empresa.com"
                                Style="width:100%; margin-bottom: 1rem"
@@ -92,6 +106,8 @@
                     <label for="RememberMe" style="margin-left: 0.5rem">Lembrar login</label>
                 </div>
 
+                <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
+
                 <RadzenButton ButtonType="ButtonType.Submit"
                               Text="Entrar"
                               Style="width:100%; margin-top: 1rem"
@@ -105,47 +121,23 @@
 @code {
     private PersonalizacaoDto? personalizacao;
     private string? errorMessage;
-    private string? _pendingToken;
     private bool _shouldRedirect;
-
-    private InputModel Input { get; set; } = new();
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "errorMessage")]
+    private string? ErrorMessageFromUrl { get; set; }
 
 
     protected override async Task OnInitializedAsync()
     {
         personalizacao = await PersonalizacaoApiService.ObterAsync();
-    }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
+        // Atribui a mensagem da URL para a variável do componente
+        if (!string.IsNullOrEmpty(ErrorMessageFromUrl))
         {
-            await JSRuntime.InvokeVoidAsync("eval", "document.body.style.margin='0'; document.body.style.height='100vh';");
+            errorMessage = ErrorMessageFromUrl;
         }
-
-        if (!string.IsNullOrEmpty(_pendingToken))
-        {
-            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", _pendingToken);
-            _pendingToken = null;
-
-            if (_shouldRedirect)
-                NavigationManager.NavigateTo(ReturnUrl ?? "/", forceLoad: true);
-        }
-    }
-
-    private sealed class InputModel
-    {
-        [Required]
-        [EmailAddress]
-        public string? Email { get; set; } = string.Empty;
-
-        [Required]
-        [DataType(DataType.Password)]
-        public string? Password { get; set; } = string.Empty;
-
-        public bool RememberMe { get; set; }
     }
 }
