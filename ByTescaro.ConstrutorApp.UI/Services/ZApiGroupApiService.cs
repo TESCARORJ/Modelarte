@@ -1,7 +1,13 @@
 ﻿using ByTescaro.ConstrutorApp.Application.DTOs;
+using System.Text.Json;
 
 namespace ByTescaro.ConstrutorApp.UI.Services
 {
+    public class ZApiGroupResponse
+    {
+        public List<GroupDto> Value { get; set; }
+    }
+
     public class ZApiGroupApiService
     {
         private readonly HttpClient _httpClient;
@@ -30,7 +36,9 @@ namespace ByTescaro.ConstrutorApp.UI.Services
 
             if (response.IsSuccessStatusCode)
             {
-                var groups = await response.Content.ReadFromJsonAsync<List<GroupDto>>();
+                var jsonContent = await response.Content.ReadAsStringAsync();
+                var apiResponse = JsonSerializer.Deserialize<ZApiGroupResponse>(jsonContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                var groups = apiResponse?.Value;
                 return groups?.Where(g => g.IsGroup).ToList() ?? new List<GroupDto>();
             }
             else

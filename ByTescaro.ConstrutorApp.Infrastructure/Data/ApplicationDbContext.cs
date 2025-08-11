@@ -236,7 +236,6 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Data
                        .IsRequired()
                        .OnDelete(DeleteBehavior.Cascade);
 
-                builder.Navigation(o => o.Projeto).AutoInclude();
 
 
                 builder.HasOne(o => o.ResponsavelObra)
