@@ -58,4 +58,12 @@ public class ObraInsumoController : ControllerBase
         return Ok(insumos);
     }
 
+
+    [HttpGet("all")]
+    public async Task<IActionResult> GetInsumos()
+    {
+        var disponiveis = await _service.ObterInsumosAsync();
+        return Ok(disponiveis);
+    }
+
 }

@@ -45,7 +45,8 @@
                             Multiple="true"
                             @bind-Value="_insumosSelecionados"
                             Placeholder="Insumos Disponíveis"
-                            Style="width: 100%;" />
+                            Style="width: 100%;" 
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.StartsWith" AllowFiltering="true" />
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeLG="5">
@@ -55,7 +56,8 @@
                             Multiple="true"
                             @bind-Value="_insumosRelacionadosSelecionados"
                             Placeholder="Insumos por Etapa"
-                            Style="width: 100%;" />
+                            Style="width: 100%;"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.StartsWith" AllowFiltering="true" />
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeLG="2">
@@ -174,7 +176,7 @@
 
     private async Task LoadInsumosData()
     {
-        InsumosDisponiveis = await InsumoService.GetInsumosDisponiveisAsync(Obra.Id);
+        InsumosDisponiveis = await InsumoService.GetInsumosAsync();
 
         var relacionadosEtapa = await InsumoService.GetInsumosPadraoRelacionadosAsync(Obra.Id);
 

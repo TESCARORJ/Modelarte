@@ -1,13 +1,7 @@
 ﻿using ByTescaro.ConstrutorApp.Application.DTOs;
-using System.Text.Json;
 
 namespace ByTescaro.ConstrutorApp.UI.Services
 {
-    public class ZApiGroupResponse
-    {
-        public List<GroupDto> Value { get; set; }
-    }
-
     public class ZApiGroupApiService
     {
         private readonly HttpClient _httpClient;
@@ -27,26 +21,40 @@ namespace ByTescaro.ConstrutorApp.UI.Services
             var token = _configuration["ZApiSettings:InstanceToken"];
             var clientToken = _configuration["ZApiSettings:ClientToken"];
 
-            var requestUri = $"{baseUrl}/instances/{instanceId}/token/{token}/groups?page=1&pageSize=100"; // Ajuste o pageSize conforme necessário
+            var allGroups = new List<GroupDto>();
+            var page = 1;
+            const int pageSize = 100;
+            bool hasMorePages;
 
-            var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
-            request.Headers.Add("Client-Token", clientToken);
-
-            var response = await _httpClient.SendAsync(request);
-
-            if (response.IsSuccessStatusCode)
+            do
             {
-                var jsonContent = await response.Content.ReadAsStringAsync();
-                var apiResponse = JsonSerializer.Deserialize<ZApiGroupResponse>(jsonContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                var groups = apiResponse?.Value;
-                return groups?.Where(g => g.IsGroup).ToList() ?? new List<GroupDto>();
-            }
-            else
-            {
-                // Logar ou tratar o erro
-                var errorContent = await response.Content.ReadAsStringAsync();
-                throw new HttpRequestException($"Erro ao buscar grupos do Z-API: {response.ReasonPhrase}. Detalhes: {errorContent}");
-            }
+                var requestUri = $"{baseUrl}/instances/{instanceId}/token/{token}/groups?page={page}&pageSize={pageSize}";
+
+                var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+                request.Headers.Add("Client-Token", clientToken);
+
+                var response = await _httpClient.SendAsync(request);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    throw new HttpRequestException($"Erro ao buscar grupos do Z-API na página {page}: {response.ReasonPhrase}. Detalhes: {errorContent}");
+                }
+
+                var currentPageGroups = await response.Content.ReadFromJsonAsync<List<GroupDto>>();
+
+                if (currentPageGroups == null || !currentPageGroups.Any())
+                {
+                    break; // Nenhuma grupo retornado, sair do loop.
+                }
+
+                allGroups.AddRange(currentPageGroups);
+                hasMorePages = currentPageGroups.Count == pageSize;
+                page++;
+
+            } while (hasMorePages);
+
+            return allGroups.Where(g => g.IsGroup).ToList();
         }
     }
 }

@@ -150,8 +150,8 @@
             {
                 Severity = NotificationSeverity.Error,
                 Summary = "Erro",
-                Detail = $"Erro ao excluir projeto: {ex.Message}",
-                Duration = 5000
+                Detail = $"Erro ao excluir projeto: {ex.Message} - {ex.StackTrace} - {ex.Source}",
+                Duration = 15000
             });
         }
     }

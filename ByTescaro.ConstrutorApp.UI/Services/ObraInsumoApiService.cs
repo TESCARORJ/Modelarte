@@ -15,6 +15,9 @@ namespace ByTescaro.ConstrutorApp.UI.Services
         public async Task<List<InsumoDto>> GetInsumosDisponiveisAsync(long obraId) =>
             await _http.GetFromJsonAsync<List<InsumoDto>>($"api/obrainsumo/disponiveis/{obraId}") ?? new();
 
+        public async Task<List<InsumoDto>> GetInsumosAsync() =>
+          await _http.GetFromJsonAsync<List<InsumoDto>>($"api/obrainsumo/all") ?? new();
+
         public async Task CreateAsync(ObraInsumoDto dto) =>
             await _http.PostAsJsonAsync("api/obrainsumo", dto);
 

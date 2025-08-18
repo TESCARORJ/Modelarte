@@ -189,24 +189,24 @@
           IsGroup = false
       }).ToList();
 
-        // Busca grupos do Z-API
-        try
-        {
-            var grupos = await ZApiGroupApiService.GetGroupsAsync();
-            var selectableGroups = grupos.Select(g => new SelectableUserDto
-            {
-                // Um Group ID pode ser maior que long. MaxValue, então usei um hashcode
-                Id = g.Phone.GetHashCode(),
-                Nome = $"{g.Name} (Grupo)", // Adiciona um sufixo para fácil identificação
-                TelefoneWhatsApp = g.Phone, // O Group ID é usado no lugar do número de telefone
-                IsGroup = true
-            }).ToList();
-            allSelectableUsers.AddRange(selectableGroups);
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(NotificationSeverity.Error, "Erro Z-API", $"Falha ao buscar grupos: {ex.Message}");
-        }
+//         // Busca grupos do Z-API
+//         try
+//         {
+//             var grupos = await ZApiGroupApiService.GetGroupsAsync();
+//             var selectableGroups = grupos.Select(g => new SelectableUserDto
+//             {
+//                 // Um Group ID pode ser maior que long. MaxValue, então usei um hashcode
+//                 Id = g.Phone.GetHashCode(),
+//                 Nome = $"{g.Name} (Grupo)", // Adiciona um sufixo para fácil identificação
+//                 TelefoneWhatsApp = g.Phone, // O Group ID é usado no lugar do número de telefone
+//                 IsGroup = true
+//             }).ToList();
+//             allSelectableUsers.AddRange(selectableGroups);
+//         }
+//         catch (Exception ex)
+//         {
+//             NotificationService.Notify(NotificationSeverity.Error, "Erro Z-API", $"Falha ao buscar grupos: {ex.Message}");
+//         }
 
         // Combina as listas
         allSelectableUsers.AddRange(funcionarios);
