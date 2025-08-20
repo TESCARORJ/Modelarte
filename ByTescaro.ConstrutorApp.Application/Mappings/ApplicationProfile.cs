@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using ByTescaro.ConstrutorApp.Application.DTOs;
 using ByTescaro.ConstrutorApp.Application.DTOs.Relatorios;
+using ByTescaro.ConstrutorApp.Application.Utils;
 using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Entities.Admin;
 
@@ -387,7 +388,7 @@ public class ApplicationProfile : Profile
             .ForMember(dest => dest.NomeObra, opt => opt.MapFrom(src => src.Nome))
             .ForMember(dest => dest.DataInicioObra, opt => opt.MapFrom(src => src.DataInicioExecucao))
             .ForMember(dest => dest.DataInicioProjeto, opt => opt.MapFrom(src => src.Projeto.DataInicio))
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => EnumHelper.ObterDescricaoEnum(src.Status)))
             .ForMember(dest => dest.ClienteNome, opt => opt.MapFrom(src => src.Projeto.Cliente.Nome))
             .ForMember(dest => dest.ProjetoNome, opt => opt.MapFrom(src => src.Projeto.Nome))
             // Adicione mapeamentos para as coleções aninhadas

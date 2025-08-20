@@ -14,6 +14,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         public async Task<Obra?> GetByIdWithRelacionamentosAsync(long id)
         {
             return await _dbSet
+                .Include(o => o.Projeto)
                 .Include(o => o.Funcionarios)
                 .Include(o => o.Fornecedores)
                 .Include(o => o.Insumos)

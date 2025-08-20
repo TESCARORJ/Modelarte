@@ -134,14 +134,14 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                 table.Cell().Text(obraRelatorioDto.Status);
                                 table.Cell().Text("Data Início:").SemiBold();
                                 table.Cell().Text(obraRelatorioDto.DataInicioObra.ToShortDateString());
-                                table.Cell().Text("Conclusão Prevista:").SemiBold();
-                                table.Cell().Text(obraRelatorioDto.DataConclusaoPrevista?.ToShortDateString() ?? "N/A");
+                                //table.Cell().Text("Conclusão Prevista:").SemiBold();
+                                //table.Cell().Text(obraRelatorioDto.DataConclusaoPrevista?.ToShortDateString() ?? "N/A");
                                 table.Cell().Text("Progresso Atual:").SemiBold();
                                 table.Cell().Text($"{obraRelatorioDto.ProgressoAtual}%");
                                 //table.Cell().Text("Orçamento Total:").SemiBold();
                                 //table.Cell().Text(obraRelatorioDto.OrcamentoTotal.ToString("C"));
-                                table.Cell().Text("Descrição:").SemiBold();
-                                table.Cell().Text(obraRelatorioDto.Descricao);
+                                //table.Cell().Text("Descrição:").SemiBold();
+                                //table.Cell().Text(obraRelatorioDto.Descricao);
                             });
 
                             if (obraRelatorioDto.Etapas.Any())
