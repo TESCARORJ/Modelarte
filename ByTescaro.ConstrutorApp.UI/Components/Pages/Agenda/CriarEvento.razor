@@ -89,7 +89,7 @@
                                             AllowClear="true" Style="width:100%;" Name="Participantes">
                                 <Template Context="userContext">
                                     <div>
-                                        <strong>@userContext.Nome</strong> - @userContext.TelefoneWhatsApp
+                                        <strong>@(userContext.Nome ?? "N/A")</strong> - @(userContext.TelefoneWhatsApp ?? "N/A")
                                     </div>
                                 </Template>
                             </RadzenDropDown>

@@ -59,7 +59,7 @@ namespace ByTescaro.ConstrutorApp.Application.BackgroundServices
                             else
                             {
                                 _logger.LogWarning("Nenhuma configuração de lembrete diário ativa encontrada. Verificando novamente em 1 hora.");
-                                delayTime = TimeSpan.FromHours(1);
+                                delayTime = TimeSpan.FromMinutes(10);
                                 await Task.Delay(delayTime, stoppingToken);
                                 continue; // Pula para a próxima iteração
                             }

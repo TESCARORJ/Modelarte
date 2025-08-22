@@ -12,16 +12,36 @@ using ByTescaro.ConstrutorApp.UI.Authentication;
 using ByTescaro.ConstrutorApp.UI.Components;
 using ByTescaro.ConstrutorApp.UI.Properties;
 using ByTescaro.ConstrutorApp.UI.Services;
-using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Options;
 using Radzen;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Ajusta a cultura para pt-BR e coloca nomes de meses com inicial maiúscula
+var culture = (CultureInfo)CultureInfo.CreateSpecificCulture("pt-BR").Clone();
+var ti = culture.TextInfo;
+var dtfi = culture.DateTimeFormat;
+
+dtfi.MonthNames = dtfi.MonthNames
+    .Select(m => string.IsNullOrEmpty(m) ? m : ti.ToTitleCase(m))
+    .ToArray();
+dtfi.MonthGenitiveNames = dtfi.MonthGenitiveNames
+    .Select(m => string.IsNullOrEmpty(m) ? m : ti.ToTitleCase(m))
+    .ToArray();
+dtfi.AbbreviatedMonthNames = dtfi.AbbreviatedMonthNames
+    .Select(m => string.IsNullOrEmpty(m) ? m : ti.ToTitleCase(m))
+    .ToArray();
+dtfi.AbbreviatedMonthGenitiveNames = dtfi.AbbreviatedMonthGenitiveNames
+    .Select(m => string.IsNullOrEmpty(m) ? m : ti.ToTitleCase(m))
+    .ToArray();
+
+CultureInfo.DefaultThreadCurrentCulture = culture;
+CultureInfo.DefaultThreadCurrentUICulture = culture;
 
 // Adiciona suporte ao Radzen ThemeService
 //builder.Services.AddScoped<Radzen.ThemeService>();
@@ -34,8 +54,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<Radzen.SchedulerDaySelectEventArgs>();
 
 builder.Services.AddRadzenComponents();
-
-
 
 // 🔐 Persistência de chaves compartilhada entre subdomínios
 builder.Services.AddDataProtection()

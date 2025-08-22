@@ -135,12 +135,12 @@
 
     void OnSlotRender(SchedulerSlotRenderEventArgs args)
     {
-        if (args.View.Text == "Month" && args.Start.Date == DateTime.Today)
+        if (args.View.Text == "Mês" && args.Start.Date == DateTime.Today)
         {
             args.Attributes["style"] = "background: var(--rz-scheduler-highlight-background-color, rgba(255,220,40,.2));";
         }
 
-        if ((args.View.Text == "Week" || args.View.Text == "Day") && args.Start.Hour >= 9 && args.Start.Hour < 18)
+        if ((args.View.Text == "Semana" || args.View.Text == "Dia") && args.Start.Hour >= 9 && args.Start.Hour < 18)
         {
             args.Attributes["style"] = "background: var(--rz-scheduler-highlight-background-color, rgba(255,220,40,.2));";
         }
