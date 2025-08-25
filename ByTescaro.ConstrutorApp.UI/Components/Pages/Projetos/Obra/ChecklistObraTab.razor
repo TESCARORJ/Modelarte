@@ -37,8 +37,29 @@
             <div class="etapa-container">
                 <RadzenRow AlignItems="AlignItems.Center">
                     <RadzenColumn Size="10" SizeMD="11">
-                        <RadzenText TextStyle="TextStyle.Subtitle1" Class="rz-mb-0"><b>@etapa.Nome</b></RadzenText>
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+                            <RadzenText TextStyle="TextStyle.Subtitle1" Class="rz-mb-0"><b>@etapa.Nome</b></RadzenText>
+
+                            <!-- Selecionar todos os itens da etapa -->
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.25rem">
+                                <RadzenCheckBox TValue="bool"
+                                                TriState="false"
+                                                Value="@(TodosSelecionados(etapa))"
+                                                Change="@(v => SelecionarTodos(etapa, v as bool? == true))" />
+                                <span class="rz-text-caption">Selecionar todos</span>
+                            </RadzenStack>
+
+                            <!-- Excluir em lote (mostra contador) -->
+                            <RadzenButton Icon="delete_sweep"
+                                          ButtonStyle="ButtonStyle.Danger"
+                                          Size="ButtonSize.Small"
+                                          Disabled="@(QtdSelecionados(etapa) == 0)"
+                                          Click="() => RemoverItensSelecionadosAsync(etapa)">
+                                Excluir selecionados (@QtdSelecionados(etapa))
+                            </RadzenButton>
+                        </RadzenStack>
                     </RadzenColumn>
+
                     <RadzenColumn Size="2" SizeMD="1" TextAlign="TextAlign.End">
                         <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
                                       Click="() => ConfirmarRemocaoEtapa(etapa)" />
@@ -51,8 +72,17 @@
                 {
                     <RadzenRow AlignItems="AlignItems.Center" Class="rz-mb-2">
                         <RadzenColumn Size="12" SizeMD="7">
-                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+
+                                <!-- Checkbox: Selecionar item para exclusão em lote -->
+                                <RadzenCheckBox TValue="bool"
+                                                TriState="false"
+                                                Value="@IsSelecionado(etapa, item)"
+                                                Change="@(v => ToggleSelecionado(etapa, item, v as bool? == true))" />
+
+                                <!-- Checkbox existente: Concluído -->
                                 <RadzenCheckBox TValue="bool" TriState="false" @bind-Value="item.Concluido" />
+
                                 <span class="rz-text-body1">@item.Nome</span>
                             </RadzenStack>
                         </RadzenColumn>
@@ -60,6 +90,8 @@
                         <RadzenColumn Size="12" SizeMD="5" Class="rz-mt-2 rz-mt-md-0">
                             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" JustifyContentMD="JustifyContent.End" Gap="0.5rem">
                                 <RadzenBadge Text="@ObterStatusPrazoItem(item).Texto" BadgeStyle="@ObterBadgeStyle(ObterStatusPrazoItem(item).Cor)" />
+
+                                <!-- Lixeira individual continua funcionando -->
                                 <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
                                               Click="() => ConfirmarRemocaoItem(etapa, item)" />
                             </RadzenStack>
@@ -118,6 +150,8 @@
 
     private long etapaSelecionadaId = 0;
     private Dictionary<long, long> itemSelecionadoIds = new();
+    private readonly Dictionary<long, HashSet<ObraItemEtapaDto>> _selecionadosPorEtapa = new();
+
 
     private bool isLoading = true;
 
@@ -133,6 +167,7 @@
         {
             isLoading = true;
             Etapas = await ChecklistService.GetEtapasAsync(Obra.Id);
+            _selecionadosPorEtapa.Clear(); // limpa seleções obsoletas
             isLoading = false;
         }
     }
@@ -277,6 +312,8 @@
         if (confirm == true)
         {
             etapa.Itens.Remove(item);
+            // Se estava selecionado, desmarca
+            if (_selecionadosPorEtapa.TryGetValue(etapa.Ordem, out var set)) set.Remove(item);
             NotificationService.Notify(NotificationSeverity.Info, "Removido", "Item removido da lista.");
             StateHasChanged();
         }
@@ -373,4 +410,70 @@
 
         return errors;
     }
+
+    private HashSet<ObraItemEtapaDto> GetSet(ObraEtapaDto etapa)
+    {
+        if (!_selecionadosPorEtapa.TryGetValue(etapa.Ordem, out var set))
+        {
+            set = new HashSet<ObraItemEtapaDto>();
+            _selecionadosPorEtapa[etapa.Ordem] = set;
+        }
+        return set;
+    }
+
+    private bool IsSelecionado(ObraEtapaDto etapa, ObraItemEtapaDto item)
+        => _selecionadosPorEtapa.TryGetValue(etapa.Ordem, out var set) && set.Contains(item);
+
+    private void ToggleSelecionado(ObraEtapaDto etapa, ObraItemEtapaDto item, bool value)
+    {
+        var set = GetSet(etapa);
+        if (value) set.Add(item); else set.Remove(item);
+    }
+
+    private int QtdSelecionados(ObraEtapaDto etapa)
+        => _selecionadosPorEtapa.TryGetValue(etapa.Ordem, out var set) ? set.Count : 0;
+
+    private bool TodosSelecionados(ObraEtapaDto etapa)
+    {
+        if (!etapa.Itens.Any()) return false;
+        var set = GetSet(etapa);
+        return etapa.Itens.All(i => set.Contains(i));
+    }
+
+    private void SelecionarTodos(ObraEtapaDto etapa, bool selecionar)
+    {
+        var set = GetSet(etapa);
+        set.Clear();
+        if (selecionar)
+        {
+            foreach (var i in etapa.Itens)
+                set.Add(i);
+        }
+    }
+
+    private async Task RemoverItensSelecionadosAsync(ObraEtapaDto etapa)
+    {
+        var set = GetSet(etapa);
+        var qtd = set.Count;
+        if (qtd == 0) return;
+
+        var confirm = await DialogService.Confirm(
+            $"Deseja realmente remover {qtd} item(ns) da etapa '{etapa.Nome}'?",
+            "Remover Itens Selecionados");
+
+        if (confirm == true)
+        {
+            // Evitar coleção modificada durante iteração
+            var aRemover = set.ToList();
+
+            foreach (var item in aRemover)
+                etapa.Itens.Remove(item);
+
+            set.Clear();
+
+            NotificationService.Notify(NotificationSeverity.Info, "Removidos", $"{qtd} item(ns) removido(s).");
+            StateHasChanged();
+        }
+    }
+
 }
