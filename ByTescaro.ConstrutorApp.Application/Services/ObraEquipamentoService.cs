@@ -127,62 +127,58 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task<List<EquipamentoDto>> ObterEquipamentosTotalAlocadosAsync()
         {
-            
-            var equipamentosAlocadosQuery = await _unitOfWork.ObraEquipamentoRepository.GetAllAsync(); 
+            bool apenasAtivos = true;
 
-            var equipamentosAlocados = equipamentosAlocadosQuery
-                .OrderByDescending(oe => oe.DataInicioUso) 
-                .ToList();
+            // 1) Carregamentos (como hoje)
+            var alocacoes = (await _unitOfWork.ObraEquipamentoRepository.GetAllAsync()) ?? new List<ObraEquipamento>();
+            var obras = (await _unitOfWork.ObraRepository.GetAllAsync())?.ToDictionary(o => o.Id) ?? new Dictionary<long, Obra>();
+            var equipamentos = (await _unitOfWork.EquipamentoRepository.GetAllAsync()) ?? new List<Equipamento>();
 
-            var obras = (await _unitOfWork.ObraRepository.GetAllAsync()).ToList();
-    
-            var equipamentos = (await _unitOfWork.EquipamentoRepository.GetAllAsync()).ToList();
+            // 2) Para cada equipamento, pegue: (a) uma alocação ativa (DataFimUso == null) se existir; 
+            // caso contrário, a última histórica. Ativos vêm primeiro.
+            var ultimaPorEquip = alocacoes
+                .GroupBy(oe => oe.EquipamentoId)
+                .Select(g => g
+                    .OrderByDescending(oe => oe.DataFimUso == null)   // ativos no topo
+                    .ThenByDescending(oe => oe.DataInicioUso)
+                    .ThenByDescending(oe => oe.Id)
+                    .First())
+                .ToDictionary(oe => oe.EquipamentoId);
 
-            var equipamentosDict = equipamentos.ToDictionary(e => e.Id);
-            var obrasDict = obras.ToDictionary(o => o.Id);
-         
+            var result = new List<EquipamentoDto>(equipamentos.Count);
 
-            var resultadoEquipamentosDto = new List<EquipamentoDto>();
-
-       
             foreach (var equipBase in equipamentos)
             {
-                var equipDto = _mapper.Map<EquipamentoDto>(equipBase);
+                var dto = _mapper.Map<EquipamentoDto>(equipBase);
 
-                var ultimaAlocacao = equipamentosAlocados
-                    .Where(oe => oe.EquipamentoId == equipBase.Id)
-                    .OrderByDescending(oe => oe.DataInicioUso)
-                     .ThenByDescending(oe => oe.Id)
-                    .FirstOrDefault();
-
-                if (ultimaAlocacao != null)
+                if (ultimaPorEquip.TryGetValue(equipBase.Id, out var ultima))
                 {
-                    // Preencher informações da alocação atual/última
-                    equipDto.ObraIdAtual = ultimaAlocacao.ObraId;
-                    equipDto.DataInicioUsoAtual = ultimaAlocacao.DataInicioUso;
-                    equipDto.DataFimUsoAtual = ultimaAlocacao.DataFimUso;
+                    // Se a intenção for retornar apenas alocados, ignore alocação encerrada
+                    if (apenasAtivos && ultima.DataFimUso != null)
+                        continue;
 
-                    if (obrasDict.TryGetValue(ultimaAlocacao.ObraId, out var obra))
+                    dto.ObraIdAtual = ultima.ObraId;
+                    dto.DataInicioUsoAtual = ultima.DataInicioUso;
+                    dto.DataFimUsoAtual = ultima.DataFimUso;
+
+                    if (obras.TryGetValue(ultima.ObraId, out var obra))
                     {
-                        equipDto.ObraNomeAtual = obra.Nome;
-
-                        if (obra?.Projeto != null)
-                        {
-                            equipDto.ProjetoNomeAtual = obra.Projeto.Nome;
-
-                            if (obra.Projeto.Cliente != null)
-                            {
-                                equipDto.ClienteNomeAtual = obra.Projeto.Cliente.Nome;
-                            }
-                        }
-
+                        dto.ObraNomeAtual = obra.Nome;
+                        dto.ProjetoNomeAtual = obra.Projeto?.Nome;           // pode ser null sem Include
+                        dto.ClienteNomeAtual = obra.Projeto?.Cliente?.Nome;  // idem
                     }
                 }
-                resultadoEquipamentosDto.Add(equipDto);
+
+                // Se pediu apenas ativos e não há alocação ativa → pula
+                if (apenasAtivos && dto.ObraIdAtual == null)
+                    continue;
+
+                result.Add(dto);
             }
 
-            return resultadoEquipamentosDto;
+            return result.OrderBy(e => e.Nome).ToList();
         }
+
 
         public async Task MoverEquipamentoAsync(MovimentacaoEquipamentoDto dto)
         {

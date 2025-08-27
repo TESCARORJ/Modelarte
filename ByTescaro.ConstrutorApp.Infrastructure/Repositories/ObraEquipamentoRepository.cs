@@ -14,8 +14,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         public async Task<List<ObraEquipamento>> GetByObraIdAsync(long obraId)
         {
             return await _dbSet.Where(e => e.ObraId == obraId)
-                .Include(e => e.Equipamento)
                 .AsNoTracking()
+                .Include(e => e.Equipamento)
                 .ToListAsync();
         }
     }
