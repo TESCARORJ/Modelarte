@@ -112,7 +112,9 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                         Quantidade = itemDto.Quantidade,
                         DataHoraCadastro = DateTime.Now,
                         UsuarioCadastroId = usuarioLogadoId,
-                        ObraServicoListaId = listaParaAtualizar.Id
+                        ObraServicoListaId = listaParaAtualizar.Id, 
+                        ObraId = itemDto.ObraId
+                       
                     });
                 }
                 else 

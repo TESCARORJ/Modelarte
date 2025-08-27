@@ -1,28 +1,26 @@
 ﻿@using ByTescaro.ConstrutorApp.Application.DTOs
 @using ByTescaro.ConstrutorApp.UI.Services
 @inject NotificationService NotificationService
-@inject ObraApiService ObraApiService
+@inject ObraFuncionarioApiService ObraFuncionarioApiService
+@inject ObraServicoListaApiService ListaService
 
 <RadzenMediaQuery Query="(max-width: 768px)" Change="OnMediaChanged" />
 
-<RadzenCard Class="rz-p-4">
-    <RadzenHeading Size="H6" Text="Listas de Servicos da Obra" />
+<RadzenCard class="rz-p-4">
+    <RadzenHeading Size="H6" Text="Listas de Serviços da Obra" />
 
-    <RadzenRow Class="rz-mb-2 rz-align-items-end" Style="gap: 0.5rem;">
+    <RadzenRow class="rz-mb-2 rz-align-items-end" style="gap:.5rem">
         <RadzenColumn Size="12" SizeMD="6">
             <RadzenDropDown Data="@ResponsaveisDisponiveis"
                             TextProperty="FuncionarioNome"
                             ValueProperty="FuncionarioId"
                             @bind-Value="ResponsavelSelecionadoId"
                             Placeholder="Selecionar Responsável"
-                            Style="width: 100%;" />
+                            Style="width:100%;" />
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="3">
-            <RadzenButton Icon="add_circle_outline"
-                          Text="Nova Lista"
-                          Click="@NovaLista"
-                          Style="width: 100%;" />
+            <RadzenButton Icon="add_circle_outline" Text="Nova Lista" Click="@NovaLista" Style="width:100%;" />
         </RadzenColumn>
     </RadzenRow>
 
@@ -33,17 +31,16 @@
                 foreach (var lista in Obra.ListasServico)
                 {
                     <RadzenAccordionItem Text="@($"{lista.NomeResponsavel} - Id: {lista.Id}")" Icon="list_alt">
-                        @* Adicionar um EventCallback para recarregar a Obra quando uma lista for salva/excluída *@
                         <ObraServicoListaEditor Lista="lista"
-                                               Obra="Obra"
-                                               OnListChanged="LoadObraData" /> @* Renomeado para clareza e ação específica *@
+                                                Obra="Obra"
+                                                OnListChanged="LoadObraData" />
                     </RadzenAccordionItem>
                 }
             }
             else
             {
                 <RadzenAccordionItem Text="Nenhuma lista cadastrada" Icon="info" Disabled="true">
-                    <p style="padding: 1rem;">Nenhuma lista de servicos foi adicionada a esta obra.</p>
+                    <p style="padding:1rem">Nenhuma lista de serviços foi adicionada a esta obra.</p>
                 </RadzenAccordionItem>
             }
         </Items>
@@ -55,32 +52,30 @@
     private void OnMediaChanged(bool matches) => isMobile = matches;
 
     [Parameter] public ObraDto Obra { get; set; } = new();
+
     private List<ObraFuncionarioDto> ResponsaveisDisponiveis = new();
     private long? ResponsavelSelecionadoId;
-    [Parameter] public long ObraId { get; set; }
 
-    protected override async Task OnInitializedAsync()
-    {
-        // Ao inicializar, recarregue os dados completos da obra
-        await LoadObraData();
-    }
+    protected override async Task OnInitializedAsync() => await LoadObraData();
 
     private async Task LoadObraData()
     {
-        if (Obra.Id > 0)
-        {
-            var obraCarregada = await ObraApiService.GetByIdAsync(Obra.Id);
-            if (obraCarregada != null)
-            {
-                Obra = obraCarregada; // Atualiza a instância da Obra com os dados mais recentes do servidor
-                ResponsaveisDisponiveis = obraCarregada.Funcionarios;
+        if (Obra?.Id <= 0) return;
 
-                StateHasChanged(); // Força a renderização do componente
-            }
-            else
-            {
-                NotificationService.Notify(NotificationSeverity.Error, "Erro", "Não foi possível carregar os dados da obra.");
-            }
+        try
+        {
+            // 1) Responsáveis da obra
+            ResponsaveisDisponiveis = await ObraFuncionarioApiService.GetByObraIdAsync(Obra.Id);
+
+            // 2) Listas de serviços da obra
+            var listas = await ListaService.GetPorObraIdAsync(Obra.Id) ?? new();
+            Obra.ListasServico = listas;
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Falha ao carregar dados: {ex.Message}");
         }
     }
 
@@ -92,24 +87,23 @@
             return Task.CompletedTask;
         }
 
-        var funcionario = Obra.Funcionarios.FirstOrDefault(f => f.FuncionarioId == ResponsavelSelecionadoId);
-        if (funcionario == null)
+        var func = ResponsaveisDisponiveis.FirstOrDefault(f => f.FuncionarioId == ResponsavelSelecionadoId);
+        if (func is null)
         {
             NotificationService.Notify(NotificationSeverity.Error, "Erro", "Funcionário não encontrado.");
             return Task.CompletedTask;
         }
 
-        var nova = new ObraServicoListaDto
-            {
-                ObraId = Obra.Id,
-                ResponsavelId = funcionario.FuncionarioId,
-                NomeResponsavel = funcionario.FuncionarioNome,
-                Data = DateOnly.FromDateTime(DateTime.Today),
-                Itens = new()
-            };
-
         Obra.ListasServico ??= new();
-        Obra.ListasServico.Add(nova);
+        Obra.ListasServico.Add(new ObraServicoListaDto
+        {
+            ObraId = Obra.Id,
+            ResponsavelId = func.FuncionarioId,
+            NomeResponsavel = func.FuncionarioNome,
+            Data = DateOnly.FromDateTime(DateTime.Today),
+            Itens = new()
+        });
+
         ResponsavelSelecionadoId = null;
         StateHasChanged();
         return Task.CompletedTask;

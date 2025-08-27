@@ -230,6 +230,8 @@
 
             await OnListChanged.InvokeAsync();
             StateHasChanged();
+            await LoadInsumosData();
+
         }
         catch (Exception ex)
         {
@@ -336,7 +338,7 @@
         {
             try
             {
-                await ListaService.UpdateAsync(Lista);
+                //await ListaService.UpdateAsync(Lista);
                 NotificationService.Notify(NotificationSeverity.Success, "Atualizado", "Itens adicionados e salvos com sucesso.");
             }
             catch (Exception ex)

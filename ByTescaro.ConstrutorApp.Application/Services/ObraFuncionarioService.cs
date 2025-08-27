@@ -24,7 +24,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 
         public async Task<List<ObraFuncionarioDto>> ObterPorObraIdAsync(long obraId)
         {
-            var list = await _unitOfWork.ObraFuncionarioRepository.FindAllWithIncludesAsync(x => x.ObraId == obraId);
+            var list = await _unitOfWork.ObraFuncionarioRepository.GetByObraIdAsync(obraId); // inclui Funcionario + NoTracking
             return _mapper.Map<List<ObraFuncionarioDto>>(list);
         }
 
@@ -109,7 +109,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var todosFuncionarios = await _unitOfWork.FuncionarioRepository
                 .GetAllIncludingAsync(x => x.Ativo == true, f => f.Funcao); 
 
-            var disponiveis = todosFuncionarios.ToList();
+            var disponiveis = todosFuncionarios.OrderBy(x => x.Nome).ToList();
 
             return _mapper.Map<List<FuncionarioDto>>(disponiveis);
         }
@@ -143,7 +143,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                         ClienteNome = cliente.Nome ?? string.Empty,
                         FuncaoNome = funcao.Nome
                     };
-                }).ToList();
+                }).OrderBy(x => x.Nome).ToList();
 
             return resultado;
 

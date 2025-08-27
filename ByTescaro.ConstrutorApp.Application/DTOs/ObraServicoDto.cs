@@ -5,6 +5,8 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs
     public class ObraServicoDto
     {
         public long Id { get; set; }
+        public long ObraId { get; set; }
+
         public long ObraServicoListaId { get; set; }
         public long ServicoId { get; set; }
         public string? ServicoNome { get; set; } = string.Empty;

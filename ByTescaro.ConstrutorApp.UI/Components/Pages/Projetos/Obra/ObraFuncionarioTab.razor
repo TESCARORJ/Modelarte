@@ -8,17 +8,21 @@
 <RadzenCard Class="pa-4">
     <RadzenHeading Size="H6" Text="Funcionários Alocados na Obra" class="mb-3" />
 
-    <RadzenDropDown TValue="List<long>"
-    Data="@FuncionariosDisponiveis"
-    TextProperty="Nome"
-    ValueProperty="Id"
-    Placeholder="Selecionar Funcionários"
-    Multiple="true"
-    SelectAllText="Selecionar Todos"
-    Style="width: 100%;"
-                    Class="rz-mb-2"
-    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.StartsWith" AllowFiltering="true" @bind-Value="_funcionariosSelecionados" />
+    
 
+    <RadzenDropDown TValue="IEnumerable<long>"
+                    Data="@FuncionariosDisponiveis"
+                    TextProperty="Nome"
+                    ValueProperty="Id"
+                    Placeholder="Selecionar Funcionários"
+                    Multiple="true"
+                    SelectAllText="Selecionar Todos"
+                    Style="width: 100%;"
+                    Class="rz-mb-2"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                    FilterOperator="StringFilterOperator.StartsWith"
+                    AllowFiltering="true"
+                    @bind-Value="_funcionariosSelecionados" />
 
 
     <RadzenRow Style="margin-bottom: 1rem; gap: 0.5rem">
@@ -67,12 +71,14 @@
     [Parameter] public List<FuncionarioDto> FuncionariosDisponiveis { get; set; } = new();
     private bool IsBotaoSalvarDesabilitado => Obra.Funcionarios == null || !Obra.Funcionarios.Any();
     private List<ObraFuncionarioDto> _funcionariosOriginais = new();
-    private List<long> _funcionariosSelecionados = new();
+    private IEnumerable<long> _funcionariosSelecionados = Array.Empty<long>();
+    private long _lastObraIdCarregado = 0;
+
     private bool isLoading = true;
 
 
 
-    private void AdicionarFuncionarios()
+    private async Task AdicionarFuncionarios()
     {
         if (Obra.Funcionarios == null)
             Obra.Funcionarios = new List<ObraFuncionarioDto>();
@@ -104,7 +110,6 @@
             Obra.Funcionarios = Obra.Funcionarios.Concat(novos).ToList();
         }
 
-        _funcionariosSelecionados.Clear();
     }
 
 
@@ -152,91 +157,72 @@
     /// </summary>
     protected override async Task OnParametersSetAsync()
     {
-        // Garante que o Obra.Id seja válido antes de buscar os dados
-        if (Obra != null && Obra.Id > 0)
+        if (Obra?.Id > 0 && Obra.Id != _lastObraIdCarregado)
         {
-            isLoading = true;
+            // 1) Carrega funcionários da obra pelo endpoint dedicado
+            var lista = await ObraFuncionarioApiService.GetByObraIdAsync(Obra.Id)
+                        ?? new List<ObraFuncionarioDto>();
 
-            // Chama o serviço para carregar o checklist associado a esta obra
-            Obra = await ObraApiService.GetByIdAsync(Obra.Id);
+            Obra.Funcionarios = lista.ToList();
+            _funcionariosOriginais = lista.Select(f => new ObraFuncionarioDto
+            {
+                Id = f.Id,
+                FuncionarioId = f.FuncionarioId,
+                ObraId = f.ObraId,
+                FuncionarioNome = f.FuncionarioNome,
+                FuncaoNoObra = f.FuncaoNoObra,
+                DataInicio = f.DataInicio,
+                DataFim = f.DataFim
+            }).ToList();
 
-            isLoading = false;
+            _lastObraIdCarregado = Obra.Id;
+            StateHasChanged();
         }
     }
-
-
 
     protected override async Task OnInitializedAsync()
     {
-        if (!FuncionariosDisponiveis.Any())
-        {
+        // Carrega catálogo de funcionários disponíveis (se o pai não passou)
+        if (FuncionariosDisponiveis == null || FuncionariosDisponiveis.Count == 0)
             FuncionariosDisponiveis = await ObraFuncionarioApiService.GetFuncionariosTotalDisponiveisAsync();
-        }
-
-        // Clona os funcionários atuais para controle de remoções
-        // _funcionariosOriginais = Obra.Funcionarios?.Select(f => new ObraFuncionarioDto
-        //     {
-        //         Id = f.Id,
-        //         FuncionarioId = f.FuncionarioId,
-        //         ObraId = f.ObraId
-        //     }).ToList() ?? new();
-
-        _funcionariosOriginais = await ObraFuncionarioApiService.GetByObraIdAsync(Obra.Id);
-
     }
-
 
     private async Task SalvarFuncionariosAsync()
     {
-
         var validationErrors = await ValidateForm(Obra);
-
-
         if (validationErrors.Any())
         {
-            foreach (var error in validationErrors)
-            {
-                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Erro de Validação", Detail = error, Duration = 5000 });
-            }
+            foreach (var err in validationErrors)
+                NotificationService.Notify(NotificationSeverity.Error, "Erro de Validação", err);
             return;
         }
 
-
-
-       
         try
         {
-            // 🔁 Atualizar e adicionar
-            foreach (var funcionario in Obra.Funcionarios)
+            // Upserts
+            foreach (var f in Obra.Funcionarios)
             {
-                funcionario.ObraId = Obra.Id;               
+                f.ObraId = Obra.Id;
 
-                if (funcionario.Id == 0)
-                    await ObraFuncionarioApiService.CreateAsync(funcionario);
+                if (f.Id == 0)
+                    await ObraFuncionarioApiService.CreateAsync(f); // ideal: service retornar DTO com Id
                 else
-                    await ObraFuncionarioApiService.UpdateAsync(funcionario);
+                    await ObraFuncionarioApiService.UpdateAsync(f);
             }
 
-            // ❌ Remover os que saíram
-            var idsAtuais = Obra.Funcionarios.Select(f => f.Id).ToHashSet();
-            var removidos = _funcionariosOriginais.Where(f => !idsAtuais.Contains(f.Id)).ToList();
+            // Remoções (comparam por vínculo/Id)
+            var idsAtuais = Obra.Funcionarios.Select(x => x.Id).ToHashSet();
+            var removidos = _funcionariosOriginais.Where(x => !idsAtuais.Contains(x.Id) && x.Id > 0).ToList();
+            foreach (var r in removidos)
+                await ObraFuncionarioApiService.DeleteAsync(r.Id);
 
-            foreach (var func in removidos)
-            {
-                if (func.Id > 0)
-                    await ObraFuncionarioApiService.DeleteAsync(func.Id);
-            }
-
-            // ✅ Atualiza o controle de estado original
-            _funcionariosOriginais = Obra.Funcionarios
-                .Select(f => new ObraFuncionarioDto
-                    {
-                        Id = f.Id,
-                        FuncionarioId = f.FuncionarioId,
-                        ObraId = f.ObraId
-                    }).ToList();
+            // 🔄 Recarregar do endpoint dedicado pra consolidar IDs/estado
+            var lista = await ObraFuncionarioApiService.GetByObraIdAsync(Obra.Id) ?? new();
+            Obra.Funcionarios = lista.ToList();
+            _funcionariosOriginais = lista.ToList();
 
             NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Funcionários salvos com sucesso.");
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -244,49 +230,31 @@
         }
     }
 
-    private async Task<List<string>> ValidateForm(ObraDto model)
+    private Task<List<string>> ValidateForm(ObraDto model)
     {
         var errors = new List<string>();
 
-
-        if (string.IsNullOrEmpty(model.Nome))
-        {
-            errors.Add("Campo Noome da Obra é obrigatório.");
-        }
-
+        if (string.IsNullOrWhiteSpace(model.Nome))
+            errors.Add("Campo Nome da Obra é obrigatório.");
 
         if (model.ResponsavelMaterial == null)
-        {
             errors.Add("Selecione o Responsável Materiais.");
-        }
-
 
         if (model.ResponsavelObraId == null)
-        {
             errors.Add("Selecione o Responsável Obra.");
-        }
 
-
-        if (!Obra.Funcionarios.Any())
-        {
+        if (model.Funcionarios == null || !model.Funcionarios.Any())
             errors.Add("Adicione ao menos um funcionário.");
+
+        foreach (var f in model.Funcionarios ?? Enumerable.Empty<ObraFuncionarioDto>())
+        {
+            if (f.DataInicio == default)
+                errors.Add($"Funcionário '{f.FuncionarioNome}' está sem data de início.");
+            if (f.DataFim.HasValue && f.DataFim < f.DataInicio)
+                errors.Add($"Funcionário '{f.FuncionarioNome}' possui data de fim anterior à de início.");
         }
 
-        var erros = new List<string>();
-
-        foreach (var func in Obra.Funcionarios)
-        {
-            if (func.DataInicio == default)
-                erros.Add($"Funcionário '{func.FuncionarioNome}' está sem data de início.");
-
-            if (func.DataFim.HasValue && func.DataFim < func.DataInicio)
-                erros.Add($"Funcionário '{func.FuncionarioNome}' possui data de fim anterior à de início.");
-        }        
-
-
-        return errors;
+        return Task.FromResult(errors);
     }
-
-
 
 }

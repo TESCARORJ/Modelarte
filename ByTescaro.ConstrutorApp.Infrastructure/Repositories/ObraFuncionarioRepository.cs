@@ -16,6 +16,7 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
             return await _dbSet
                 .Where(e => e.ObraId == obraId)
                 .Include(e => e.Funcionario)
+                    .ThenInclude(f => f.Funcao)
                 .AsNoTracking()
                 .ToListAsync();
         }

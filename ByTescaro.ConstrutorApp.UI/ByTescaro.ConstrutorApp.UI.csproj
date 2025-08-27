@@ -16,17 +16,17 @@
 		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="9.0.8" />
 		<PackageReference Include="Radzen.Blazor" Version="7.0.6" />
 	</ItemGroup>
-	
-
-	<ItemGroup>
-	  <Folder Include="wwwroot\Uploads\Projetos\17\16\Imagens\" />
-	</ItemGroup>
 
 
 	<ItemGroup>
 	  <ProjectReference Include="..\ByTescaro.ConstrutorApp.Application\ByTescaro.ConstrutorApp.Application.csproj" />
 	  <ProjectReference Include="..\ByTescaro.ConstrutorApp.Domain\ByTescaro.ConstrutorApp.Domain.csproj" />
 	  <ProjectReference Include="..\ByTescaro.ConstrutorApp.Infrastructure\ByTescaro.ConstrutorApp.Infrastructure.csproj" />
+	</ItemGroup>
+
+
+	<ItemGroup>
+	  <Folder Include="wwwroot\Uploads\Projetos\" />
 	</ItemGroup>
 
 </Project>

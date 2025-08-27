@@ -537,13 +537,20 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-app.UseAntiforgery();
 
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseAntiforgery();
+var apiPrefix = "/api";
+
+// Antiforgery só para rotas que NÃO são API
+app.UseWhen(
+    ctx => !ctx.Request.Path.StartsWithSegments(apiPrefix, StringComparison.OrdinalIgnoreCase),
+    branch =>
+    {
+        branch.UseAntiforgery();
+    });
 
 // Mapeamento da API
 app.MapControllers();

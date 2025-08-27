@@ -121,24 +121,24 @@
     {
         // Se Lista for nula, inicialize-a para evitar NullReferenceException
         Lista ??= new ObraServicoListaDto
-            {
-                ObraId = Obra.Id,
-                Data = DateOnly.FromDateTime(DateTime.Today),
-                Itens = new List<ObraServicoDto>()
-            };
+        {
+            ObraId = Obra.Id,
+            Data = DateOnly.FromDateTime(DateTime.Today),
+            Itens = new List<ObraServicoDto>()
+        };
 
         await LoadServicosData();
 
         if (Lista.Itens != null)
         {
             _servicosOriginais = Lista.Itens.Select(i => new ObraServicoDto
-                {
-                    Id = i.Id,
-                    ObraServicoListaId = i.ObraServicoListaId,
-                    ServicoId = i.ServicoId,
-                    ServicoNome = i.ServicoNome,
-                    Quantidade = i.Quantidade
-                }).ToList();
+            {
+                Id = i.Id,
+                ObraServicoListaId = i.ObraServicoListaId,
+                ServicoId = i.ServicoId,
+                ServicoNome = i.ServicoNome,
+                Quantidade = i.Quantidade
+            }).ToList();
         }
     }
 
@@ -159,9 +159,9 @@
 
         try
         {
+            Lista.ObraId = Obra.Id;
             if (Lista.Id == 0)
             {
-                Lista.ObraId = Obra.Id;
                 var novaLista = await ListaService.CreateAsync(Lista);
                 if (novaLista is not null)
                 {
@@ -178,6 +178,7 @@
             }
             else
             {
+
                 await ListaService.UpdateAsync(Lista);
                 NotificationService.Notify(NotificationSeverity.Success, "Sucesso", "Lista de servicos atualizada com sucesso.");
             }
@@ -185,6 +186,8 @@
             // Notificar o componente pai que uma mudança na lista ocorreu, para que ele recarregue a Obra.
             await OnListChanged.InvokeAsync();
             StateHasChanged(); // Renderiza este componente para refletir o ID, se aplicável
+            await LoadServicosData();
+
         }
         catch (Exception ex)
         {
@@ -247,12 +250,13 @@
                 if (servico is not null)
                 {
                     baseAtualizada.Add(new ObraServicoDto
-                        {
-                            ObraServicoListaId = Lista.Id,
-                            ServicoId = servico.Id,
-                            ServicoNome = servico.Nome,
-                            Quantidade = QuantidadeSelecionada
-                        });
+                    {
+                        ObraServicoListaId = Lista.Id,
+                        ServicoId = servico.Id,
+                        ServicoNome = servico.Nome,
+                        Quantidade = QuantidadeSelecionada,
+                        ObraId = Obra.Id
+                    });
                 }
             }
         }
@@ -270,7 +274,7 @@
         {
             try
             {
-                await ListaService.UpdateAsync(Lista); // Salva as alterações dos itens
+                //await ListaService.UpdateAsync(Lista); // Salva as alterações dos itens
                 NotificationService.Notify(NotificationSeverity.Success, "Atualizado", "Itens adicionados e salvos com sucesso.");
             }
             catch (Exception ex)
