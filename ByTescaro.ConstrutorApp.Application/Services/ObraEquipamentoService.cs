@@ -165,12 +165,17 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     if (obrasDict.TryGetValue(ultimaAlocacao.ObraId, out var obra))
                     {
                         equipDto.ObraNomeAtual = obra.Nome;
-                        
+
+                        if (obra?.Projeto != null)
+                        {
                             equipDto.ProjetoNomeAtual = obra.Projeto.Nome;
-                      
+
+                            if (obra.Projeto.Cliente != null)
+                            {
                                 equipDto.ClienteNomeAtual = obra.Projeto.Cliente.Nome;
-                            
-                       
+                            }
+                        }
+
                     }
                 }
                 resultadoEquipamentosDto.Add(equipDto);
