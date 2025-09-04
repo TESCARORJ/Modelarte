@@ -14,6 +14,8 @@ namespace ByTescaro.ConstrutorApp.Infrastructure.Repositories
         public async Task<Obra?> GetByIdWithRelacionamentosAsync(long id)
         {
             return await _dbSet
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(o => o.Projeto)
                 .Include(o => o.Funcionarios)
                 .Include(o => o.Fornecedores)

@@ -4,6 +4,8 @@ using ByTescaro.ConstrutorApp.Application.Interfaces;
 using ByTescaro.ConstrutorApp.Application.Utils; 
 using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
+using ByTescaro.ConstrutorApp.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -13,49 +15,245 @@ namespace ByTescaro.ConstrutorApp.Application.Services
 {
     public class RelatorioObraService : IRelatorioObraService
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
+        //private readonly IUnitOfWork _unitOfWork;
+        //private readonly IMapper _mapper;
         private readonly ILogger<RelatorioObraService> _logger;
         private readonly IPersonalizacaoService _personalizacaoService;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
 
-        public RelatorioObraService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<RelatorioObraService> logger, IPersonalizacaoService personalizacaoService)
+        public RelatorioObraService(/*IUnitOfWork unitOfWork, IMapper mapper,*/ ILogger<RelatorioObraService> logger, IPersonalizacaoService personalizacaoService, IDbContextFactory<ApplicationDbContext> ctx)
         {
-            _unitOfWork = unitOfWork;
-            _mapper = mapper;
+            //_unitOfWork = unitOfWork;
+            //_mapper = mapper;
             _logger = logger;
 
             QuestPDF.Settings.License = LicenseType.Community;
             _personalizacaoService = personalizacaoService;
+            _dbFactory = ctx;
+        }
+
+        public async Task<ObraRelatorioDto?> GetRelatorioAsync(long obraId, CancellationToken ct = default)
+        {
+            // A) Cabeçalho leve (um contexto dedicado)
+            ObraRelatorioDto? head;
+            using (var ctx = _dbFactory.CreateDbContext())
+            {
+                head = await ctx.Set<Obra>()
+                    .Where(o => o.Id == obraId)
+                    .Select(o => new ObraRelatorioDto
+                    {
+                        Id = o.Id,
+                        NomeObra = o.Nome ?? string.Empty,
+                        Status = o.Status.ToString(),
+                        DataInicioObra = o.DataInicioExecucao ?? DateTime.MinValue,
+                        ClienteNome = o.Projeto.Cliente.Nome ?? string.Empty,
+                        ProjetoNome = o.Projeto.Nome ?? string.Empty
+                    })
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(ct);
+            }
+
+            if (head == null) return null;
+
+            // Funções locais: cada uma cria e fecha seu próprio DbContext
+            async Task<List<ObraEtapaRelatorioDto>> LoadEtapasAsync()
+            {
+                using var ctx = _dbFactory.CreateDbContext();
+                return await ctx.Set<ObraEtapa>()
+                    .Where(e => e.ObraId == obraId && e.Ativo == true)
+                    .Select(e => new ObraEtapaRelatorioDto
+                    {
+                        // Id removido (não existe no DTO)
+                        Nome = e.Nome ?? string.Empty,
+                        DataInicioPrevista = e.DataInicio ?? DateTime.MinValue,
+                        Itens = e.Itens
+                            .Where(i => i.Ativo == true)
+                            .Select(i => new ObraItemEtapaRelatorioDto
+                            {
+                                Nome = i.Nome ?? string.Empty,
+                                Concluido = i.Concluido
+                            }).ToList()
+                    })
+                    .AsNoTracking()
+                    .ToListAsync(ct);
+            }
+
+            async Task<List<ObraInsumoRelatorioDto>> LoadInsumosAsync()
+            {
+                using var ctx = _dbFactory.CreateDbContext();
+
+                // Evita subquery com outro contexto: faz os JOINs aqui
+                var query =
+                    from oi in ctx.Set<ObraInsumo>()
+                    where oi.ObraId == obraId
+                    join oil in ctx.Set<ObraInsumoLista>() on oi.ObraInsumoListaId equals oil.Id into oilj
+                    from oil in oilj.DefaultIfEmpty()
+                    join p in ctx.Set<Pessoa>() on oil.ResponsavelId equals p.Id into pj
+                    from p in pj.DefaultIfEmpty()
+                    select new ObraInsumoRelatorioDto
+                    {
+                        InsumoNome = oi.Insumo.Nome ?? string.Empty,
+                        UnidadeMedida = oi.Insumo.UnidadeMedida, // atribui enum diretamente
+                        Quantidade = oi.Quantidade,
+                        IsRecebido = oi.IsRecebido,
+                        DataRecebimento = oi.DataRecebimento,
+                        ResponsavelRecbimentoNome = p != null ? p.Nome : null
+                    };
+
+                return await query.AsNoTracking().ToListAsync(ct);
+            }
+
+            async Task<List<ObraFuncionarioRelatorioDto>> LoadFuncionariosAsync()
+            {
+                using var ctx = _dbFactory.CreateDbContext();
+                return await ctx.Set<ObraFuncionario>()
+                    .Where(x => x.ObraId == obraId)
+                    .Select(x => new ObraFuncionarioRelatorioDto
+                    {
+                        FuncionarioNome = x.FuncionarioNome ?? string.Empty,
+                        FuncaoNoObra = x.FuncaoNoObra,
+                        DataInicio = x.DataInicio,
+                        DataFim = x.DataFim
+                    })
+                    .AsNoTracking()
+                    .ToListAsync(ct);
+            }
+
+            async Task<List<ObraEquipamentoRelatorioDto>> LoadEquipamentosAsync()
+            {
+                using var ctx = _dbFactory.CreateDbContext();
+                return await ctx.Set<ObraEquipamento>()
+                    .Where(x => x.ObraId == obraId)
+                    .Select(x => new ObraEquipamentoRelatorioDto
+                    {
+                        EquipamentoNome = x.EquipamentoNome ?? string.Empty,
+                        DataInicioUso = x.DataInicioUso,
+                        DataFimUso = x.DataFimUso
+                    })
+                    .AsNoTracking()
+                    .ToListAsync(ct);
+            }
+
+            async Task<List<ObraRetrabalhoRelatorioDto>> LoadRetrabalhosAsync()
+            {
+                using var ctx = _dbFactory.CreateDbContext();
+
+                var query =
+                    from r in ctx.Set<ObraRetrabalho>()
+                    where r.ObraId == obraId
+                    join p in ctx.Set<Pessoa>() on r.ResponsavelId equals p.Id into pj
+                    from p in pj.DefaultIfEmpty()
+                    select new ObraRetrabalhoRelatorioDto
+                    {
+                        Descricao = r.Descricao ?? string.Empty,
+                        Status = r.Status, // atribui enum diretamente
+                        NomeResponsavel = p != null ? p.Nome : null
+                    };
+
+                return await query.AsNoTracking().ToListAsync(ct);
+            }
+
+            async Task<List<ObraPendenciaRelatorioDto>> LoadPendenciasAsync()
+            {
+                using var ctx = _dbFactory.CreateDbContext();
+
+                var query =
+                    from pnd in ctx.Set<ObraPendencia>()
+                    where pnd.ObraId == obraId
+                    join p in ctx.Set<Pessoa>() on pnd.ResponsavelId equals p.Id into pj
+                    from p in pj.DefaultIfEmpty()
+                    select new ObraPendenciaRelatorioDto
+                    {
+                        Descricao = pnd.Descricao ?? string.Empty,
+                        Status = pnd.Status, // atribui enum diretamente
+                        NomeResponsavel = p != null ? p.Nome : null
+                    };
+
+                return await query.AsNoTracking().ToListAsync(ct);
+            }
+
+            async Task<List<ObraDocumentoRelatorioDto>> LoadDocumentosAsync()
+            {
+                using var ctx = _dbFactory.CreateDbContext();
+                return await ctx.Set<ObraDocumento>()
+                    .Where(x => x.ObraId == obraId)
+                    .Select(x => new ObraDocumentoRelatorioDto
+                    {
+                        NomeOriginal = x.NomeOriginal ?? string.Empty,
+                        Extensao = x.Extensao ?? string.Empty
+                    })
+                    .AsNoTracking()
+                    .ToListAsync(ct);
+            }
+
+            async Task<List<ObraImagemRelatorioDto>> LoadImagensAsync()
+            {
+                using var ctx = _dbFactory.CreateDbContext();
+                return await ctx.Set<ObraImagem>()
+                    .Where(x => x.ObraId == obraId)
+                    .Select(x => new ObraImagemRelatorioDto
+                    {
+                        CaminhoRelativo = x.CaminhoRelativo ?? string.Empty
+                    })
+                    .AsNoTracking()
+                    .ToListAsync(ct);
+            }
+
+            // Dispara em paralelo, cada um com seu próprio contexto:
+            var etapasTask = LoadEtapasAsync();
+            var insumosTask = LoadInsumosAsync();
+            var funcsTask = LoadFuncionariosAsync();
+            var equipsTask = LoadEquipamentosAsync();
+            var retrabTask = LoadRetrabalhosAsync();
+            var pendTask = LoadPendenciasAsync();
+            var docsTask = LoadDocumentosAsync();
+            var imgsTask = LoadImagensAsync();
+
+            await Task.WhenAll(etapasTask, insumosTask, funcsTask, equipsTask, retrabTask, pendTask, docsTask, imgsTask);
+
+            head.Etapas = etapasTask.Result;
+            head.Insumos = insumosTask.Result;
+            head.Funcionarios = funcsTask.Result;
+            head.Equipamentos = equipsTask.Result;
+            head.Retrabalhos = retrabTask.Result;
+            head.Pendencias = pendTask.Result;
+            head.Documentos = docsTask.Result;
+            head.Imagens = imgsTask.Result;
+
+            return head;
         }
 
         public async Task<byte[]> GerarRelatorioObraPdfAsync(long obraId)
         {
-            _logger.LogInformation($"Gerando relatório para a Obra ID: {obraId}");
+            _logger.LogInformation("Gerando relatório para a Obra ID: {ObraId}", obraId);
 
-            var obra = await _unitOfWork.ObraRepository.GetByIdWithRelacionamentosAsync(obraId);
-
-            if (obra == null)
-            {
-                _logger.LogWarning($"Obra com ID {obraId} não encontrada para geração de relatório.");
+            var dto = await GetRelatorioAsync(obraId);
+            if (dto == null)
                 throw new KeyNotFoundException($"Obra com ID {obraId} não encontrada.");
-            }
 
-            var personalizacao = await _personalizacaoService.ObterAsync();
-
-            var obraRelatorioDto = _mapper.Map<ObraRelatorioDto>(obra);
-
-            obraRelatorioDto.ProgressoAtual = CalcularProgressoObra(obra);
-            //obraRelatorioDto.OrcamentoTotal = CalcularOrcamentoTotalObra(obra);
-
-            foreach (var etapa in obraRelatorioDto.Etapas)
+            // Calcula % por etapa e progresso geral
+            foreach (var e in dto.Etapas)
             {
-                var etapaOriginal = obra.Etapas.FirstOrDefault(e => e.Nome == etapa.Nome);
-                if (etapaOriginal != null)
-                {
-                    etapa.PercentualConclusao = CalcularProgressoEtapa(etapaOriginal);
-                }
+                e.PercentualConclusao = e.Itens.Count == 0
+                    ? 0
+                    : (int)Math.Round(100.0 * e.Itens.Count(i => i.Concluido) / e.Itens.Count);
             }
+            dto.ProgressoAtual = dto.Etapas.Count == 0
+                ? 0
+                : (int)Math.Round(dto.Etapas.Average(x => x.PercentualConclusao));
 
+            // Personalização + pré-carrega imagens (sem I/O no compose)
+            var personalizacao = await _personalizacaoService.ObterAsync();
+            string webRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            byte[]? logoBytes = TryLoadBytesSafe(CombineSafe(webRoot, personalizacao?.LogotipoUrl));
+
+            var imagensBytes = dto.Imagens.Select(img =>
+            {
+                var path = CombineSafe(webRoot, img.CaminhoRelativo);
+                return new { img, bytes = TryLoadBytesSafe(path) };
+            }).ToList();
+
+            // Compose do PDF (igual ao seu, usando logoBytes e bytes das imagens)
             var document = Document.Create(container =>
             {
                 container.Page(page =>
@@ -64,57 +262,34 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     page.Margin(50);
                     page.DefaultTextStyle(x => x.FontSize(10));
 
-                    page.Header()
-                        .PaddingBottom(10)
-                        .Row(row =>
+                    page.Header().PaddingBottom(10).Row(row =>
+                    {
+                        row.RelativeItem(1).AlignLeft().Column(col =>
                         {
-                            // Coluna para o logotipo
-                            row.RelativeItem(1)
-                                .AlignLeft()
-                                .Column(col =>
-                                {
-                                    if (!string.IsNullOrEmpty(personalizacao.LogotipoUrl))
-                                    {
-                                        var logoPath = Path.Combine("wwwroot", personalizacao.LogotipoUrl);
-                                        if (System.IO.File.Exists(logoPath))
-                                        {
-                                            col.Item().Height(50).Image(logoPath).FitArea();
-                                        }
-                                        else
-                                        {
-                                            col.Item().Text("Logotipo não encontrado").FontSize(8).FontColor(Colors.Red.Medium);
-                                        }
-                                    }
-                                });
-
-                            // Coluna para o título do relatório
-                            row.RelativeItem(3)
-                                .AlignCenter()
-                                .Text(text =>
-                                {
-                                    text.AlignCenter();
-                                    text.Span($"Relatório da Obra: {obraRelatorioDto.NomeObra}")
-                                        .SemiBold().FontSize(18);
-
-                                    text.EmptyLine();
-
-                                    if (!string.IsNullOrEmpty(personalizacao.NomeEmpresa))
-                                    {
-                                        text.AlignCenter();
-                                        text.Span(personalizacao.NomeEmpresa)
-                                            .SemiBold().FontSize(12);
-                                    }
-                                });
-
-                            // Coluna vazia para alinhamento
-                            row.RelativeItem(1);
+                            if (logoBytes != null)
+                                col.Item().Height(50).Image(logoBytes).FitArea();
+                            else if (!string.IsNullOrEmpty(personalizacao?.LogotipoUrl))
+                                col.Item().Text("Logotipo não encontrado").FontSize(8).FontColor(Colors.Red.Medium);
                         });
+
+                        row.RelativeItem(3).AlignCenter().Text(t =>
+                        {
+                            t.AlignCenter();
+                            t.Span($"Relatório da Obra: {dto.NomeObra}").SemiBold().FontSize(18);
+                            t.EmptyLine();
+                            if (!string.IsNullOrEmpty(personalizacao?.NomeEmpresa))
+                                t.Span(personalizacao.NomeEmpresa).SemiBold().FontSize(12);
+                        });
+
+                        row.RelativeItem(1);
+                    });
 
                     page.Content()
                         .Column(column =>
                         {
                             column.Spacing(20);
 
+                            // ——— Informações Gerais ———
                             column.Item().Text("Informações Gerais").SemiBold().FontSize(14);
                             column.Item().Table(table =>
                             {
@@ -125,31 +300,25 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                 });
 
                                 table.Cell().Text("ID da Obra:").SemiBold();
-                                table.Cell().Text(obraRelatorioDto.Id.ToString());
+                                table.Cell().Text(dto.Id.ToString());
                                 table.Cell().Text("Cliente:").SemiBold();
-                                table.Cell().Text(obraRelatorioDto.ClienteNome);
+                                table.Cell().Text(dto.ClienteNome);
                                 table.Cell().Text("Projeto:").SemiBold();
-                                table.Cell().Text(obraRelatorioDto.ProjetoNome);
+                                table.Cell().Text(dto.ProjetoNome);
                                 table.Cell().Text("Status:").SemiBold();
-                                table.Cell().Text(obraRelatorioDto.Status);
+                                table.Cell().Text(dto.Status);
                                 table.Cell().Text("Data Início:").SemiBold();
-                                table.Cell().Text(obraRelatorioDto.DataInicioObra.ToShortDateString());
-                                //table.Cell().Text("Conclusão Prevista:").SemiBold();
-                                //table.Cell().Text(obraRelatorioDto.DataConclusaoPrevista?.ToShortDateString() ?? "N/A");
+                                table.Cell().Text(dto.DataInicioObra.ToShortDateString());
                                 table.Cell().Text("Progresso Atual:").SemiBold();
-                                table.Cell().Text($"{obraRelatorioDto.ProgressoAtual}%");
-                                //table.Cell().Text("Orçamento Total:").SemiBold();
-                                //table.Cell().Text(obraRelatorioDto.OrcamentoTotal.ToString("C"));
-                                //table.Cell().Text("Descrição:").SemiBold();
-                                //table.Cell().Text(obraRelatorioDto.Descricao);
+                                table.Cell().Text($"{dto.ProgressoAtual}%");
                             });
 
-                            if (obraRelatorioDto.Etapas.Any())
+                            // ——— Etapas ———
+                            if (dto.Etapas.Any())
                             {
-                                column.Item().PaddingTop(10)
-                                    .Text("Etapas").SemiBold().FontSize(14);
+                                column.Item().PaddingTop(10).Text("Etapas").SemiBold().FontSize(14);
 
-                                foreach (var etapa in obraRelatorioDto.Etapas.OrderBy(e => e.DataInicioPrevista))
+                                foreach (var etapa in dto.Etapas.OrderBy(e => e.DataInicioPrevista))
                                 {
                                     column.Item()
                                         .BorderBottom(1).BorderColor(Colors.Grey.Lighten2).PaddingBottom(10)
@@ -157,7 +326,6 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                         {
                                             etapaColumn.Spacing(5);
                                             etapaColumn.Item().Text($"{etapa.Nome} ({etapa.PercentualConclusao}%)").SemiBold();
-                                            //etapaColumn.Item().Text($"Período: {etapa.DataInicioPrevista.ToShortDateString()} - {etapa.DataConclusaoPrevista?.ToShortDateString() ?? "N/A"}");
                                             etapaColumn.Item().Text(etapa.Descricao);
 
                                             if (etapa.Itens.Any())
@@ -176,46 +344,46 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                 }
                             }
 
-                            if (obraRelatorioDto.Insumos.Any())
+                            // ——— Insumos ———
+                            if (dto.Insumos.Any())
                             {
-                                column.Item().PaddingTop(10)
-                                    .Text("Insumos Utilizados").SemiBold().FontSize(14);
+                                column.Item().PaddingTop(10).Text("Insumos Utilizados").SemiBold().FontSize(14);
 
-                                var insumosAgrupados = obraRelatorioDto.Insumos
+                                var insumosAgrupados = dto.Insumos
                                     .GroupBy(i => i.ResponsavelRecbimentoNome ?? "Não Informado")
                                     .OrderBy(g => g.Key);
 
-                                foreach (var grupoResponsavel in insumosAgrupados)
+                                foreach (var grupo in insumosAgrupados)
                                 {
                                     column.Item()
                                         .BorderBottom(1).BorderColor(Colors.Grey.Lighten3).PaddingBottom(10)
                                         .Column(responsavelColumn =>
                                         {
                                             responsavelColumn.Spacing(5);
-                                            responsavelColumn.Item().PaddingBottom(5).Text($"Recebido por: {grupoResponsavel.Key}")
-                                                .SemiBold().FontSize(12);
+                                            responsavelColumn.Item().PaddingBottom(5)
+                                                .Text($"Recebido por: {grupo.Key}").SemiBold().FontSize(12);
 
                                             responsavelColumn.Item().Table(table =>
                                             {
-                                                table.ColumnsDefinition(columns =>
+                                                table.ColumnsDefinition(c =>
                                                 {
-                                                    columns.RelativeColumn(3);
-                                                    columns.RelativeColumn();
-                                                    columns.RelativeColumn();
-                                                    columns.RelativeColumn();
-                                                    columns.RelativeColumn();
+                                                    c.RelativeColumn(3);
+                                                    c.RelativeColumn();
+                                                    c.RelativeColumn();
+                                                    c.RelativeColumn();
+                                                    c.RelativeColumn();
                                                 });
 
-                                                table.Header(header =>
+                                                table.Header(h =>
                                                 {
-                                                    header.Cell().BorderBottom(1).Padding(3).Text("Insumo").SemiBold();
-                                                    header.Cell().BorderBottom(1).Padding(0).Text("Unidade").SemiBold();
-                                                    header.Cell().BorderBottom(1).Padding(0).Text("Qtd").SemiBold();
-                                                    header.Cell().BorderBottom(1).Padding(0).Text("Recebido?").SemiBold();
-                                                    header.Cell().BorderBottom(1).Padding(0).Text("Recebido em:").SemiBold();
+                                                    h.Cell().BorderBottom(1).Padding(3).Text("Insumo").SemiBold();
+                                                    h.Cell().BorderBottom(1).Padding(0).Text("Unidade").SemiBold();
+                                                    h.Cell().BorderBottom(1).Padding(0).Text("Qtd").SemiBold();
+                                                    h.Cell().BorderBottom(1).Padding(0).Text("Recebido?").SemiBold();
+                                                    h.Cell().BorderBottom(1).Padding(0).Text("Recebido em:").SemiBold();
                                                 });
 
-                                                foreach (var insumo in grupoResponsavel.OrderBy(i => i.InsumoNome))
+                                                foreach (var insumo in grupo.OrderBy(i => i.InsumoNome))
                                                 {
                                                     table.Cell().Padding(3).Text(insumo.InsumoNome);
                                                     table.Cell().Padding(0).Text(EnumHelper.ObterDescricaoEnum(insumo.UnidadeMedida));
@@ -228,10 +396,10 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                 }
                             }
 
-                            if (obraRelatorioDto.Funcionarios.Any())
+                            // ——— Funcionários ———
+                            if (dto.Funcionarios.Any())
                             {
-                                column.Item().PaddingTop(10)
-                                    .Text("Funcionários Alocados").SemiBold().FontSize(14);
+                                column.Item().PaddingTop(10).Text("Funcionários Alocados").SemiBold().FontSize(14);
                                 column.Item().Table(table =>
                                 {
                                     table.ColumnsDefinition(columns =>
@@ -250,20 +418,20 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                         header.Cell().BorderBottom(1).Padding(5).Text("Fim").SemiBold();
                                     });
 
-                                    foreach (var func in obraRelatorioDto.Funcionarios)
+                                    foreach (var f in dto.Funcionarios)
                                     {
-                                        table.Cell().Padding(2).Text(func.FuncionarioNome);
-                                        table.Cell().Padding(2).Text(func.FuncaoNoObra);
-                                        table.Cell().Padding(2).Text(func.DataInicio.ToShortDateString());
-                                        table.Cell().Padding(2).Text(func.DataFim?.ToShortDateString() ?? "N/A");
+                                        table.Cell().Padding(2).Text(f.FuncionarioNome);
+                                        table.Cell().Padding(2).Text(f.FuncaoNoObra);
+                                        table.Cell().Padding(2).Text(f.DataInicio.ToShortDateString());
+                                        table.Cell().Padding(2).Text(f.DataFim?.ToShortDateString() ?? "N/A");
                                     }
                                 });
                             }
 
-                            if (obraRelatorioDto.Equipamentos.Any())
+                            // ——— Equipamentos ———
+                            if (dto.Equipamentos.Any())
                             {
-                                column.Item().PaddingTop(10)
-                                    .Text("Equipamentos Alocados").SemiBold().FontSize(14);
+                                column.Item().PaddingTop(10).Text("Equipamentos Alocados").SemiBold().FontSize(14);
                                 column.Item().Table(table =>
                                 {
                                     table.ColumnsDefinition(columns =>
@@ -280,19 +448,19 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                         header.Cell().BorderBottom(1).Padding(5).Text("Fim").SemiBold();
                                     });
 
-                                    foreach (var equip in obraRelatorioDto.Equipamentos)
+                                    foreach (var e in dto.Equipamentos)
                                     {
-                                        table.Cell().Padding(2).Text(equip.EquipamentoNome);
-                                        table.Cell().Padding(2).Text(equip.DataInicioUso.ToShortDateString());
-                                        table.Cell().Padding(2).Text(equip.DataFimUso?.ToShortDateString() ?? "N/A");
+                                        table.Cell().Padding(2).Text(e.EquipamentoNome);
+                                        table.Cell().Padding(2).Text(e.DataInicioUso.ToShortDateString());
+                                        table.Cell().Padding(2).Text(e.DataFimUso?.ToShortDateString() ?? "N/A");
                                     }
                                 });
                             }
-                            
-                            if (obraRelatorioDto.Retrabalhos.Any())
+
+                            // ——— Retrabalhos ———
+                            if (dto.Retrabalhos.Any())
                             {
-                                column.Item().PaddingTop(10)
-                                    .Text("Retrabalhos").SemiBold().FontSize(14);
+                                column.Item().PaddingTop(10).Text("Retrabalhos").SemiBold().FontSize(14);
                                 column.Item().Table(table =>
                                 {
                                     table.ColumnsDefinition(columns =>
@@ -300,7 +468,6 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                         columns.RelativeColumn(2);
                                         columns.RelativeColumn();
                                         columns.RelativeColumn();
-                                        
                                     });
 
                                     table.Header(header =>
@@ -310,19 +477,19 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                         header.Cell().BorderBottom(1).Padding(5).Text("Status").SemiBold();
                                     });
 
-                                    foreach (var retrab in obraRelatorioDto.Retrabalhos)
+                                    foreach (var r in dto.Retrabalhos)
                                     {
-                                        table.Cell().Padding(2).Text(retrab.Descricao);
-                                        table.Cell().Padding(2).Text(retrab.NomeResponsavel);
-                                        table.Cell().Padding(2).Text(EnumHelper.ObterDescricaoEnum(retrab.Status));
+                                        table.Cell().Padding(2).Text(r.Descricao);
+                                        table.Cell().Padding(2).Text(r.NomeResponsavel);
+                                        table.Cell().Padding(2).Text(EnumHelper.ObterDescricaoEnum(r.Status));
                                     }
                                 });
                             }
 
-                            if (obraRelatorioDto.Pendencias.Any())
+                            // ——— Pendências ———
+                            if (dto.Pendencias.Any())
                             {
-                                column.Item().PaddingTop(10)
-                                    .Text("Pendências").SemiBold().FontSize(14);
+                                column.Item().PaddingTop(10).Text("Pendências").SemiBold().FontSize(14);
                                 column.Item().Table(table =>
                                 {
                                     table.ColumnsDefinition(columns =>
@@ -330,7 +497,6 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                         columns.RelativeColumn(2);
                                         columns.RelativeColumn();
                                         columns.RelativeColumn();
-
                                     });
 
                                     table.Header(header =>
@@ -340,88 +506,61 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                         header.Cell().BorderBottom(1).Padding(5).Text("Status").SemiBold();
                                     });
 
-                                    foreach (var pend in obraRelatorioDto.Pendencias)
+                                    foreach (var p in dto.Pendencias)
                                     {
-                                        table.Cell().Padding(2).Text(pend.Descricao);
-                                        table.Cell().Padding(2).Text(pend.NomeResponsavel);
-                                        table.Cell().Padding(2).Text(EnumHelper.ObterDescricaoEnum(pend.Status));
+                                        table.Cell().Padding(2).Text(p.Descricao);
+                                        table.Cell().Padding(2).Text(p.NomeResponsavel);
+                                        table.Cell().Padding(2).Text(EnumHelper.ObterDescricaoEnum(p.Status));
                                     }
                                 });
                             }
 
-                            if (obraRelatorioDto.Documentos.Any())
+                            // ——— Documentos ———
+                            if (dto.Documentos.Any())
                             {
-                                column.Item().PaddingTop(10)
-                                    .Text("Documentos").SemiBold().FontSize(14);
-                                foreach (var doc in obraRelatorioDto.Documentos)
-                                {
-                                    column.Item().Text($"- {doc.NomeOriginal} ({doc.Extensao})");
-                                }
+                                column.Item().PaddingTop(10).Text("Documentos").SemiBold().FontSize(14);
+                                foreach (var d in dto.Documentos)
+                                    column.Item().Text($"- {d.NomeOriginal} ({d.Extensao})");
                             }
 
-                            if (obraRelatorioDto.Imagens.Any())
+                            // ——— Imagens ———
+                            if (dto.Imagens.Any())
                             {
-                                column.Item().PaddingTop(10)
-                                    .Text("Imagens").SemiBold().FontSize(14);
+                                column.Item().PaddingTop(10).Text("Imagens").SemiBold().FontSize(14);
 
-                                // Substituído Grid por Column e Row
                                 column.Item().Column(imageContainer =>
                                 {
-                                    const int colunas = 3; // Número de colunas desejado
-                                    var imagens = obraRelatorioDto.Imagens.ToList();
+                                    const int colunas = 3;
+                                    var blocos = imagensBytes.Chunk(colunas);
 
-                                    // Iterar pelas imagens em blocos de 'colunas'
-                                    for (int i = 0; i < imagens.Count; i += colunas)
+                                    foreach (var bloco in blocos)
                                     {
-                                        var imagensDaLinha = imagens.Skip(i).Take(colunas).ToList();
-
                                         imageContainer.Item().Row(row =>
                                         {
-                                            row.Spacing(5); // Espaçamento entre as imagens na linha
+                                            row.Spacing(5);
 
-                                            foreach (var img in imagensDaLinha)
+                                            foreach (var entry in bloco)
                                             {
-                                                row.RelativeItem().Column(imgCol => // Usar Column dentro de Row para cada imagem
+                                                row.RelativeItem().Column(imgCol =>
                                                 {
-                                                    try
+                                                    if (entry.bytes != null)
                                                     {
-                                                        var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", img.CaminhoRelativo.TrimStart('/'));
-                                                        if (System.IO.File.Exists(imagePath))
-                                                        {
-                                                            imgCol.Item().Height(100).Width(100).Padding(5)
-                                                                .Image(imagePath).FitArea();
-                                                        }
-                                                        else
-                                                        {
-                                                            _logger.LogWarning($"Imagem não encontrada no caminho: {imagePath}");
-                                                            imgCol.Item().Height(100).Width(100).Padding(5)
-                                                                .AlignCenter().AlignMiddle()
-                                                                .Text("Imagem não encontrada").FontSize(8);
-                                                        }
+                                                        // (2) usa bytes pré-carregados (sem I/O no compose)
+                                                        imgCol.Item().Height(100).Width(100).Padding(5)
+                                                            .Image(entry.bytes).FitArea();
                                                     }
-                                                    catch (Exception ex)
+                                                    else
                                                     {
-                                                        _logger.LogError(ex, $"Erro ao carregar imagem para o relatório: {img.CaminhoRelativo}");
                                                         imgCol.Item().Height(100).Width(100).Padding(5)
                                                             .AlignCenter().AlignMiddle()
-                                                            .Text("Erro ao carregar imagem").FontSize(8);
+                                                            .Text("Imagem não encontrada").FontSize(8);
                                                     }
                                                 });
                                             }
 
-                                            // Adicionar itens vazios para preencher a linha se houver menos imagens que o número de colunas
-                                            int colunasFaltantes = colunas - imagensDaLinha.Count;
-                                            for (int j = 0; j < colunasFaltantes; j++)
-                                            {
-                                                row.RelativeItem().Text(string.Empty); // Adiciona um espaço vazio
-                                            }
+                                            for (int i = bloco.Length; i < colunas; i++)
+                                                row.RelativeItem().Text(string.Empty);
                                         });
-
-                                        // Adicionar um pequeno padding entre as linhas de imagens
-                                        if (i + colunas < imagens.Count)
-                                        {
-                                            imageContainer.Item().PaddingBottom(5).Text(string.Empty);
-                                        }
                                     }
                                 });
                             }
@@ -441,7 +580,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 });
             });
 
-            return document.GeneratePdf();
+            return await Task.Run(() => document.GeneratePdf());
         }
 
         private int CalcularProgressoObra(Obra obra)
@@ -473,12 +612,21 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             return (int)Math.Round((double)itensConcluidos / totalItens * 100);
         }
 
-        //private decimal CalcularOrcamentoTotalObra(Obra obra)
-        //{
-        //    if (obra?.Orcamentos == null || !obra.Orcamentos.Any())
-        //        return 0;
+        private static string CombineSafe(string root, string? relative)
+        {
+            relative = (relative ?? string.Empty).Trim().TrimStart('/', '\\');
+            return Path.Combine(root, relative);
+        }
 
-        //    return obra.Orcamentos.Sum(o => o.ValorTotal);
-        //}
+        private static byte[]? TryLoadBytesSafe(string path)
+        {
+            try
+            {
+                if (File.Exists(path))
+                    return File.ReadAllBytes(path);
+            }
+            catch { /* silencioso para não travar render */ }
+            return null;
+        }
     }
 }

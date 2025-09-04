@@ -93,8 +93,15 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString, sqlOptions =>
-        sqlOptions.EnableRetryOnFailure(3, TimeSpan.FromSeconds(10), null)));
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
+        sql =>
+        {
+            sql.CommandTimeout(120);
+            sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+        });
+    options.EnableSensitiveDataLogging(false);
+});
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
