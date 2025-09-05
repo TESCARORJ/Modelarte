@@ -1,9 +1,7 @@
-﻿using AutoMapper;
-using ByTescaro.ConstrutorApp.Application.DTOs.Relatorios;
+﻿using ByTescaro.ConstrutorApp.Application.DTOs.Relatorios;
 using ByTescaro.ConstrutorApp.Application.Interfaces;
-using ByTescaro.ConstrutorApp.Application.Utils; 
+using ByTescaro.ConstrutorApp.Application.Utils;
 using ByTescaro.ConstrutorApp.Domain.Entities;
-using ByTescaro.ConstrutorApp.Domain.Interfaces;
 using ByTescaro.ConstrutorApp.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -60,14 +58,13 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             {
                 using var ctx = _dbFactory.CreateDbContext();
                 return await ctx.Set<ObraEtapa>()
-                    .Where(e => e.ObraId == obraId && e.Ativo == true)
+                    .Where(e => e.ObraId == obraId)
                     .Select(e => new ObraEtapaRelatorioDto
                     {
                         // Id removido (não existe no DTO)
                         Nome = e.Nome ?? string.Empty,
                         DataInicioPrevista = e.DataInicio ?? DateTime.MinValue,
                         Itens = e.Itens
-                            .Where(i => i.Ativo == true)
                             .Select(i => new ObraItemEtapaRelatorioDto
                             {
                                 Nome = i.Nome ?? string.Empty,
@@ -97,6 +94,29 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                         Quantidade = oi.Quantidade,
                         IsRecebido = oi.IsRecebido,
                         DataRecebimento = oi.DataRecebimento,
+                        ResponsavelRecbimentoNome = p != null ? p.Nome : null
+                    };
+
+                return await query.AsNoTracking().ToListAsync(ct);
+            }
+
+
+            async Task<List<ObraServicoRelatorioDto>> LoadServicosAsync()
+            {
+                using var ctx = _dbFactory.CreateDbContext();
+
+                // Evita subquery com outro contexto: faz os JOINs aqui
+                var query =
+                    from oi in ctx.Set<ObraServico>()
+                    where oi.ObraId == obraId
+                    join oil in ctx.Set<ObraServicoLista>() on oi.ObraServicoListaId equals oil.Id into oilj
+                    from oil in oilj.DefaultIfEmpty()
+                    join p in ctx.Set<Pessoa>() on oil.ResponsavelId equals p.Id into pj
+                    from p in pj.DefaultIfEmpty()
+                    select new ObraServicoRelatorioDto
+                    {
+                        ServicoNome = oi.Servico.Nome ?? string.Empty,
+                        Quantidade = oi.Quantidade,           
                         ResponsavelRecbimentoNome = p != null ? p.Nome : null
                     };
 
@@ -202,6 +222,7 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             // Dispara em paralelo, cada um com seu próprio contexto:
             var etapasTask = LoadEtapasAsync();
             var insumosTask = LoadInsumosAsync();
+            var servicosTask = LoadServicosAsync();
             var funcsTask = LoadFuncionariosAsync();
             var equipsTask = LoadEquipamentosAsync();
             var retrabTask = LoadRetrabalhosAsync();
@@ -209,10 +230,11 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             var docsTask = LoadDocumentosAsync();
             var imgsTask = LoadImagensAsync();
 
-            await Task.WhenAll(etapasTask, insumosTask, funcsTask, equipsTask, retrabTask, pendTask, docsTask, imgsTask);
+            await Task.WhenAll(etapasTask, insumosTask, servicosTask, funcsTask, equipsTask, retrabTask, pendTask, docsTask, imgsTask);
 
             head.Etapas = etapasTask.Result;
             head.Insumos = insumosTask.Result;
+            head.Servicos = servicosTask.Result;
             head.Funcionarios = funcsTask.Result;
             head.Equipamentos = equipsTask.Result;
             head.Retrabalhos = retrabTask.Result;
@@ -234,13 +256,12 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             // Calcula % por etapa e progresso geral
             foreach (var e in dto.Etapas)
             {
-                e.PercentualConclusao = e.Itens.Count == 0
-                    ? 0
-                    : (int)Math.Round(100.0 * e.Itens.Count(i => i.Concluido) / e.Itens.Count);
+                e.PercentualConclusao = CalcularProgressoEtapa(e);
+
             }
-            dto.ProgressoAtual = dto.Etapas.Count == 0
-                ? 0
-                : (int)Math.Round(dto.Etapas.Average(x => x.PercentualConclusao));
+
+
+            dto.ProgressoAtual = CalcularProgressoObra(dto);
 
             // Personalização + pré-carrega imagens (sem I/O no compose)
             var personalizacao = await _personalizacaoService.ObterAsync();
@@ -390,6 +411,52 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                                                     table.Cell().Padding(0).Text(insumo.Quantidade.ToString("N2"));
                                                     table.Cell().Padding(0).Text(insumo.IsRecebido ? "Sim" : "Não");
                                                     table.Cell().Padding(0).Text(insumo.DataRecebimento?.ToShortDateString() ?? string.Empty);
+                                                }
+                                            });
+                                        });
+                                }
+                            }
+
+                            // ——— Servicos ———
+                            if (dto.Servicos.Any())
+                            {
+                                column.Item().PaddingTop(10).Text("Serviços Utilizados").SemiBold().FontSize(14);
+
+                                var servicosAgrupados = dto.Servicos
+                                    .GroupBy(i => i.ResponsavelRecbimentoNome ?? "Não Informado")
+                                    .OrderBy(g => g.Key);
+
+                                foreach (var grupo in servicosAgrupados)
+                                {
+                                    column.Item()
+                                        .BorderBottom(1).BorderColor(Colors.Grey.Lighten3).PaddingBottom(10)
+                                        .Column(responsavelColumn =>
+                                        {
+                                            responsavelColumn.Spacing(5);
+                                            responsavelColumn.Item().PaddingBottom(5)
+                                                .Text($"Recebido por: {grupo.Key}").SemiBold().FontSize(12);
+
+                                            responsavelColumn.Item().Table(table =>
+                                            {
+                                                table.ColumnsDefinition(c =>
+                                                {
+                                                    c.RelativeColumn(3);
+                                                    c.RelativeColumn();
+                                                    c.RelativeColumn();
+
+                                                });
+
+                                                table.Header(h =>
+                                                {
+                                                    h.Cell().BorderBottom(1).Padding(3).Text("Servico").SemiBold();
+                                                    h.Cell().BorderBottom(1).Padding(0).Text("Qtd").SemiBold();
+                                                });
+
+                                                foreach (var servico in grupo.OrderBy(i => i.ServicoNome))
+                                                {
+                                                    table.Cell().Padding(3).Text(servico.ServicoNome);
+                                                    table.Cell().Padding(0).Text(servico.Quantidade.ToString("N2"));
+                                                   
                                                 }
                                             });
                                         });
@@ -583,35 +650,20 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             return await Task.Run(() => document.GeneratePdf());
         }
 
-        private int CalcularProgressoObra(Obra obra)
+        private static int CalcularProgressoEtapa(ObraEtapaRelatorioDto etapa)
         {
-            if (obra == null || !obra.Etapas.Any())
-                return 0;
-
-            var totalEtapas = obra.Etapas.Count;
-            if (totalEtapas == 0) return 0;
-
-            int progressoTotalEtapas = 0;
-            foreach (var etapa in obra.Etapas)
-            {
-                progressoTotalEtapas += CalcularProgressoEtapa(etapa);
-            }
-
-            return (int)Math.Round((double)progressoTotalEtapas / totalEtapas);
+            if (etapa?.Itens == null || etapa.Itens.Count == 0) return 0;
+            int total = etapa.Itens.Count;
+            int concluidos = etapa.Itens.Count(i => i.Concluido);
+            return (int)Math.Round(100.0 * concluidos / total);
         }
 
-        private int CalcularProgressoEtapa(ObraEtapa etapa)
+        private static int CalcularProgressoObra(ObraRelatorioDto obra)
         {
-            if (etapa == null || !etapa.Itens.Any())
-                return 0;
-
-            var totalItens = etapa.Itens.Count;
-            if (totalItens == 0) return 0;
-
-            var itensConcluidos = etapa.Itens.Count(item => item.Concluido);
-            return (int)Math.Round((double)itensConcluidos / totalItens * 100);
+            if (obra?.Etapas == null || obra.Etapas.Count == 0) return 0;
+            // mesma semântica do seu método antigo: média simples entre etapas
+            return (int)Math.Round(obra.Etapas.Average(e => CalcularProgressoEtapa(e)));
         }
-
         private static string CombineSafe(string root, string? relative)
         {
             relative = (relative ?? string.Empty).Trim().TrimStart('/', '\\');

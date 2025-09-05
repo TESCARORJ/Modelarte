@@ -394,6 +394,7 @@ public class ApplicationProfile : Profile
             // Adicione mapeamentos para as coleções aninhadas
             .ForMember(dest => dest.Etapas, opt => opt.MapFrom(src => src.Etapas))
             .ForMember(dest => dest.Insumos, opt => opt.MapFrom(src => src.Insumos))
+            .ForMember(dest => dest.Servicos, opt => opt.MapFrom(src => src.Servicos))
             .ForMember(dest => dest.Funcionarios, opt => opt.MapFrom(src => src.Funcionarios))
             .ForMember(dest => dest.Equipamentos, opt => opt.MapFrom(src => src.Equipamentos))
             .ForMember(dest => dest.Documentos, opt => opt.MapFrom(src => src.Documentos))

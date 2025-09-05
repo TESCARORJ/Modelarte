@@ -22,6 +22,7 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs.Relatorios
 
         public List<ObraEtapaRelatorioDto> Etapas { get; set; } = new List<ObraEtapaRelatorioDto>();
         public List<ObraInsumoRelatorioDto> Insumos { get; set; } = new List<ObraInsumoRelatorioDto>();
+        public List<ObraServicoRelatorioDto> Servicos { get; set; } = new List<ObraServicoRelatorioDto>();
         public List<ObraFuncionarioRelatorioDto> Funcionarios { get; set; } = new List<ObraFuncionarioRelatorioDto>();
         public List<ObraEquipamentoRelatorioDto> Equipamentos { get; set; } = new List<ObraEquipamentoRelatorioDto>();
         public List<ObraDocumentoRelatorioDto> Documentos { get; set; } = new List<ObraDocumentoRelatorioDto>();

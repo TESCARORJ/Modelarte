@@ -5,7 +5,7 @@ namespace ByTescaro.ConstrutorApp.Application.DTOs;
 public class InsumoDto
 {
     public long Id { get; set; }
-    public bool Ativo { get; set; }
+    public bool Ativo { get; set; } = true;
     public string? Nome { get; set; } = string.Empty;
     public string? Descricao { get; set; } = string.Empty;
     public UnidadeMedida? UnidadeMedida { get; set; }
