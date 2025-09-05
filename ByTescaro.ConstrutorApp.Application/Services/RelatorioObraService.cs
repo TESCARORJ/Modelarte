@@ -5,6 +5,7 @@ using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -18,16 +19,19 @@ namespace ByTescaro.ConstrutorApp.Application.Services
         private readonly ILogger<RelatorioObraService> _logger;
         private readonly IPersonalizacaoService _personalizacaoService;
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        private readonly ProgressoStrategy _progressStrategy;
 
-        public RelatorioObraService(/*IUnitOfWork unitOfWork, IMapper mapper,*/ ILogger<RelatorioObraService> logger, IPersonalizacaoService personalizacaoService, IDbContextFactory<ApplicationDbContext> ctx)
+
+        public RelatorioObraService(ILogger<RelatorioObraService> logger, IPersonalizacaoService personalizacaoService, IDbContextFactory<ApplicationDbContext> ctx, IOptions<RelatorioObraOptions> opts)
         {
-            //_unitOfWork = unitOfWork;
-            //_mapper = mapper;
             _logger = logger;
 
             QuestPDF.Settings.License = LicenseType.Community;
             _personalizacaoService = personalizacaoService;
             _dbFactory = ctx;
+            _progressStrategy = opts?.Value?.ProgressoStrategy ?? ProgressoStrategy.Media;
+
+
         }
 
         public async Task<ObraRelatorioDto?> GetRelatorioAsync(long obraId, CancellationToken ct = default)
@@ -58,12 +62,12 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             {
                 using var ctx = _dbFactory.CreateDbContext();
                 return await ctx.Set<ObraEtapa>()
-                    .Where(e => e.ObraId == obraId)
+                    .Where(e => e.ObraId == obraId)                    
                     .Select(e => new ObraEtapaRelatorioDto
                     {
-                        // Id removido (não existe no DTO)
                         Nome = e.Nome ?? string.Empty,
-                        DataInicioPrevista = e.DataInicio ?? DateTime.MinValue,
+                        //Descricao = e.Descricao,
+                        DataInicioPrevista = e.DataInicio ?? default(DateTime),
                         Itens = e.Itens
                             .Select(i => new ObraItemEtapaRelatorioDto
                             {
@@ -259,9 +263,11 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                 e.PercentualConclusao = CalcularProgressoEtapa(e);
 
             }
-
-
-            dto.ProgressoAtual = CalcularProgressoObra(dto);
+            dto.ProgressoAtual = _progressStrategy switch
+            {
+                ProgressoStrategy.PonderadoItens => CalcularProgressoObraPonderado(dto),
+                _ => CalcularProgressoObra(dto)
+            };
 
             // Personalização + pré-carrega imagens (sem I/O no compose)
             var personalizacao = await _personalizacaoService.ObterAsync();
@@ -679,6 +685,18 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             }
             catch { /* silencioso para não travar render */ }
             return null;
+        }
+
+        private static int CalcularProgressoObraPonderado(ObraRelatorioDto obra)
+        {
+            if (obra?.Etapas == null || obra.Etapas.Count == 0) return 0;
+
+            var itens = obra.Etapas.SelectMany(e => e.Itens ?? Enumerable.Empty<ObraItemEtapaRelatorioDto>()).ToList();
+            int total = itens.Count;
+            if (total == 0) return 0;
+
+            int concluidos = itens.Count(i => i.Concluido);
+            return (int)Math.Round(100.0 * concluidos / total);
         }
     }
 }

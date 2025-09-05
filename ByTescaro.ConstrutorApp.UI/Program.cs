@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 using Radzen;
 using System.Globalization;
 
@@ -526,7 +527,12 @@ builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 builder.Services.AddLogging();
 
+builder.Services.Configure<RelatorioObraOptions>(
+    builder.Configuration.GetSection("Relatorios:Obra"));
 
+builder.Services.AddSingleton(
+    typeof(ProgressoStrategy),
+    sp => (object)sp.GetRequiredService<IOptions<RelatorioObraOptions>>().Value.ProgressoStrategy);
 
 #region [ Build & Configure App ]
 
