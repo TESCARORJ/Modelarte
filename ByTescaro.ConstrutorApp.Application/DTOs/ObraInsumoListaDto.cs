@@ -7,7 +7,7 @@
         public long ResponsavelId { get; set; }
         public string? NomeResponsavel { get; set; } = string.Empty;
         public DateOnly Data { get; set; }
-        public List<ObraInsumoDto> Itens { get; set; } = new();
+        public List<ObraInsumoDto>? Itens { get; set; }
 
         public DateTime DataHoraCadastro { get; set; }
         public long? UsuarioCadastroId { get; set; }

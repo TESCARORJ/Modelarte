@@ -1,0 +1,315 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services 
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.Application.Utils
+@using Microsoft.AspNetCore.Hosting
+@using Microsoft.JSInterop
+@using Radzen
+@using Radzen.Blazor
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+@inject ObraDocumentoApiService ObraDocumentoApiService 
+@inject ObraApiService ObraApiService
+@inject IWebHostEnvironment Env
+
+<RadzenCard Class="rz-p-4" @key="Obra?.Id">
+    <RadzenHeading Size="H6" Text="Upload de Documentos" />
+
+    <RadzenUpload Style="width: 100%"
+                  Multiple="true"
+                  Accept="@accepts"
+                  Change="ProcessarUpload"
+                  ChooseText="Selecionar Documentos"
+                  InputAttributes="@(new Dictionary<string,object>{{ "aria-label", "select file" }})" />
+
+    @if (isUploading)
+    {
+        <div class="rz-mt-2">
+            <RadzenText Text="Enviando..." Style="color:gray" />
+            <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+        </div>
+    }
+
+    <RadzenDivider Style="margin: 1rem 0" />
+
+    @if (Obra.Documentos?.Any() == true)
+    {
+        <div style="overflow-x:auto">
+            <RadzenDataGrid Data="@Obra.Documentos.OrderByDescending(d => d.DataHoraCadastro)"
+                            TItem="ObraDocumentoDto"
+                            AllowSorting="true"
+                            AllowPaging="false"
+                            ShowPagingSummary="false"
+                            Responsive="true"
+                            ColumnWidth="220px">
+                <Columns>
+                    <RadzenDataGridColumn TItem="ObraDocumentoDto" Title="Documento">
+                        <Template Context="doc">
+                            <b>@doc.NomeOriginal</b>
+                            <div class="rz-text-caption">
+                                @doc.Extensao?.ToUpper() • @FormatarTamanho(doc.TamanhoEmKb)
+                            </div>
+                        </Template>
+                    </RadzenDataGridColumn>
+
+                    <RadzenDataGridColumn TItem="ObraDocumentoDto" Property="DataHoraCadastro" Title="Enviado em" Width="180px">
+                        <Template Context="doc">
+                            @doc.DataHoraCadastro.ToString("dd/MM/yyyy HH:mm")
+                        </Template>
+                    </RadzenDataGridColumn>
+
+                    <RadzenDataGridColumn TItem="ObraDocumentoDto" Title="Ações" Width="260px" TextAlign="TextAlign.Center">
+                        <Template Context="doc">
+                            <div class="acoes-doc">
+                                <!-- Link de download com a mesma altura do RadzenButton (tamanho Small) -->
+                                <a class="rz-button rz-button-sm rz-variant-outlined"
+                                   href="@GetFileUrl(doc)"
+                                   download="@GetDownloadFileName(doc)">
+                                    <span class="rz-button-icon rz-material-icons">download</span>
+                                    <span class="rz-button-text">Download</span>
+                                </a>
+
+                                <RadzenButton Icon="delete"
+                                              Text="Excluir"
+                                              ButtonStyle="ButtonStyle.Danger"
+                                              Size="ButtonSize.Small"
+                                              Click="@(() => ConfirmarRemocao(doc))" />
+                            </div>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </div>
+    }
+    else
+    {
+        <RadzenText Text="Nenhum documento enviado." />
+    }
+</RadzenCard>
+
+<style>
+  /* Alinha os botões na mesma linha e altura */
+  .acoes-doc{
+    display:inline-flex;
+    align-items:center;
+    gap:.5rem;
+  }
+</style>
+
+@code {
+    [Parameter] public ObraDto Obra { get; set; } = new();
+
+    private bool isUploading;
+
+    private string accepts => string.Join(", ",
+        Enum.GetValues<ExtensaoDocumentoPermitida>()
+            .Select(e => $".{e.ToString().ToLower()}"));
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Obra ??= new();
+
+        if (Obra.Id > 0)
+        {
+            Obra.Documentos = await ObraDocumentoApiService.GetByObraIdAsync(Obra.Id) ?? new();
+            StateHasChanged();
+        }
+        else
+        {
+            Obra!.Documentos = new();
+        }
+    }
+
+    private async Task ProcessarUpload(UploadChangeEventArgs args)
+    {
+        if (Obra is null || Obra.Id <= 0)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Obra inválida", "Abra uma obra antes de enviar documentos.");
+            return;
+        }
+
+        Obra.Documentos ??= new List<ObraDocumentoDto>();
+        isUploading = true;
+        StateHasChanged();
+
+        var arquivos = args?.Files ?? Enumerable.Empty<object>();
+
+        foreach (var file in arquivos)
+        {
+            var nomeOriginal = System.IO.Path.GetFileName(GetFileName(file));
+            var extensao = System.IO.Path.GetExtension(nomeOriginal).ToLower().TrimStart('.');
+
+            if (!Enum.TryParse<ExtensaoDocumentoPermitida>(extensao.ToUpperInvariant(), out _))
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Extensão não permitida", $"Arquivo '{nomeOriginal}' ignorado.");
+                continue;
+            }
+
+            try
+            {
+                var webRoot = Env.WebRootPath ?? System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot");
+
+                var pastaDestino = System.IO.Path.Combine(webRoot, "Uploads", "Projetos",
+                                                          Obra.ProjetoId.ToString(), Obra.Id.ToString(), "Documentos");
+                System.IO.Directory.CreateDirectory(pastaDestino);
+
+                var caminhoFisico = System.IO.Path.Combine(pastaDestino, nomeOriginal);
+
+                await using (var origem = await GetFileStreamAsync(file))
+                await using (var destino = System.IO.File.Create(caminhoFisico))
+                {
+                    await origem.CopyToAsync(destino);
+                }
+
+                var tamanhoKb = Math.Max(1, (long)Math.Ceiling(new System.IO.FileInfo(caminhoFisico).Length / 1024.0));
+
+                var dto = new ObraDocumentoDto
+                {
+                    ObraId = Obra.Id,
+                    NomeOriginal = nomeOriginal,
+                    CaminhoRelativo = System.IO.Path.Combine("Uploads", "Projetos",
+                                                             Obra.ProjetoId.ToString(), Obra.Id.ToString(), "Documentos", nomeOriginal)
+                                        .Replace("\\", "/"),
+                    Extensao = extensao,
+                    TamanhoEmKb = tamanhoKb,
+                    DataHoraCadastro = DateTime.Now
+                };
+
+                await ObraDocumentoApiService.CreateAsync(dto);
+                var salvo = dto;
+
+                Obra.Documentos.Add(salvo);
+
+                NotificationService.Notify(NotificationSeverity.Success, "Upload concluído", $"'{nomeOriginal}' salvo com sucesso.");
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Erro no upload", $"Falha ao salvar '{nomeOriginal}': {ex.Message}");
+            }
+        }
+
+        isUploading = false;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmarRemocao(ObraDocumentoDto doc)
+    {
+        if (doc is null) return;
+
+        var confirmado = await DialogService.Confirm(
+            $"Confirma a exclusão de '{doc.NomeOriginal}'?",
+            "Excluir documento",
+            new ConfirmOptions
+            {
+                OkButtonText = "Excluir",
+                CancelButtonText = "Cancelar",
+            });
+
+        if (confirmado == true)
+        {
+            try
+            {
+                var idProp = doc.GetType().GetProperty("Id");
+                var id = idProp != null ? Convert.ToInt64(idProp.GetValue(doc) ?? 0) : 0;
+                if (id > 0)
+                {
+                    try { await ObraDocumentoApiService.DeleteAsync(id); } catch { }
+                }
+
+                if (!string.IsNullOrWhiteSpace(doc.CaminhoRelativo))
+                {
+                    var webRoot = Env.WebRootPath ?? System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot");
+                    var fullPath = System.IO.Path.Combine(webRoot, doc.CaminhoRelativo.Replace("/", System.IO.Path.DirectorySeparatorChar.ToString()));
+                    if (System.IO.File.Exists(fullPath))
+                    {
+                        System.IO.File.Delete(fullPath);
+                    }
+                }
+
+                Obra.Documentos?.Remove(doc);
+                NotificationService.Notify(NotificationSeverity.Success, "Documento removido", $"'{doc.NomeOriginal}' excluído.");
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Erro ao excluir", ex.Message);
+            }
+        }
+    }
+
+    private string GetFileUrl(ObraDocumentoDto doc)
+    {
+        if (doc == null || string.IsNullOrWhiteSpace(doc.CaminhoRelativo))
+            return "#";
+
+        var path = doc.CaminhoRelativo.Replace("\\", "/").TrimStart('/');
+
+        var lastSlash = path.LastIndexOf('/');
+        if (lastSlash >= 0 && lastSlash < path.Length - 1)
+        {
+            var dir = path[..(lastSlash + 1)];
+            var file = path[(lastSlash + 1)..];
+            path = dir + Uri.EscapeDataString(file);
+        }
+
+        return NavigationManager.ToAbsoluteUri(path).ToString();
+    }
+
+    private static Task<System.IO.Stream> GetFileStreamAsync(object file)
+    {
+        if (file is Microsoft.AspNetCore.Components.Forms.IBrowserFile bf)
+        {
+            System.IO.Stream s = bf.OpenReadStream(long.MaxValue);
+            return Task.FromResult(s);
+        }
+
+        var tipo = file.GetType();
+        var metodo = tipo.GetMethod("OpenReadStream", Type.EmptyTypes) ??
+                     tipo.GetMethod("OpenReadStream", new[] { typeof(long) });
+
+        if (metodo != null)
+        {
+            var resultado = metodo.GetParameters().Length == 0
+                ? metodo.Invoke(file, null)
+                : metodo.Invoke(file, new object[] { long.MaxValue });
+
+            if (resultado is System.IO.Stream stream1)
+            {
+                return Task.FromResult(stream1);
+            }
+        }
+
+        var propStream = tipo.GetProperty("Stream");
+        if (propStream?.GetValue(file) is System.IO.Stream stream2)
+        {
+            return Task.FromResult(stream2);
+        }
+
+        return Task.FromResult<System.IO.Stream>(System.IO.Stream.Null);
+    }
+
+    private static string GetFileName(object? file)
+    {
+        if (file is null) return $"arquivo_{Guid.NewGuid():N}";
+        var prop = file.GetType().GetProperty("Name");
+        var valor = prop?.GetValue(file)?.ToString();
+        return string.IsNullOrWhiteSpace(valor) ? $"arquivo_{Guid.NewGuid():N}" : valor!;
+    }
+
+    private static string GetDownloadFileName(ObraDocumentoDto doc)
+        => string.IsNullOrWhiteSpace(doc?.NomeOriginal)
+           ? "arquivo"
+           : doc!.NomeOriginal;
+
+    private static string FormatarTamanho(long? kb)
+    {
+        var v = kb.GetValueOrDefault();
+        if (v <= 0) return "—";
+        if (v < 1024) return $"{v} KB";
+        var mb = v / 1024.0;
+        if (mb < 1024) return $"{mb:0.##} MB";
+        return $"{mb / 1024.0:0.##} GB";
+    }
+}

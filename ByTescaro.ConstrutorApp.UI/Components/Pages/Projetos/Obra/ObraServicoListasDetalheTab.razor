@@ -1,0 +1,121 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Radzen
+
+@inject ObraServicoListaApiService ListaService
+@inject NotificationService NotificationService
+
+<RadzenCard Class="rz-p-4" @key="Obra?.Id">
+    <RadzenHeading Size="H6" Text="Listas de Serviços da Obra" class="mb-3" />
+
+    @if (isLoading)
+    {
+        <div style="padding:.5rem 0">
+            <RadzenText Text="Carregando listas..." Style="color:gray" />
+            <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+        </div>
+    }
+    else
+    {
+        <div class="rz-text-right rz-mb-3">
+            <RadzenBadge Text="@($"Listas: {TotalListas}")" Style="margin-right:.5rem" />
+            <RadzenBadge Text="@($"Itens: {TotalItens}")" />
+        </div>
+
+        <RadzenAccordion>
+            <Items>
+                @if (Obra.ListasServico?.Any() == true)
+                {
+                    @foreach (var lista in Obra.ListasServico)
+                    {
+                        var qtdItens = lista.Itens?.Count ?? 0;
+
+                        <RadzenAccordionItem @key="lista.Id"
+                                             Icon="list_alt"
+                                             Text="@($"{lista.NomeResponsavel} — {lista.Data:dd/MM/yyyy}  •  Itens: {qtdItens}")">
+
+                            <div class="rz-mb-3">
+                                <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Wrap="FlexWrap.Wrap">
+                                    <RadzenBadge Text="@($"Responsável: {lista.NomeResponsavel}")" />
+                                    <RadzenBadge Text="@($"Data: {lista.Data:dd/MM/yyyy}")" />
+                                    <RadzenBadge Text="@($"Itens: {qtdItens}")" />
+                                </RadzenStack>
+                            </div>
+
+                            @if (lista.Itens?.Any() == true)
+                            {
+                                <div style="overflow-x:auto">
+                                    <RadzenDataGrid Data="@(lista.Itens.OrderBy(i => i.ServicoNome).ToList())"
+                                                    TItem="ObraServicoDto"
+                                                    AllowSorting="true"
+                                                    AllowFiltering="false"
+                                                    AllowPaging="false"
+                                                    ShowPagingSummary="false"
+                                                    Responsive="true"
+                                                    ColumnWidth="220px">
+                                        <Columns>
+                                            <RadzenDataGridColumn TItem="ObraServicoDto" Property="ServicoNome" Title="Serviço" />
+                                            <RadzenDataGridColumn TItem="ObraServicoDto" Property="Quantidade" Title="Quantidade" Width="140px">
+                                                <Template Context="i">
+                                                    @i.Quantidade.ToString("N2")
+                                                </Template>
+                                            </RadzenDataGridColumn>
+                                        </Columns>
+                                    </RadzenDataGrid>
+                                </div>
+                            }
+                            else
+                            {
+                                <RadzenAlert Severity="AlertSeverity.Info">Nenhum item nesta lista.</RadzenAlert>
+                            }
+                        </RadzenAccordionItem>
+                    }
+                }
+                else
+                {
+                    <RadzenAccordionItem Text="Nenhuma lista cadastrada" Icon="info" Disabled="true">
+                        <p style="padding: 1rem;">Nenhuma lista de serviços foi adicionada a esta obra.</p>
+                    </RadzenAccordionItem>
+                }
+            </Items>
+        </RadzenAccordion>
+    }
+</RadzenCard>
+
+@code {
+    [Parameter] public ObraDto Obra { get; set; } = new();
+
+    private bool isLoading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Obra?.Id > 0)
+        {
+            isLoading = true;
+            try
+            {
+                var listas = await ListaService.GetPorObraIdAsync(Obra.Id) ?? new();
+                // ordena por data (mais recente primeiro), se preferir
+                Obra.ListasServico = listas.OrderByDescending(x => x.Data).ToList();
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Falha ao carregar listas: {ex.Message}");
+                Obra.ListasServico = new();
+            }
+            finally
+            {
+                isLoading = false;
+                StateHasChanged();
+            }
+        }
+        else
+        {
+            Obra.ListasServico = new();
+            isLoading = false;
+        }
+    }
+
+    private int TotalListas => Obra.ListasServico?.Count ?? 0;
+    private int TotalItens => Obra.ListasServico?.Sum(l => l.Itens?.Count ?? 0) ?? 0;
+}

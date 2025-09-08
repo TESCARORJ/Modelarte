@@ -1,0 +1,80 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Radzen
+
+@inject ObraEquipamentoApiService ObraEquipamentoApiService
+
+<RadzenCard Class="rz-p-4" @key="Obra?.Id">
+    <RadzenHeading Size="H6" Text="Equipamentos Alocados na Obra" class="mb-3" />
+
+    @if (isLoading)
+    {
+        <div style="padding:.5rem 0">
+            <RadzenText Text="Carregando equipamentos..." Style="color:gray" />
+            <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+        </div>
+    }
+    else
+    {
+       
+            <div style="overflow-x:auto">
+                <RadzenDataGrid Data="@equipamentos"
+                                TItem="ObraEquipamentoDto"
+                                AllowSorting="true"
+                                AllowFiltering="false"
+                                AllowPaging="false"
+                                ShowPagingSummary="false"
+                                Responsive="true"
+                                ColumnWidth="220px">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="EquipamentoNome" Title="Nome" />
+                        <RadzenDataGridColumn TItem="ObraEquipamentoDto" Title="Patrimônio" Width="140px">
+                            <Template Context="e">
+                                @PatrimonioDe(e.EquipamentoId)
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataInicioUso" Title="Início" FormatString="{0:dd/MM/yyyy}" Width="120px" />
+                        <RadzenDataGridColumn TItem="ObraEquipamentoDto" Property="DataFimUso" Title="Fim" FormatString="{0:dd/MM/yyyy}" Width="120px" />
+                    </Columns>
+                </RadzenDataGrid>
+            </div>
+  
+    }
+</RadzenCard>
+
+@code {
+    [Parameter] public ObraDto Obra { get; set; } = new();
+
+    private bool isLoading = true;
+    private List<ObraEquipamentoDto> equipamentos = new();
+    // Catálogo usado apenas para exibir patrimônio quando disponível
+    private List<EquipamentoDto> catalogoEquipamentos = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Obra?.Id > 0)
+        {
+            isLoading = true;
+            try
+            {
+                equipamentos = await ObraEquipamentoApiService.GetByObraIdAsync(Obra.Id) ?? new();
+                // opcional: tenta obter dados de patrimônio (se não vierem no DTO da obra)
+                catalogoEquipamentos = await ObraEquipamentoApiService.GetEquipamentosDisponiveisAsync(Obra.Id) ?? new();
+            }
+            finally
+            {
+                isLoading = false;
+                StateHasChanged();
+            }
+        }
+        else
+        {
+            equipamentos = new();
+            catalogoEquipamentos = new();
+            isLoading = false;
+        }
+    }
+
+    private string PatrimonioDe(long equipamentoId)
+        => catalogoEquipamentos.FirstOrDefault(x => x.Id == equipamentoId)?.Patrimonio ?? "—";
+}

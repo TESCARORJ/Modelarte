@@ -107,11 +107,6 @@ namespace ByTescaro.ConstrutorApp.Application.Services
                     existingItem.Quantidade = itemDto.Quantidade;
                     existingItem.IsRecebido = itemDto.IsRecebido; 
                     existingItem.DataRecebimento = itemDto.DataRecebimento; 
-
-
-
-                    // Não é necessário chamar _unitOfWork.ObraInsumoRepository.Update(existingItem);
-                    // O EF Core já está rastreando existingItem e detectará as mudanças.
                 }
             }
                        

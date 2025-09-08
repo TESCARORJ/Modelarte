@@ -1,0 +1,149 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Radzen
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+
+@inject ObraInsumoListaApiService ListaService
+@inject NotificationService NotificationService
+
+<RadzenCard Class="rz-p-4" @key="Obra?.Id">
+    <RadzenHeading Size="H6" Text="Listas de Insumos da Obra" class="mb-3" />
+
+    @if (isLoading)
+    {
+        <div style="padding:.5rem 0">
+            <RadzenText Text="Carregando listas..." Style="color:gray" />
+            <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+        </div>
+    }
+    else
+    {
+        <div class="rz-text-right rz-mb-3">
+            <RadzenBadge Text="@($"Listas: {TotalListas}")" Style="margin-right:.5rem" />
+            <RadzenBadge Text="@($"Itens: {TotalItens}")" />
+        </div>
+
+        <RadzenAccordion>
+            <Items>
+                @if (Obra.ListasInsumo?.Any() == true)
+                {
+                    @foreach (var lista in Obra.ListasInsumo)
+                    {
+                        var qtdItens = lista.Itens?.Count ?? 0;
+                        var qtdRecebidos = lista.Itens?.Count(i => i.IsRecebido) ?? 0;
+
+                        <RadzenAccordionItem @key="lista.Id"
+                                             Icon="list_alt"
+                                             Text="@($"{lista.NomeResponsavel} — {lista.Data:dd/MM/yyyy}  •  Itens: {qtdItens}  •  Recebidos: {qtdRecebidos}")">
+
+                            <div class="rz-mb-3">
+                                <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Wrap="FlexWrap.Wrap">
+                                    <RadzenBadge Text="@($"Responsável: {lista.NomeResponsavel}")" />
+                                    <RadzenBadge Text="@($"Data: {lista.Data:dd/MM/yyyy}")" />
+                                    <RadzenBadge Text="@($"Itens: {qtdItens}")" />
+                                    <RadzenBadge Text="@($"Recebidos: {qtdRecebidos}")" BadgeStyle="BadgeStyle.Success" />
+                                </RadzenStack>
+                            </div>
+
+                            @if (lista.Itens?.Any() == true)
+                            {
+                                <div style="overflow-x:auto">
+                                    <RadzenDataGrid Data="@(lista.Itens.OrderBy(i => i.InsumoNome).ToList())"
+                                                    TItem="ObraInsumoDto"
+                                                    AllowSorting="true"
+                                                    AllowFiltering="false"
+                                                    AllowPaging="false"
+                                                    ShowPagingSummary="false"
+                                                    Responsive="true"
+                                                    ColumnWidth="220px">
+                                        <Columns>
+                                            <RadzenDataGridColumn TItem="ObraInsumoDto" Property="InsumoNome" Title="Insumo" />
+                                            <RadzenDataGridColumn TItem="ObraInsumoDto" Property="Quantidade" Title="Quantidade" Width="140px">
+                                                <Template Context="i">
+                                                    @i.Quantidade.ToString("N2")
+                                                </Template>
+                                            </RadzenDataGridColumn>
+                                            <RadzenDataGridColumn TItem="ObraInsumoDto" Property="UnidadeMedida" Title="Unidade" Width="160px" Sortable="false">
+                                                <Template Context="i">
+                                                    @ObterNomeUnidade(i.UnidadeMedida)
+                                                </Template>
+                                            </RadzenDataGridColumn>
+                                            <RadzenDataGridColumn TItem="ObraInsumoDto" Property="IsRecebido" Title="Recebido" Width="120px" TextAlign="TextAlign.Center">
+                                                <Template Context="i">
+                                                    <RadzenCheckBox TValue="bool" Value="i.IsRecebido" Disabled="true" />
+                                                </Template>
+                                            </RadzenDataGridColumn>
+                                            <RadzenDataGridColumn TItem="ObraInsumoDto" Property="DataRecebimento" Title="Data de Recebimento" Width="180px">
+                                                <Template Context="i">
+                                                    @i.DataRecebimento?.ToString("dd/MM/yyyy")
+                                                </Template>
+                                            </RadzenDataGridColumn>
+                                        </Columns>
+                                    </RadzenDataGrid>
+                                </div>
+                            }
+                            else
+                            {
+                                <RadzenAlert Severity="AlertSeverity.Info">Nenhum item nesta lista.</RadzenAlert>
+                            }
+                        </RadzenAccordionItem>
+                    }
+                }
+                else
+                {
+                    <RadzenAccordionItem Text="Nenhuma lista cadastrada" Icon="info" Disabled="true">
+                        <p style="padding: 1rem;">Nenhuma lista de insumos foi adicionada a esta obra.</p>
+                    </RadzenAccordionItem>
+                }
+            </Items>
+        </RadzenAccordion>
+    }
+</RadzenCard>
+
+@code {
+    [Parameter] public ObraDto Obra { get; set; } = new();
+
+    private bool isLoading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Obra?.Id > 0)
+        {
+            isLoading = true;
+            try
+            {
+             
+                var listas = await ListaService.GetPorObraIdAsync(Obra.Id) ?? new();
+                Obra.ListasInsumo = listas.OrderByDescending(x => x.Data).ToList();
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Falha ao carregar listas: {ex.Message}");
+                Obra.ListasInsumo = new();
+            }
+            finally
+            {
+                isLoading = false;
+                StateHasChanged();
+            }
+        }
+        else
+        {
+            Obra.ListasInsumo = new();
+            isLoading = false;
+        }
+    }
+
+    private int TotalListas => Obra.ListasInsumo?.Count ?? 0;
+    private int TotalItens => Obra.ListasInsumo?.Sum(l => l.Itens?.Count ?? 0) ?? 0;
+
+    private static string ObterNomeUnidade(UnidadeMedida? unidade)
+    {
+        if (unidade is null) return "";
+        var member = unidade.Value.GetType().GetMember(unidade.ToString() ?? "").FirstOrDefault();
+        var display = member?.GetCustomAttribute<DisplayAttribute>();
+        return display?.Name ?? unidade.ToString();
+    }
+}

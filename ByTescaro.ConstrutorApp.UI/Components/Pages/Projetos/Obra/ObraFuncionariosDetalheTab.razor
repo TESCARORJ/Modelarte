@@ -1,0 +1,88 @@
+﻿@using System.Linq
+@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Radzen
+
+@inject ObraFuncionarioApiService ObraFuncionarioApiService
+
+<RadzenCard Class="rz-p-4" @key="Obra?.Id">
+    <RadzenHeading Size="H6" Text="Funcionários Alocados na Obra" class="mb-3" />
+
+    @if (isLoading)
+    {
+        <div style="padding:.5rem 0">
+            <RadzenText Text="Carregando funcionários..." Style="color:gray" />
+            <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+        </div>
+    }
+    else
+    {
+
+
+ 
+            <div style="overflow-x:auto">
+                <RadzenDataGrid Data="@funcionarios"
+                                TItem="ObraFuncionarioDto"
+                                AllowSorting="true"
+                                AllowFiltering="false"
+                                AllowPaging="false"
+                                ShowPagingSummary="false"
+                                Responsive="true"
+                                ColumnWidth="220px">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="FuncionarioNome" Title="Nome" />
+                        <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="FuncaoNoObra" Title="Função" />
+                        <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="DataInicio" Title="Início" FormatString="{0:dd/MM/yyyy}" Width="120px" />
+                        <RadzenDataGridColumn TItem="ObraFuncionarioDto" Property="DataFim" Title="Fim" FormatString="{0:dd/MM/yyyy}" Width="120px" />
+                    </Columns>
+
+                
+                </RadzenDataGrid>
+            </div>
+       
+    }
+</RadzenCard>
+
+@code {
+    [Parameter] public ObraDto Obra { get; set; } = new();
+
+    private bool isLoading = true;
+    private string filtro = string.Empty;
+
+    private List<ObraFuncionarioDto> funcionarios = new();
+
+    // MATERIALIZADO (ToList) para evitar reavaliação “preguiçosa”
+    // private List<ObraFuncionarioDto> Filtrados =>
+    //     funcionarios
+    //         .Where(f =>
+    //             string.IsNullOrWhiteSpace(filtro) ||
+    //             (f.FuncionarioNome?.Contains(filtro, StringComparison.OrdinalIgnoreCase) ?? false) ||
+    //             (f.FuncaoNoObra?.Contains(filtro, StringComparison.OrdinalIgnoreCase) ?? false))
+    //         .OrderBy(f => f.FuncionarioNome ?? string.Empty)
+    //         .ToList();
+
+    private int total => funcionarios.Count;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Obra?.Id > 0)
+        {
+            isLoading = true;
+            try
+            {
+                var result = await ObraFuncionarioApiService.GetByObraIdAsync(Obra.Id);
+                funcionarios = (result ?? new List<ObraFuncionarioDto>()).ToList(); // garante materialização
+            }
+            finally
+            {
+                isLoading = false;
+                StateHasChanged(); // força novo render após carregar
+            }
+        }
+        else
+        {
+            funcionarios = new();
+            isLoading = false;
+        }
+    }
+}

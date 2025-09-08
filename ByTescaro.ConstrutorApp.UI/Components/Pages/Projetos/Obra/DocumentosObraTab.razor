@@ -1,15 +1,17 @@
 ﻿@using ByTescaro.ConstrutorApp.Application.DTOs
-@using ByTescaro.ConstrutorApp.UI.Services 
+@using ByTescaro.ConstrutorApp.UI.Services
 @using ByTescaro.ConstrutorApp.Domain.Enums
 @using ByTescaro.ConstrutorApp.Application.Utils
+@using Microsoft.JSInterop
+
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
 @inject NotificationService NotificationService
 @inject DialogService DialogService
-@inject ObraDocumentoApiService ObraDocumentoApiService 
-@inject ObraApiService ObraApiService 
+@inject ObraDocumentoApiService ObraDocumentoApiService
+@inject ObraApiService ObraApiService
 
-<RadzenCard Class="rz-p-4">
+<RadzenCard Class="rz-p-4" @key="Obra?.Id">
     <RadzenHeading Size="H6" Text="Upload de Documentos" />
 
     <RadzenUpload Style="width: 100%"
@@ -30,17 +32,24 @@
                         <b>@doc.NomeOriginal (@doc.Extensao.ToUpper()) - @doc.TamanhoEmKb KB</b>
                     </HeaderTemplate>
                     <ChildContent>
-                        <RadzenButton Icon="open_in_new" Text="Abrir"
-                                      ButtonStyle="ButtonStyle.Light"
-                                      Click="@(() => AbrirDocumento(doc))" />
-                        <RadzenButton Icon="delete" Text="Excluir"
-                                      ButtonStyle="ButtonStyle.Danger"
-                                      Click="@(() => ConfirmarRemocao(doc))" />
+                        <div class="acoes-doc">
+                            <!-- DOWNLOAD estilizado como botão Radzen (tamanho small) -->
+                            <a class="rz-button rz-button-sm rz-variant-filled rz-mr-2"
+                               href="@GetFileUrl(doc)"
+                               download="@GetDownloadFileName(doc)">
+                                <span class="rz-button-text">Download</span>
+                            </a>
+
+                            <RadzenButton Icon="delete"
+                                          Text="Excluir"
+                                          ButtonStyle="ButtonStyle.Danger"
+                                          Size="ButtonSize.Small"
+                                          Click="@(() => ConfirmarRemocao(doc))" />
+                        </div>
                     </ChildContent>
                 </RadzenPanel>
             </Template>
         </RadzenDataList>
-
     }
     else
     {
@@ -48,19 +57,32 @@
     }
 </RadzenCard>
 
+<style>
+    /* Garante alinhamento vertical e espaçamento fixo entre os botões */
+    .acoes-doc {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+    }
+</style>
+
 @code {
     [Parameter] public ObraDto Obra { get; set; } = new();
 
-    private string accepts => string.Join(", ", Enum.GetValues<ExtensaoDocumentoPermitida>().Select(e => $".{e.ToString().ToLower()}"));
+    private string accepts => string.Join(", ",
+        Enum.GetValues<ExtensaoDocumentoPermitida>()
+            .Select(e => $".{e.ToString().ToLower()}"));
 
     protected override async Task OnParametersSetAsync()
     {
-        // Garante que o Obra.Id seja válido antes de buscar os dados
         if (Obra != null && Obra.Id > 0)
         {
-            // Carrega os documentos associados a esta obra
-            Obra.Documentos = await ObraDocumentoApiService.GetByObraIdAsync(Obra.Id);
+            Obra.Documentos = await ObraDocumentoApiService.GetByObraIdAsync(Obra.Id) ?? new();
             StateHasChanged();
+        }
+        else
+        {
+            Obra.Documentos = new();
         }
     }
 
@@ -71,7 +93,7 @@
 
         foreach (var file in args.Files)
         {
-            var extensao = Path.GetExtension(file.Name).ToLower().TrimStart('.');
+            var extensao = System.IO.Path.GetExtension(file.Name).ToLower().TrimStart('.');
 
             if (!Enum.TryParse<ExtensaoDocumentoPermitida>(extensao.ToUpper(), out _))
             {
@@ -81,34 +103,30 @@
 
             try
             {
-                var nomeOriginal = Path.GetFileName(file.Name);
-                var pastaDestino = Path.Combine("wwwroot", "Uploads", "Projetos", Obra.ProjetoId.ToString(), Obra.Id.ToString(), "Documentos");
-                Directory.CreateDirectory(pastaDestino);
+                var nomeOriginal = System.IO.Path.GetFileName(file.Name);
+                var pastaDestino = System.IO.Path.Combine("wwwroot", "Uploads", "Projetos", Obra.ProjetoId.ToString(), Obra.Id.ToString(), "Documentos");
+                System.IO.Directory.CreateDirectory(pastaDestino);
 
-                var caminhoFinal = Path.Combine(pastaDestino, nomeOriginal);
+                var caminhoFinal = System.IO.Path.Combine(pastaDestino, nomeOriginal);
 
-                // Comprimir e salvar o arquivo físico
+                // Comprimir (se preciso) e salvar o arquivo físico
                 await using var streamComprimido = await DocumentoCompressorService.ComprimirSeNecessarioAsync(file);
-                await using var fs = File.Create(caminhoFinal);
+                await using var fs = System.IO.File.Create(caminhoFinal);
                 await streamComprimido.CopyToAsync(fs);
 
-                var tamanhoKb = streamComprimido.Length / 1024;
+                var tamanhoKb = Math.Max(1, (long)System.Math.Ceiling(streamComprimido.Length / 1024.0));
 
                 var documentoDto = new ObraDocumentoDto
                 {
                     ObraId = Obra.Id,
                     NomeOriginal = nomeOriginal,
-                    CaminhoRelativo = Path.Combine("Uploads", "Projetos", Obra.ProjetoId.ToString(), Obra.Id.ToString(), "Documentos", nomeOriginal).Replace("\\", "/"),
+                    CaminhoRelativo = System.IO.Path.Combine("Uploads", "Projetos", Obra.ProjetoId.ToString(), Obra.Id.ToString(), "Documentos", nomeOriginal).Replace("\\", "/"),
                     Extensao = extensao,
                     TamanhoEmKb = tamanhoKb,
-                    DataHoraCadastro = DateTime.Now,
-                    // UsuarioCadastroId e UsuarioCadastroNome serão preenchidos no serviço, se necessário, ou via DTO
+                    DataHoraCadastro = DateTime.Now
                 };
 
-                // Chamar o serviço de API para criar o registro no banco de dados
                 await ObraDocumentoApiService.CreateAsync(documentoDto);
-
-                // O documentoDto agora deve ter o Id preenchido pelo serviço
                 Obra.Documentos.Add(documentoDto);
 
                 NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Sucesso", Detail = $"Documento '{nomeOriginal}' salvo com sucesso." });
@@ -122,25 +140,41 @@
         StateHasChanged();
     }
 
-
-    private async Task AbrirDocumento(ObraDocumentoDto doc)
+    private string GetFileUrl(ObraDocumentoDto doc)
     {
-        var url = NavigationManager.BaseUri + doc.CaminhoRelativo;
-        await JS.InvokeVoidAsync("open", url, "_blank");
+        if (doc == null || string.IsNullOrWhiteSpace(doc.CaminhoRelativo))
+            return "#";
+
+        // Normaliza separadores e remove a barra inicial
+        var path = doc.CaminhoRelativo.Replace("\\", "/").TrimStart('/');
+
+        // Escapa apenas o nome do arquivo (para espaços/acentos)
+        var lastSlash = path.LastIndexOf('/');
+        if (lastSlash >= 0 && lastSlash < path.Length - 1)
+        {
+            var dir = path[..(lastSlash + 1)];
+            var file = path[(lastSlash + 1)..];
+            path = dir + Uri.EscapeDataString(file);
+        }
+
+        // URL absoluta respeitando BaseUri/PathBase
+        return NavigationManager.ToAbsoluteUri(path).ToString();
     }
 
+    private static string GetDownloadFileName(ObraDocumentoDto doc)
+        => string.IsNullOrWhiteSpace(doc?.NomeOriginal) ? "arquivo" : doc.NomeOriginal;
 
     private async Task ConfirmarRemocao(ObraDocumentoDto doc)
     {
-        bool? confirm = await DialogService.Confirm($"Deseja realmente remover o documento '{doc.NomeOriginal}'?", "Remover Documento");
+        bool? confirm = await DialogService.Confirm(
+            $"Deseja realmente remover o documento '{doc.NomeOriginal}'?",
+            "Remover Documento");
 
         if (confirm == true)
         {
             try
             {
-                // A remoção do arquivo físico e do registro no BD será feita pelo serviço
                 await ObraDocumentoApiService.DeleteAsync(doc.Id);
-
                 Obra.Documentos.Remove(doc);
                 NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Info, Summary = "Removido", Detail = $"Documento '{doc.NomeOriginal}' removido." });
             }

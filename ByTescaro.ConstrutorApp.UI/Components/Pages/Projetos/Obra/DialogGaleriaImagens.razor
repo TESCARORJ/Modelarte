@@ -1,16 +1,30 @@
 ﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using Radzen
+@using Radzen.Blazor
 @inject Radzen.DialogService DialogService
 
-<RadzenCard Style="width:100%; height:80vh; display: flex; flex-direction: column; padding: 0;">
-    @if (Imagens.Count > 0)
+<RadzenCard Style="width:100%; height:80vh; display:flex; flex-direction:column; padding:0;">
+    @if (_slides?.Count > 0)
     {
-        <RadzenCarousel @ref=carousel @bind-SelectedIndex="@selectedIndex" Auto="false" AllowPaging="@allowPaging"
-                        Style="height: 400px;" PagerPosition="@pagerPosition" PagerOverlay="@pagerOverlay">
+        <RadzenCarousel @key="_slides.Count"
+                        Auto="false"
+                        AllowNavigation="@allowNavigation"
+                        Style="height: calc(80vh - 72px); max-width: 95vw;"
+                        class="rz-mx-auto"
+                        ButtonStyle="@buttonStyle"
+                        ButtonSize="@buttonSize"
+                        ButtonShade="@buttonShade"
+                        ButtonVariant="@buttonVariant">
+
             <Items>
-                @foreach (var imagem in Imagens)
+                @foreach (var imagem in _slides)
                 {
                     <RadzenCarouselItem>
-                        <RadzenImage Path="@($"/{imagem.CaminhoRelativo}")" class="rz-w-100" />
+                        <div class="slide">
+                            <RadzenImage Path="@GetUrl(imagem)"
+                                         class="rz-w-100 rz-h-100"
+                                         Style="max-width:100%; max-height:100%; object-fit:contain;" />
+                        </div>
                     </RadzenCarouselItem>
                 }
             </Items>
@@ -30,32 +44,75 @@
                   Style="margin: 1rem auto;" />
 </RadzenCard>
 
-@code {
-    RadzenCarousel carousel;
-    bool allowPaging = true;
-    bool pagerOverlay = true;
-    PagerPosition pagerPosition = PagerPosition.Bottom;
-    int selectedIndex;
+<style>
+    .slide {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #111; /* letterbox */
+        border-radius: 4px;
+        overflow: hidden;
+    }
 
+    .sem-imagens {
+        flex: 1 1 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+
+@code {
+    // Props no padrão da documentação (customizáveis se quiser)
+    bool allowNavigation = true;
+    Variant buttonVariant = Variant.Text;
+    ButtonStyle buttonStyle = ButtonStyle.Base;
+    Shade buttonShade = Shade.Lighter;
+    ButtonSize buttonSize = ButtonSize.Large;
 
     [Parameter] public List<ObraImagemDto> Imagens { get; set; } = new();
     [Parameter] public ObraImagemDto? ImagemInicial { get; set; }
 
+    // Lista reordenada para iniciar na imagem clicada
+    private List<ObraImagemDto> _slides = new();
+
     protected override void OnParametersSet()
     {
-        // Se uma imagem inicial for fornecida, tenta encontrar seu índice
-        if (ImagemInicial != null && Imagens != null && Imagens.Any())
-        {
-            var initialIndex = Imagens.FindIndex(img => img.Id == ImagemInicial.Id);
-            if (initialIndex >= 0)
-            {
-                selectedIndex = initialIndex;
-            }
-        }
+        _slides = BuildSlides(Imagens, ImagemInicial);
     }
 
-    private void Fechar()
+    private static List<ObraImagemDto> BuildSlides(List<ObraImagemDto> source, ObraImagemDto? initial)
     {
-        DialogService.Close();
+        if (source is null || source.Count == 0) return new();
+
+        var idx = 0;
+        if (initial != null)
+        {
+            var found = source.FindIndex(i => i.Id == initial.Id);
+            if (found >= 0) idx = found;
+        }
+
+        // Reordena: a partir do índice inicial e “dá a volta”
+        return source.Skip(idx).Concat(source.Take(idx)).ToList();
     }
+
+    private string GetUrl(ObraImagemDto img)
+    {
+        if (img == null || string.IsNullOrWhiteSpace(img.CaminhoRelativo)) return "#";
+
+        // Normaliza path e escapa apenas o nome do arquivo (espaços/acentos)
+        var p = img.CaminhoRelativo.Replace("\\", "/").TrimStart('/');
+        var last = p.LastIndexOf('/');
+        if (last >= 0 && last < p.Length - 1)
+        {
+            var dir = p[..(last + 1)];
+            var file = p[(last + 1)..];
+            p = dir + Uri.EscapeDataString(file);
+        }
+
+        return "/" + p;
+    }
+
+    private void Fechar() => DialogService.Close();
 }

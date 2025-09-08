@@ -2,75 +2,115 @@
 
 @using ByTescaro.ConstrutorApp.Application.DTOs
 @using ByTescaro.ConstrutorApp.Domain.Enums
-@using ByTescaro.ConstrutorApp.Application.Utils @* Para EnumHelper, se aplicável *@
+@using ByTescaro.ConstrutorApp.Application.Utils
+@using ByTescaro.ConstrutorApp.UI.Components.Pages.Projetos.Obra
 @using ByTescaro.ConstrutorApp.UI.Services
-@inject ProjetoApiService ProjetoApiService
-@inject NavigationManager Navigation
 @using Microsoft.AspNetCore.Authorization
+@inject ProjetoApiService ProjetoApiService
+@inject ObraApiService ObraApiService
+@inject NavigationManager Navigation
 @attribute [Authorize]
+
+<style>
+        ul[role="tablist"] {
+                display: flex !important;
+                flex-wrap: wrap;
+                justify-content: center;
+                padding: 0;
+                margin: 0;
+                gap: 0.5rem;
+
+    }
+
+            ul[role="tablist"] li {
+                    flex: 1 1 auto;
+                    text-align: center;
+                    min-width: 120px;
+
+    }
+
+                ul[role="tablist"] li a {
+                        display: block;
+                        padding: 0.75rem 1rem;
+                        font-weight: 500;
+                        border-radius: 8px;
+                        transition: background-color 0.2s;
+
+    }
+
+                    ul[role="tablist"] li a:hover {
+                            background-color: #f0f0f0;
+
+    }
+
+
+</style>
 
 <PageTitle>Detalhes do Projeto</PageTitle>
 
-<RadzenCard Class="rz-mt-4 rz-p-4 rz-shadow-md rz-rounded-md rz-mx-auto" Style="max-width: 1300px; width: 100%;">
+<RadzenCard Class="rz-mt-4 rz-p-4 rz-shadow-md rz-rounded-md rz-mx-auto" Style="max-width: 1500px; width: 100%;">
     <RadzenHeading Size="H4" Text="Detalhes do Projeto" Class="rz-mb-3" />
 
     @if (projeto is null)
     {
-        <RadzenText Text="Carregando detalhes do projeto ou projeto não encontrado..." Style="color: gray; padding: 1rem;" />
+        <RadzenText Text="Carregando detalhes do projeto..." Style="color: gray; padding: 1rem;" />
         <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" Style="margin-top: 10px;" />
     }
     else
     {
+        <!-- Resumo rápido do Projeto -->
+        <RadzenRow Class="rz-mb-3">
+            <RadzenColumn Size="12" SizeMD="3">
+                <RadzenCard Class="rz-p-3 rz-shadow-xs">
+                    <div class="rz-text-caption">Status</div>
+                    <div class="rz-text-subtitle-1"><b>@EnumHelper.ObterDescricaoEnum(projeto.Status)</b></div>
+                </RadzenCard>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="3">
+                <RadzenCard Class="rz-p-3 rz-shadow-xs">
+                    <div class="rz-text-caption">Início</div>
+                    <div class="rz-text-subtitle-1"><b>@projeto.DataInicio?.ToString("dd/MM/yyyy")</b></div>
+                </RadzenCard>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="3">
+                <RadzenCard Class="rz-p-3 rz-shadow-xs">
+                    <div class="rz-text-caption">Fim Previsto</div>
+                    <div class="rz-text-subtitle-1"><b>@(projeto.DataFim == null ? "Sem Previsão" : projeto.DataFim.Value.ToString("dd/MM/yyyy"))</b></div>
+                </RadzenCard>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="3">
+                <RadzenCard Class="rz-p-3 rz-shadow-xs">
+                    <div class="rz-text-caption">Progresso Médio</div>
+                    <RadzenProgressBar Value="@progressoProjeto" ShowValue="true" />
+                </RadzenCard>
+            </RadzenColumn>
+        </RadzenRow>
+
         <RadzenTabs>
             <Tabs>
+                <!-- INFORMAÇÕES GERAIS -->
                 <RadzenTabsItem Text="Informações Gerais">
+                    <!-- (reaproveitei seu bloco original, só compactei) -->
                     <RadzenFieldset Text="Dados Principais do Projeto" Style="margin-bottom: 1.5rem;">
-                        @* Removido RadzenTemplateForm e RadzenGrid internos, usando RadzenRow/Column diretamente com RadzenText *@
                         <RadzenRow>
                             <RadzenColumn Size="12" SizeMD="6">
-                                <RadzenText TextStyle="TextStyle.Body1">
-                                    <strong>Nome do Projeto:</strong> <span>@projeto.Nome</span>
-                                </RadzenText>
+                                <b>Nome:</b> @projeto.Nome
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="6">
-                                <RadzenText TextStyle="TextStyle.Body1">
-                                    <strong>Status:</strong> <span>@(EnumHelper.ObterDescricaoEnum(projeto.Status))</span>
-                                </RadzenText>
+                                <b>Status:</b> @EnumHelper.ObterDescricaoEnum(projeto.Status)
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="6">
-                                <RadzenText TextStyle="TextStyle.Body1">
-                                    <strong>Data Início:</strong> <span>@projeto.DataInicio?.ToString("dd/MM/yyyy")</span>
-                                </RadzenText>
+                                <b>Data Início:</b> @projeto.DataInicio?.ToString("dd/MM/yyyy")
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="6">
-                                <RadzenText TextStyle="TextStyle.Body1">
-                                    <strong>Data Fim Prevista:</strong> <span>@projeto.DataFim?.ToString("dd/MM/yyyy")</span>
-                                </RadzenText>
-                            </RadzenColumn>
-                            @* Adicione aqui outros campos de auditoria ou outros dados importantes do projeto *@
-                            <RadzenColumn Size="12" SizeMD="6">
-                                <RadzenText TextStyle="TextStyle.Body1">
-                                    <strong>Usuário Cadastro:</strong> <span>@projeto.UsuarioCadastroNome</span> @* Assumindo que você tem essa propriedade *@
-                                </RadzenText>
+                                <b>Data Fim Prevista:</b> @projeto.DataFim?.ToString("dd/MM/yyyy")
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="6">
-                                <RadzenText TextStyle="TextStyle.Body1">
-                                    <strong>Data/Hora Cadastro:</strong> <span>@projeto.DataHoraCadastro.ToString("dd/MM/yyyy HH:mm:ss")</span>
-                                </RadzenText>
+                                <b>Usuário Cadastro:</b> @projeto.UsuarioCadastroNome
                             </RadzenColumn>
-                           @*   @if (projeto.DataHoraAtualizacao.HasValue)
-                            {
-                                <RadzenColumn Size="12" SizeMD="6">
-                                    <RadzenText TextStyle="TextStyle.Body1">
-                                        <strong>Última Atualização Por:</strong> <span>@projeto.UsuarioAtualizacaoNome</span>
-                                    </RadzenText>
-                                </RadzenColumn>
-                                <RadzenColumn Size="12" SizeMD="6">
-                                    <RadzenText TextStyle="TextStyle.Body1">
-                                        <strong>Data/Hora Última Atualização:</strong> <span>@projeto.DataHoraAtualizacao?.ToString("dd/MM/yyyy HH:mm:ss")</span>
-                                    </RadzenText>
-                                </RadzenColumn>
-                            } *@
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <b>Data/Hora Cadastro:</b> @projeto.DataHoraCadastro.ToString("dd/MM/yyyy HH:mm:ss")
+                            </RadzenColumn>
                         </RadzenRow>
                     </RadzenFieldset>
 
@@ -78,133 +118,102 @@
                     {
                         <RadzenFieldset Text="Endereço" Style="margin-bottom: 1.5rem;">
                             <RadzenRow>
-                                <RadzenColumn Size="12" SizeMD="3">
-                                    <RadzenText TextStyle="TextStyle.Body1">
-                                        <strong>CEP:</strong> <span>@projeto.CEP</span>
-                                    </RadzenText>
-                                </RadzenColumn>
-                                <RadzenColumn Size="12" SizeMD="6">
-                                    <RadzenText TextStyle="TextStyle.Body1">
-                                        <strong>Logradouro:</strong> <span>@projeto.Logradouro</span>
-                                    </RadzenText>
-                                </RadzenColumn>
-                                <RadzenColumn Size="12" SizeMD="3">
-                                    <RadzenText TextStyle="TextStyle.Body1">
-                                        <strong>Número:</strong> <span>@projeto.Numero</span>
-                                    </RadzenText>
-                                </RadzenColumn>
-                                <RadzenColumn Size="12" SizeMD="4">
-                                    <RadzenText TextStyle="TextStyle.Body1">
-                                        <strong>Complemento:</strong> <span>@projeto.Complemento</span>
-                                    </RadzenText>
-                                </RadzenColumn>
-                                <RadzenColumn Size="12" SizeMD="4">
-                                    <RadzenText TextStyle="TextStyle.Body1">
-                                        <strong>Bairro:</strong> <span>@projeto.Bairro</span>
-                                    </RadzenText>
-                                </RadzenColumn>
-                                <RadzenColumn Size="12" SizeMD="4">
-                                    <RadzenText TextStyle="TextStyle.Body1">
-                                        <strong>Cidade:</strong> <span>@projeto.Cidade</span>
-                                    </RadzenText>
-                                </RadzenColumn>
-                                <RadzenColumn Size="12" SizeMD="6">
-                                    <RadzenText TextStyle="TextStyle.Body1">
-                                        <strong>Estado:</strong> <span>@projeto.Estado</span>
-                                    </RadzenText>
-                                </RadzenColumn>
-                                <RadzenColumn Size="12" SizeMD="2">
-                                    <RadzenText TextStyle="TextStyle.Body1">
-                                        <strong>UF:</strong> <span>@projeto.UF</span>
-                                    </RadzenText>
-                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="3"><b>CEP:</b> @projeto.CEP</RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="6"><b>Logradouro:</b> @projeto.Logradouro</RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="3"><b>Número:</b> @projeto.Numero</RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="4"><b>Complemento:</b> @projeto.Complemento</RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="4"><b>Bairro:</b> @projeto.Bairro</RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="4"><b>Cidade:</b> @projeto.Cidade</RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="6"><b>Estado:</b> @projeto.Estado</RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="2"><b>UF:</b> @projeto.UF</RadzenColumn>
                             </RadzenRow>
                         </RadzenFieldset>
                     }
 
-                    <RadzenFieldset Text="Observações" Style="margin-bottom: 1.5rem;">
-                        <RadzenText TextStyle="TextStyle.Body1" Style="white-space: pre-wrap;"> @* pre-wrap para quebras de linha *@
-                            <strong>Observação Geral:</strong><br />
-                            <span>@projeto.Observacao</span>
-                        </RadzenText>
+                    <RadzenFieldset Text="Observações">
+                        <div style="white-space: pre-wrap">
+                            <b>Observação Geral:</b><br />
+                            @projeto.Observacao
+                        </div>
 
                         @if (projeto.Status == StatusProjeto.Concluido)
                         {
-                            <RadzenText TextStyle="TextStyle.Body1" Class="rz-mt-3" Style="white-space: pre-wrap;">
-                                <strong>Descrição da Conclusão:</strong><br />
-                                <span>@projeto.DescricaoConclusao</span>
-                            </RadzenText>
+                            <div class="rz-mt-3" style="white-space: pre-wrap">
+                                <b>Descrição da Conclusão:</b><br />
+                                @projeto.DescricaoConclusao
+                            </div>
                         }
                         @if (projeto.Status == StatusProjeto.Cancelado)
                         {
-                            <RadzenText TextStyle="TextStyle.Body1" Class="rz-mt-3" Style="white-space: pre-wrap;">
-                                <strong>Descrição do Cancelamento:</strong><br />
-                                <span>@projeto.DescricaoCancelamento</span>
-                            </RadzenText>
+                            <div class="rz-mt-3" style="white-space: pre-wrap">
+                                <b>Descrição do Cancelamento:</b><br />
+                                @projeto.DescricaoCancelamento
+                            </div>
                         }
                     </RadzenFieldset>
                 </RadzenTabsItem>
 
-                <RadzenTabsItem Text="Checklist da Obra">
+                <!-- OBRAS DO PROJETO -->
+                <RadzenTabsItem Text="Obras do Projeto">
                     @if (projeto.Obras is null || !projeto.Obras.Any())
                     {
-                        <RadzenAlert Severity="AlertSeverity.Info" Summary="Sem etapas cadastradas." />
+                        <RadzenAlert Severity="AlertSeverity.Info" Summary="Nenhuma obra vinculada ao projeto." />
                     }
                     else
                     {
-                        @foreach (var obra in projeto.Obras.OrderBy(o => o.Nome)) @* Ordene as obras por nome, se desejar *@
-                        {
-                            <RadzenCard Class="rz-mb-4 rz-shadow-sm">
-                                <RadzenHeading Size="H6" Text="@($"Obra: {obra.Nome}")" Class="rz-mb-2" />
-                                @* <RadzenText TextStyle="TextStyle.Caption">Data Início Obra: @obra.DataInicioExecucao?.ToString("dd/MM/yyyy") | Data Fim Obra: @obra.?.ToString("dd/MM/yyyy")</RadzenText> *@
-                                @* <RadzenDivider /> *@
-
-                                @foreach (var etapa in obra.Etapas.OrderBy(e => e.Ordem))
+                        <!-- Filtro simples por nome -->
+                        <RadzenTextBox @bind-Value="filtroObra" Placeholder="Filtrar obra por nome..." Style="width: 320px" />
+                        <br />
+                        <br />
+                        <RadzenAccordion ExpandMode="ExpandMode.Multiple">
+                            <Items>
+                                @foreach (var obra in projeto.Obras
+                                                        .Where(o => string.IsNullOrWhiteSpace(filtroObra) || o.Nome.Contains(filtroObra, StringComparison.OrdinalIgnoreCase))
+                                                        .OrderBy(o => o.Nome))
                                 {
-                                    <RadzenCard Class="rz-mb-3 rz-shadow-xs">
-                                        <RadzenHeading Size="H6" Text="@($"Etapa {etapa.Ordem}: {etapa.Nome}")" Class="rz-mb-2" />
-                                        @* <RadzenText TextStyle="TextStyle.Caption">Data Início Etapa: @etapa.DataInicio?.ToString("dd/MM/yyyy") | Data Fim Etapa: @etapa.DataFim?.ToString("dd/MM/yyyy")</RadzenText> *@
-                                        <RadzenDivider />
+                                    var progresso = CalcularProgressoObra(obra);
 
-                                        <RadzenGrid Data="@etapa.Itens.OrderBy(i => i.Ordem)" TItem="ObraItemEtapaDto" AllowSorting="true">
-                                            <Columns>
-                                                <RadzenDataGridColumn TItem="ObraItemEtapaDto" Property="Nome" Title="Item" Width="60%">
-                                                    <Template Context="item">
-                                                        <RadzenText Text="@item.Nome" />
-                                                    </Template>
-                                                </RadzenDataGridColumn>
-                                                <RadzenDataGridColumn TItem="ObraItemEtapaDto" Title="Status" Width="20%" TextAlign="TextAlign.Center">
-                                                    <Template Context="item">
-                                                        @{
-                                                            var (cor, texto) = ObterStatusPrazoItem(item);
-                                                        }
-                                                        <RadzenBadge Text="@texto" Style="@($"background-color: {cor.ToLower()};")" />
-                                                    </Template>
-                                                </RadzenDataGridColumn>
-                                                <RadzenDataGridColumn TItem="ObraItemEtapaDto" Property="DataPrazoCalculada" Title="Prazo" Width="20%" FormatString="{0:dd/MM/yyyy}" TextAlign="TextAlign.Center">
-                                                    <Template Context="item">
-                                                        <RadzenText Text="@(item.IsDataPrazo ? (item.DataPrazoCalculada?.ToString("dd/MM/yyyy") ?? "-") : "Não Aplicável")" />
-                                                    </Template>
-                                                </RadzenDataGridColumn>
-                                            </Columns>
-                                        </RadzenGrid>
-                                    </RadzenCard>
+                                    <RadzenAccordionItem Text="@obra.Nome">
+                                            <div class="rz-d-flex rz-align-items-center rz-gap-2 rz-justify-content-between" style="width: 100%;">
+                                                <div>
+                                                    <b>@obra.Nome</b>
+                                                    <div class="rz-text-caption">
+                                                        <b>Status:</b> @obra.Status |
+                                                        <b>Início:</b> @obra.DataInicioExecucao?.ToString("dd/MM/yyyy")
+                                                    </div>
+                                                </div>
+                                                <div style="min-width:260px">
+                                                    <RadzenProgressBar Value="@progresso" ShowValue="true" />
+                                                </div>
+                                            </div>
+
+                                        <!-- Conteúdo da obra: seus componentes em tabs -->
+                                        <RadzenTabs Class="rz-mt-4">
+                                            <Tabs>
+                                                <RadzenTabsItem Text="Checklist"><ChecklistObraDetalheTab Obra="obra" /></RadzenTabsItem>
+                                                <RadzenTabsItem Text="Funcionários"><ObraFuncionariosDetalheTab Obra="obra" /></RadzenTabsItem>
+                                                <RadzenTabsItem Text="Equipamentos"><ObraEquipamentosDetalheTab Obra="obra" /></RadzenTabsItem>
+                                                <RadzenTabsItem Text="Insumos"><ObraInsumoListasDetalheTab Obra="obra" /></RadzenTabsItem>
+                                                <RadzenTabsItem Text="Serviços"><ObraServicoListasDetalheTab Obra="obra" /></RadzenTabsItem>
+                                                <RadzenTabsItem Text="Documentos"><ObraDocumentosDetalheTab Obra="obra" /></RadzenTabsItem>
+                                                <RadzenTabsItem Text="Imagens"><ObraImagensDetalheTab Obra="obra" /></RadzenTabsItem>
+                                                <RadzenTabsItem Text="Retrabalhos"><ObraRetrabalhosDetalheTab Obra="obra" /></RadzenTabsItem>
+                                                <RadzenTabsItem Text="Pendências"><ObraPendenciasDetalheTab Obra="obra" /></RadzenTabsItem>
+
+                                            </Tabs>
+                                        </RadzenTabs>
+                                    </RadzenAccordionItem>
                                 }
-                            </RadzenCard>
-                        }
+                            </Items>
+                        </RadzenAccordion>
                     }
                 </RadzenTabsItem>
             </Tabs>
         </RadzenTabs>
 
         <div class="rz-mt-4 rz-d-flex rz-justify-content-end rz-gap-3">
-            <RadzenButton Text="Voltar"
-                          Click="@(() => Navigation.NavigateTo("/projetos"))"
-                          ButtonStyle="ButtonStyle.Light" />
-            <RadzenButton Text="Editar"
-                          Click="@(() => Navigation.NavigateTo($"/projetos/editar/{projeto.Id}"))"
-                          Icon="edit"
-                          ButtonStyle="ButtonStyle.Primary" />
+            <RadzenButton Text="Voltar" Click="@(() => Navigation.NavigateTo("/projetos"))" ButtonStyle="ButtonStyle.Light" />
+            <RadzenButton Text="Editar" Click="@(() => Navigation.NavigateTo($"/projetos/editar/{projeto.Id}"))" Icon="edit" ButtonStyle="ButtonStyle.Primary" />
         </div>
     }
 </RadzenCard>
@@ -212,66 +221,59 @@
 @code {
     [Parameter] public long Id { get; set; }
     private ProjetoDto? projeto;
+    private int progressoProjeto;
+    private string? filtroObra;
 
     protected override async Task OnInitializedAsync()
     {
-        // Garanta que você está buscando as obras e suas etapas/itens para exibi-los
-        projeto = await ProjetoApiService.GetByIdAsync(Id); // Verifique se este método já inclui Obras, Etapas, Itens
-                                                            // Se não, você precisará de um método FindOneWithIncludesAsync para o Projeto.
-                                                            // Ex: projeto = await ProjetoApiService.FindOneWithIncludesAsync(Id, p => p.Obras, p => p.Obras.Select(o => o.Etapas), ...);
-        if (projeto?.Obras != null)
+        projeto = await ProjetoApiService.GetByIdAsync(Id);
+        projeto.Obras = await ObraApiService.GetByProjetoIdAsync(Id);
+
+        // Se vier com obras/etapas/itens, já calcula o progresso do projeto aqui.
+        if (projeto?.Obras != null && projeto.Obras.Any())
         {
-            foreach (var obra in projeto.Obras)
-            {
-                if (obra.Etapas != null)
-                {
-                    foreach (var etapa in obra.Etapas)
-                    {
-                        // Garante que a lista de itens da etapa não é nula
-                        etapa.Itens ??= new List<ObraItemEtapaDto>();
-
-                        // Recalcula DataPrazoCalculada para cada item se necessário,
-                        // pois pode não vir preenchida da API ou do mapeamento.
-                        // Isso é importante para a lógica de ObterStatusPrazoItem.
-                        foreach (var item in etapa.Itens)
-                        {
-                            if (item.IsDataPrazo && item.DiasPrazo.HasValue)
-                            {
-                                var dataBase =
-                                    projeto.DataInicioExecucao?.ToDateTime(TimeOnly.MinValue) ??
-                                    projeto.DataInicio?.ToDateTime(TimeOnly.MinValue) ??
-                                    DateTime.Now; // Fallback para data atual se datas do projeto forem nulas
-
-                                item.DataPrazoCalculada = dataBase.AddDays(item.DiasPrazo.Value);
-                            }
-                            else
-                            {
-                                item.DataPrazoCalculada = null; // Garante que é nulo se não houver prazo
-                            }
-                        }
-                    }
-                }
-            }
+            progressoProjeto = CalcularProgressoProjeto(projeto.Obras);
         }
     }
 
-    private (string Cor, string Texto) ObterStatusPrazoItem(ObraItemEtapaDto item)
+    // ======= Cálculos de progresso =======
+
+    // Ponderado por quantidade de itens (mais justo quando as etapas têm tamanhos diferentes)
+    private int CalcularProgressoProjeto(IEnumerable<ObraDto> obras)
     {
-        if (!item.IsDataPrazo)
-            return ("gray", "Sem prazo"); // Retorna cor e texto diretamente
+        long totalItens = 0;
+        long totalConcluidos = 0;
 
-        // Use DataPrazoCalculada que já foi pré-calculada no OnInitializedAsync
-        var dataPrazo = item.DataPrazoCalculada;
+        foreach (var o in obras)
+        {
+            if (o.Etapas == null) continue;
+            foreach (var e in o.Etapas)
+            {
+                var itens = e?.Itens ?? new();
+                totalItens += itens.Count;
+                totalConcluidos += itens.Count(i => i.Concluido);
+            }
+        }
 
-        if (dataPrazo == null)
-            return ("gray", "Sem prazo");
+        if (totalItens == 0) return 0;
+        return (int)Math.Round(100.0 * totalConcluidos / totalItens);
+    }
 
-        var diasRestantes = (dataPrazo.Value.Date - DateTime.Today).Days; // Usar DateTime.Today para comparação com data atual
+    private int CalcularProgressoObra(ObraDto obra)
+    {
+        if (obra?.Etapas == null || !obra.Etapas.Any()) return 0;
 
-        return item.Concluido ? ("green", "Concluído") :
-               diasRestantes > 1 ? ("green", $"Faltam {diasRestantes} dias") :
-               diasRestantes == 1 ? ("orange", "Vence amanhã") :
-               diasRestantes == 0 ? ("red", "Vence hoje") :
-               ("red", $"Atrasado há {Math.Abs(diasRestantes)} dias"); // Use Math.Abs para valor absoluto de dias atrasados
+        long totalItens = 0;
+        long conclu = 0;
+
+        foreach (var e in obra.Etapas)
+        {
+            var itens = e?.Itens ?? new();
+            totalItens += itens.Count;
+            conclu += itens.Count(i => i.Concluido);
+        }
+
+        if (totalItens == 0) return 0;
+        return (int)Math.Round(100.0 * conclu / totalItens);
     }
 }

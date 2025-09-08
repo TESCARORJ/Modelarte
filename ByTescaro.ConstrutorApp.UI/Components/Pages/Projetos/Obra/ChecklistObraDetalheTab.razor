@@ -1,0 +1,185 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.Application.Utils
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Radzen
+
+@inject ObraChecklistApiService ChecklistService
+
+<RadzenCard Style="padding: 1rem">
+    @if (isLoading)
+    {
+        <div style="padding: .5rem 0">
+            <RadzenText Text="Carregando checklist..." Style="color: gray;" />
+            <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+        </div>
+    }
+    else if (Etapas is null || !Etapas.Any())
+    {
+        <RadzenText Text="Nenhuma etapa cadastrada para esta obra." 
+                    TextStyle="TextStyle.H6" 
+                    TextAlign="TextAlign.Center" 
+                    Class="rz-mt-4 rz-mb-4" />
+    }
+    else
+    {
+        <!-- Progresso geral da obra -->
+        <RadzenFieldset Text="Resumo do Progresso" Style="margin-bottom: 1rem;">
+            <RadzenRow AlignItems="AlignItems.Center">
+                <RadzenColumn Size="12" SizeMD="9">
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>Progresso geral:</strong> <span>@CalcularProgressoGeral()%</span>
+                    </RadzenText>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenProgressBar Value="@CalcularProgressoGeral()" ShowValue="true" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenFieldset>
+
+        @foreach (var etapa in Etapas.OrderBy(e => e.Ordem))
+        {
+            <RadzenCard Class="rz-mb-3 rz-shadow-xs">
+                <RadzenRow AlignItems="AlignItems.Center" Style="padding: .5rem 1rem .25rem 1rem;">
+                    <RadzenColumn Size="12" SizeMD="8">
+                        <RadzenHeading Size="H6" Text="@etapa.Nome" Class="rz-mb-1" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenProgressBar Value="@CalcularProgressoEtapa(etapa)" ShowValue="true" />
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <RadzenDivider Class="rz-my-2" />
+
+                <div style="padding: .25rem 1rem 1rem 1rem;">
+                    @if (etapa.Itens is null || !etapa.Itens.Any())
+                    {
+                        <RadzenText Text="Sem itens nesta etapa." Style="color: gray;" />
+                    }
+                    else
+                    {
+                        <RadzenDataGrid Data="@etapa.Itens.OrderBy(i => i.Ordem)"
+                                        TItem="ObraItemEtapaDto"
+                                        AllowSorting="true"
+                                        AllowFiltering="false"
+                                        AllowPaging="false"
+                                        ShowPagingSummary="false"
+                                        Responsive="true">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="ObraItemEtapaDto" Property="Nome" Title="Item" Width="60%">
+                                    <Template Context="item">
+                                        <span class="rz-text-body1">@item.Nome</span>
+                                    </Template>
+                                </RadzenDataGridColumn>
+
+                                <RadzenDataGridColumn TItem="ObraItemEtapaDto" Title="Status" Width="20%" TextAlign="TextAlign.Center">
+                                    <Template Context="item">
+                                        @{
+                                            var (cor, texto) = ObterStatusPrazoItem(item);
+                                        }
+                                        <RadzenBadge Text="@texto" BadgeStyle="@ObterBadgeStyle(cor)" />
+                                    </Template>
+                                </RadzenDataGridColumn>
+
+                                <RadzenDataGridColumn TItem="ObraItemEtapaDto" Title="Prazo" Width="20%" TextAlign="TextAlign.Center">
+                                    <Template Context="item">
+                                        @if (!item.IsDataPrazo)
+                                        {
+                                            <span>Não aplicável</span>
+                                        }
+                                        else
+                                        {
+                                            var prazo = ObterDataPrazo(item);
+                                            <span>@(prazo?.ToString("dd/MM/yyyy") ?? "-")</span>
+                                        }
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    }
+                </div>
+            </RadzenCard>
+        }
+    }
+</RadzenCard>
+
+@code {
+    [Parameter] public ObraDto Obra { get; set; } = new();
+
+    private bool isLoading = true;
+    private List<ObraEtapaDto> Etapas { get; set; } = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Obra?.Id > 0)
+        {
+            isLoading = true;
+            // Busca o checklist atualizado no backend (somente leitura)
+            Etapas = await ChecklistService.GetEtapasAsync(Obra.Id) ?? new();
+            isLoading = false;
+        }
+        else
+        {
+            isLoading = false;
+            Etapas = new();
+        }
+    }
+
+    private int CalcularProgressoEtapa(ObraEtapaDto etapa)
+    {
+        if (etapa?.Itens == null || etapa.Itens.Count == 0) return 0;
+        var total = etapa.Itens.Count;
+        var concluidos = etapa.Itens.Count(i => i.Concluido);
+        var pct = Math.Round(concluidos * 100.0 / total);
+        return Convert.ToInt32(pct);
+    }
+
+    private int CalcularProgressoGeral()
+    {
+        if (Etapas == null || Etapas.Count == 0) return 0;
+        var media = Etapas.Average(e => CalcularProgressoEtapa(e));
+        return Convert.ToInt32(Math.Round(media));
+    }
+
+    private DateTime? ObterDataPrazo(ObraItemEtapaDto item)
+    {
+        if (!item.IsDataPrazo) return null;
+
+        // Se já vier calculada do backend, usa; senão calcula com base na data de início da obra + dias de prazo
+        if (item.DataPrazoCalculada.HasValue)
+            return item.DataPrazoCalculada.Value;
+
+        var baseDate = Obra?.DataInicioExecucao ?? DateTime.Today;
+        var dias = item.DiasPrazo ?? 0;
+        return baseDate.AddDays(dias);
+    }
+
+    private (string Cor, string Texto) ObterStatusPrazoItem(ObraItemEtapaDto item)
+    {
+        if (item.Concluido)
+            return ("green", "Concluído");
+
+        if (!item.IsDataPrazo)
+            return ("gray", "Sem prazo");
+
+        var dataPrazo = ObterDataPrazo(item);
+        if (dataPrazo == null)
+            return ("gray", "Sem prazo");
+
+        var diasRestantes = (dataPrazo.Value.Date - DateTime.Today).Days;
+
+        return diasRestantes > 1 ? ("green", $"Faltam {diasRestantes} dias")
+             : diasRestantes == 1 ? ("orange", "Vence amanhã")
+             : diasRestantes == 0 ? ("red", "Vence hoje")
+             : ("red", $"Atrasado há {Math.Abs(diasRestantes)} dias");
+    }
+
+    private BadgeStyle ObterBadgeStyle(string cor) => cor.ToLower() switch
+    {
+        "gray" => BadgeStyle.Secondary,
+        "green" => BadgeStyle.Success,
+        "orange" => BadgeStyle.Warning,
+        "red" => BadgeStyle.Danger,
+        _ => BadgeStyle.Base
+    };
+}
