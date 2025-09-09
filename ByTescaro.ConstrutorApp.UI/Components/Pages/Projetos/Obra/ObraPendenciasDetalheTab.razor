@@ -1,0 +1,145 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Radzen
+@using Radzen.Blazor
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+
+@inject ObraPendenciaApiService ObraPendenciaApiService
+@inject FuncionarioApiService FuncionarioApiService
+@inject NotificationService NotificationService
+
+<RadzenCard Class="rz-pa-4" @key="Obra?.Id">
+    <RadzenHeading Size="H6" Text="Pendências da Obra" class="mb-3" />
+
+    @if (isLoading)
+    {
+        <div style="padding:.5rem 0">
+            <RadzenText Text="Carregando pendências..." Style="color:gray" />
+            <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+        </div>
+    }
+    else if (PendenciasOrdenadas?.Any() != true)
+    {
+        <RadzenAlert Severity="AlertSeverity.Info">Nenhuma pendência registrada nesta obra.</RadzenAlert>
+    }
+    else
+    {
+        <div class="rz-text-right rz-mb-3">
+            <RadzenBadge Text="@TotalPendenciasText" />
+        </div>
+
+        <div style="overflow-x:auto">
+            <RadzenDataGrid TItem="ObraPendenciaDto"
+                            Data="@PendenciasOrdenadas"
+                            AllowSorting="true"
+                            AllowFiltering="false"
+                            AllowPaging="false"
+                            ShowPagingSummary="false"
+                            Responsive="true"
+                            ColumnWidth="240px">
+                <Columns>
+                    <RadzenDataGridColumn TItem="ObraPendenciaDto" Property="Descricao" Title="Descrição" />
+                    <RadzenDataGridColumn TItem="ObraPendenciaDto" Title="Responsável" Width="220px">
+                        <Template Context="p">@GetResponsavelNome(p)</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ObraPendenciaDto" Title="Status" Width="160px" TextAlign="TextAlign.Center">
+                        <Template Context="p">
+                            @{
+                                var (texto, estilo) = StatusBadge(p.Status);
+                            }
+                            <RadzenBadge Text="@texto" BadgeStyle="@estilo" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ObraPendenciaDto" Property="DataHoraCadastro" Title="Cadastrada em" Width="180px">
+                        <Template Context="p">@p.DataHoraCadastro.ToString("dd/MM/yyyy HH:mm")</Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </div>
+    }
+</RadzenCard>
+
+@code {
+    [Parameter] public ObraDto Obra { get; set; } = new();
+
+    private bool isLoading = true;
+    private List<FuncionarioDto> Funcionarios = new();
+
+    private IEnumerable<ObraPendenciaDto> PendenciasOrdenadas =>
+        (Obra.Pendencias ?? Enumerable.Empty<ObraPendenciaDto>())
+        .OrderByDescending(r => r.DataHoraCadastro);
+
+    private string TotalPendenciasText => $"Total: {PendenciasOrdenadas.Count()}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Funcionarios = await FuncionarioApiService.GetAllAsync() ?? new();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Funcionários", $"Falha ao carregar responsáveis: {ex.Message}");
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Obra?.Id > 0)
+        {
+            isLoading = true;
+            try
+            {
+                Obra.Pendencias = await ObraPendenciaApiService.GetByObraIdAsync(Obra.Id) ?? new();
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Falha ao carregar pendências: {ex.Message}");
+                Obra.Pendencias = new();
+            }
+            finally
+            {
+                isLoading = false;
+                StateHasChanged();
+            }
+        }
+        else
+        {
+            Obra.Pendencias = new();
+            isLoading = false;
+        }
+    }
+
+    private string GetResponsavelNome(ObraPendenciaDto p)
+    {
+        // Se o DTO já tiver ResponsavelNome, pode preferir usar; aqui buscamos por ID.
+        var viaLista = Funcionarios.FirstOrDefault(f => f.Id == p.ResponsavelId)?.Nome;
+        return !string.IsNullOrWhiteSpace(viaLista) ? viaLista : "-";
+    }
+
+    private static (string texto, BadgeStyle estilo) StatusBadge(StatusPendencia status)
+    {
+        string Texto(StatusPendencia s)
+        {
+            var member = s.GetType().GetMember(s.ToString()).FirstOrDefault();
+            var display = member?.GetCustomAttribute<DisplayAttribute>();
+            return display?.Name ?? s.ToString();
+        }
+
+        var lower = status.ToString().ToLowerInvariant();
+        var style = lower switch
+        {
+            "pendente" => BadgeStyle.Warning,
+            "emandamento" => BadgeStyle.Info,
+            "em_andamento" => BadgeStyle.Info,
+            "concluido" => BadgeStyle.Success,
+            "concluído" => BadgeStyle.Success,
+            "cancelado" => BadgeStyle.Secondary,
+            _ => BadgeStyle.Light
+        };
+
+        return (Texto(status), style);
+    }
+}

@@ -1,0 +1,146 @@
+﻿@using ByTescaro.ConstrutorApp.Application.DTOs
+@using ByTescaro.ConstrutorApp.Application.Utils
+@using ByTescaro.ConstrutorApp.Domain.Enums
+@using ByTescaro.ConstrutorApp.UI.Services
+@using Radzen
+@using Radzen.Blazor
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+
+@inject ObraRetrabalhoApiService ObraRetrabalhoApiService
+@inject FuncionarioApiService FuncionarioApiService
+@inject NotificationService NotificationService
+
+<RadzenCard Class="rz-pa-4" @key="Obra?.Id">
+    <RadzenHeading Size="H6" Text="Retrabalhos da Obra" class="mb-3" />
+
+    @if (isLoading)
+    {
+        <div style="padding:.5rem 0">
+            <RadzenText Text="Carregando retrabalhos..." Style="color:gray" />
+            <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+        </div>
+    }
+    else if (RetrabalhosOrdenados?.Any() != true)
+    {
+        <RadzenAlert Severity="AlertSeverity.Info">Nenhum retrabalho registrado nesta obra.</RadzenAlert>
+    }
+    else
+    {
+        <div class="rz-text-right rz-mb-3">
+            <RadzenBadge Text="@TotalRetrabalhosText" />
+        </div>
+
+        <div style="overflow-x:auto">
+            <RadzenDataGrid TItem="ObraRetrabalhoDto"
+                            Data="@RetrabalhosOrdenados"
+                            AllowSorting="true"
+                            AllowFiltering="false"
+                            AllowPaging="false"
+                            ShowPagingSummary="false"
+                            Responsive="true"
+                            ColumnWidth="240px">
+                <Columns>
+                    <RadzenDataGridColumn TItem="ObraRetrabalhoDto" Property="Descricao" Title="Descrição" />
+                    <RadzenDataGridColumn TItem="ObraRetrabalhoDto" Title="Responsável" Width="220px">
+                        <Template Context="r">@GetResponsavelNome(r)</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ObraRetrabalhoDto" Title="Status" Width="160px" TextAlign="TextAlign.Center">
+                        <Template Context="r">
+                            @{
+                                var (texto, estilo) = StatusBadge(r.Status);
+                            }
+                            <RadzenBadge Text="@texto" BadgeStyle="@estilo" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ObraRetrabalhoDto" Property="DataHoraCadastro" Title="Cadastrado em" Width="180px">
+                        <Template Context="r">@r.DataHoraCadastro.ToString("dd/MM/yyyy HH:mm")</Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </div>
+    }
+</RadzenCard>
+
+@code {
+    [Parameter] public ObraDto Obra { get; set; } = new();
+
+    private bool isLoading = true;
+    private List<FuncionarioDto> Funcionarios = new();
+
+    private IEnumerable<ObraRetrabalhoDto> RetrabalhosOrdenados =>
+        (Obra.Retrabalhos ?? Enumerable.Empty<ObraRetrabalhoDto>())
+        .OrderByDescending(r => r.DataHoraCadastro);
+
+    private string TotalRetrabalhosText => $"Total: {RetrabalhosOrdenados.Count()}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Funcionarios = await FuncionarioApiService.GetAllAsync() ?? new();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Funcionários", $"Falha ao carregar responsáveis: {ex.Message}");
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Obra?.Id > 0)
+        {
+            isLoading = true;
+            try
+            {
+                Obra.Retrabalhos = await ObraRetrabalhoApiService.GetByObraIdAsync(Obra.Id) ?? new();
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Erro", $"Falha ao carregar retrabalhos: {ex.Message}");
+                Obra.Retrabalhos = new();
+            }
+            finally
+            {
+                isLoading = false;
+                StateHasChanged();
+            }
+        }
+        else
+        {
+            Obra.Retrabalhos = new();
+            isLoading = false;
+        }
+    }
+
+    private string GetResponsavelNome(ObraRetrabalhoDto r)
+    {
+        // Ajuste conforme seu DTO: se houver ResponsavelNome, prefira usar
+        var viaLista = Funcionarios.FirstOrDefault(f => f.Id == r.ResponsavelId)?.Nome;
+        return !string.IsNullOrWhiteSpace(viaLista) ? viaLista : "-";
+    }
+
+    private static (string texto, BadgeStyle estilo) StatusBadge(StatusRetrabalho status)
+    {
+        string Texto(StatusRetrabalho s)
+        {
+            var member = s.GetType().GetMember(s.ToString()).FirstOrDefault();
+            var display = member?.GetCustomAttribute<DisplayAttribute>();
+            return display?.Name ?? s.ToString();
+        }
+
+        var lower = status.ToString().ToLowerInvariant();
+        var style = lower switch
+        {
+            "pendente" => BadgeStyle.Warning,
+            "emandamento" => BadgeStyle.Info,
+            "em_andamento" => BadgeStyle.Info,
+            "concluido" => BadgeStyle.Success,
+            "concluído" => BadgeStyle.Success,
+            "cancelado" => BadgeStyle.Secondary,
+            _ => BadgeStyle.Light
+        };
+
+        return (Texto(status), style);
+    }
+}
