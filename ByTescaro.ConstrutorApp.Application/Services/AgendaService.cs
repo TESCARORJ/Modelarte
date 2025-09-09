@@ -6,6 +6,7 @@ using ByTescaro.ConstrutorApp.Domain.Entities;
 using ByTescaro.ConstrutorApp.Domain.Entities.Admin;
 using ByTescaro.ConstrutorApp.Domain.Enums;
 using ByTescaro.ConstrutorApp.Domain.Interfaces;
+using ByTescaro.ConstrutorApp.Infrastructure.Repositories;
 using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json; // Para logs ou serialização/desserialização
@@ -453,72 +454,85 @@ namespace ByTescaro.ConstrutorApp.Application.Services
             }
         }
 
-
-
         public async Task ExcluirEventoAsync(long eventoId, long usuarioId)
         {
+            // Carrega evento
             var evento = await _unitOfWork.EventoRepository.GetByIdTrackingAsync(eventoId);
+            if (evento == null)
+                throw new Exception("Evento não encontrado.");
+
+            // Apenas o criador pode excluir
+            if (evento.UsuarioCadastroId != usuarioId)
+                throw new UnauthorizedAccessException("Você não tem permissão para excluir este evento.");
+
             var usuarioLogado = await _usuarioLogadoService.ObterUsuarioAtualAsync();
 
+            // Participantes (carregue com Usuario se o repo suportar; senão busco o usuário individualmente mais abaixo)
+            var participantes = (await _unitOfWork.ParticipanteEventoRepository
+                .GetParticipantesByEventoIdAsync(evento.Id))?.ToList() ?? new List<ParticipanteEvento>();
 
-            if (evento == null)
+            // Envia mensagem para participantes (exceto o criador)
+            if (participantes.Count > 0)
             {
-                throw new Exception("Evento não encontrado.");
-            }
-
-            if (evento.UsuarioCadastroId != usuarioId)
-            {
-                throw new UnauthorizedAccessException("Você não tem permissão para excluir este evento.");
-            }
-
-            var participantes = await _unitOfWork.ParticipanteEventoRepository.GetParticipantesByEventoIdAsync(evento.Id);
-
-            if (participantes.Count() > 1)
-            {
-
-                var lembretesDoEvento = await _unitOfWork.LembreteEventoRepository.GetLembretesByEventoIdAsync(evento.Id);
-
-                var participantesNomes = participantes
-                     .OrderBy(u => u.Usuario.Nome)
-                     .Select(u => u.Usuario.Nome)
-                     .ToList();
-                string participantesString = participantes.Any() ? string.Join(", ", participantesNomes) : "Nenhum participante adicionado (além do criador).";
-
                 foreach (var participante in participantes)
                 {
+                    //if (participante.UsuarioId == evento.UsuarioCadastroId) continue;
+
                     var usuario = await _unitOfWork.UsuarioRepository.GetByIdTrackingAsync(participante.UsuarioId);
-                    if (usuario != null && !string.IsNullOrEmpty(usuario.TelefoneWhatsApp))
+                    if (!string.IsNullOrWhiteSpace(usuario?.TelefoneWhatsApp))
                     {
                         var mensagem = $"O evento '{evento.Titulo}' que ocorreria em {evento.DataHoraInicio:dd/MM/yyyy HH:mm} foi cancelado.";
                         await _zApiNotificationService.SendWhatsAppMessageAsync(usuario.TelefoneWhatsApp, mensagem);
                     }
                 }
+            }
 
-                if (lembretesDoEvento != null && lembretesDoEvento.Any())
-                {
-                    _unitOfWork.LembreteEventoRepository.RemoveRange(lembretesDoEvento);
-                }
+            // Remove lembretes e vínculos de participantes
+            var lembretes = await _unitOfWork.LembreteEventoRepository.GetLembretesByEventoIdAsync(evento.Id);
+            if (lembretes?.Any() == true)
+                _unitOfWork.LembreteEventoRepository.RemoveRange(lembretes);
 
-                if (participantes != null && participantes.Any())
-                {
-                    _unitOfWork.ParticipanteEventoRepository.RemoveRange(participantes);
-                }
+            if (participantes?.Any() == true)
+                _unitOfWork.ParticipanteEventoRepository.RemoveRange(participantes);
+
+            // Monta uma string simples com nomes p/ log (sem navegar de volta ao evento)
+            var participantesString = participantes.Any()
+                ? string.Join(", ", participantes
+                    .OrderBy(p => p.Usuario?.Nome) // se a navegação Usuario vier carregada
+                    .Select(p => p.Usuario?.Nome ?? $"#{p.UsuarioId}"))
+                : "Nenhum participante.";
+
+            // Snapshot PLANO para evitar ciclos de serialização
+            var logSnapshot = new
+            {
+                evento.Id,
+                evento.Titulo,
+                evento.Descricao,
+                evento.DataHoraInicio,
+                evento.DataHoraFim,
+                evento.UsuarioCadastroId,
+                Participantes = participantes.Select(p => new { p.UsuarioId, Nome = p.Usuario?.Nome }).ToList()
+            };
 
             await _logRepo.RegistrarAsync(new LogAuditoria
             {
-                UsuarioId = usuarioLogado == null ? 0 : usuarioLogado.Id,
-                UsuarioNome = usuarioLogado == null ? string.Empty : usuarioLogado.Nome,
+                UsuarioId = usuarioLogado?.Id ?? 0,
+                UsuarioNome = usuarioLogado?.Nome ?? string.Empty,
                 Entidade = nameof(Evento),
-                TipoLogAuditoria = TipoLogAuditoria.Criacao,
-                Descricao = $"Compromisso excluído por '{usuarioLogado}' em {DateTime.Now}. Título: {evento.Titulo} --- Início: {evento.DataHoraInicio} - Fim: {evento.DataHoraFim} ---  Descrição: {evento.Descricao} --- Paticipantes: {participantesString} ",
-                DadosAtuais = JsonSerializer.Serialize(evento) // Serializa o DTO para o log
+                TipoLogAuditoria = TipoLogAuditoria.Exclusao,
+                Descricao =
+                    $"Compromisso excluído por '{usuarioLogado?.Nome}' em {DateTime.Now:dd/MM/yyyy HH:mm}. " +
+                    $"Título: {evento.Titulo} — Início: {evento.DataHoraInicio:dd/MM/yyyy HH:mm} — Fim: {evento.DataHoraFim:dd/MM/yyyy HH:mm} — Participantes: {participantesString}",
+                // Serializa o snapshot em vez da entidade com navegações
+                DadosAtuais = JsonSerializer.Serialize(logSnapshot)
             });
 
-            }
+            // Exclui o evento
             _unitOfWork.EventoRepository.Remove(evento);
-
             await _unitOfWork.CommitAsync();
         }
+
+
 
         public async Task<IEnumerable<EventoDto>> ObterEventosDoUsuarioAsync(long usuarioId)
         {
